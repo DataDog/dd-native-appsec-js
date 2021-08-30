@@ -1,0 +1,3 @@
+Component,Origin,License,Copyright
+require,node-gyp-build,MIT,Copyright 2017 Mathias Buus
+dev,mocha,MIT,Copyright 2011-2018 JS Foundation and contributors https://js.foundation
