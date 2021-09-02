@@ -2,17 +2,17 @@
 {
   "targets": [{
     "target_name": "appsec",
-    "sources": [
-      "src/convert.cpp",
-      "src/main.cpp"
-    ],
     "include_dirs": [
       "src",
-      "libddwaf-1.0.6-Darwin-x86_64-2efc246/include",
+      "<!@(node -p \"require('./scripts/lib.js').include\")",
       "<!@(node -p \"require('node-addon-api').include\")"
     ],
     "libraries": [
-      "<!(node -p \"require('./scripts/lib.js').lib\")"
+      "<!@(node -p \"require('./scripts/lib.js').lib\")"
+    ],
+    "sources": [
+      "src/convert.cpp",
+      "src/main.cpp"
     ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {

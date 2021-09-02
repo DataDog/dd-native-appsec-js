@@ -1,5 +1,6 @@
 #define NAPI_VERSION  4
 #include <napi.h>
+#include <stdio.h>
 #include "ddwaf.h"
 #include "main.h"
 #include "log.h"
@@ -142,12 +143,17 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     Napi::TypeError::New(env, "Second argument must be a number").ThrowAsJavaScriptException();
     return info.Env().Null();
   }
+  int64_t timeout = info[1].ToNumber().Int64Value();
+  if (timeout <= 0) {
+    Napi::TypeError::New(env, "Second argument must be a positive number").ThrowAsJavaScriptException();
+    return info.Env().Null();
+  }
+
   ddwaf_result result;
-  uint64_t timeout = info[1].ToNumber().Int64Value();
   ddwaf_object data;
   to_ddwaf_object(&data, env, info[0]);
 
-  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, timeout);
+  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
   mlog("Run result action %i", result.action);
 
   switch(code) {
@@ -190,7 +196,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   if (code == DDWAF_BLOCK) {
     res.Set(
-      Napi::String::New(env, "data"),
+      Napi::String::New(env, "action"),
       Napi::String::New(env, "block")
     );
   }
