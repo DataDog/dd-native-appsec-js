@@ -1,0 +1,50 @@
+{
+  "name": "@datadog/native-appsec",
+  "version": "0.0.0",
+  "description": "Node.js bindings for libddwaf",
+  "main": "index.js",
+  "libddwaf_version": "1.0.7",
+  "scripts": {
+    "//TODO(@vlad)": "implement scripts too",
+    "rebuild": "node-gyp rebuild",
+    "prebuild": "node scripts/prebuild.js",
+    "prebuilds": "node scripts/prebuilds.js",
+    "prepublishOnly": "node scripts/prepublish.js",
+    "lint": "eslint .",
+    "test": "mocha 'test/**/*.spec.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DataDog/dd-native-appsec-js.git"
+  },
+  "keywords": [
+    "datadog",
+    "appsec"
+  ],
+  "author": "Datadog Inc. <info@datadoghq.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/DataDog/dd-native-appsec-js/issues"
+  },
+  "homepage": "https://github.com/DataDog/dd-native-appsec-js#readme",
+  "TODO(@cvlad)": "add engine claim",
+  "devDependencies": {
+    "@hapi/wreck": "^17.1.0",
+    "eslint": "^7.31.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "eslint-plugin-standard": "^5.0.0",
+    "mocha": "^9.1.1",
+    "node-addon-api": "^4.1.0"
+  },
+  "dependencies": {
+    "detect-libc": "^1.0.3",
+    "node-gyp-build": "^4.2.3",
+    "tar": "^6.1.11"
+  },
+  "engines": {
+    "node": ">=12"
+  }
+}
