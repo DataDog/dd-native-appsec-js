@@ -19,6 +19,13 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: npm run licenses
+
   build-native:
     strategy:
       matrix:
@@ -73,7 +80,7 @@ jobs:
           path: ${{ matrix.target.artifact }}.tgz
 
   bundle:
-    needs: [build-native, build-docker]
+    needs: ['build-native', 'build-docker']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -92,3 +99,48 @@ jobs:
           name: vendor
           path: vendor
 
+  tests-release-native:
+    needs: ['bundle']
+    strategy:
+      matrix:
+        target:
+          - name: macos
+            os: macos-latest
+            artifact: darwin-x64-unknown
+          - name: windows 64 bits # - TODO: windows support when we have a static lib
+            os: windows-2016
+            artifact: win32-x64-unknown
+    runs-on: ${{ matrix.target.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - uses: actions/download-artifact@v2
+        with:
+          name: release
+      - run: node scripts/rename.js
+      - run: npm i -S datadog-native-appsec-0.0.0.tgz
+      - run: npm t
+
+  tests-release-docker:
+    needs: ['bundle']
+    strategy:
+      matrix:
+        target:
+          - node:14
+          - node:14-alpine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: release
+      - run: docker build -t test -f ./docker/test.Dockerfile --build-arg BASE_IMAGE=${{ matrix.target }} .
+      - run: docker run test
+
+  all-good:
+    needs: [ tests-release-native,  tests-release-native, lint, licenses]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo '🚀🚀🚀🚀🚀'

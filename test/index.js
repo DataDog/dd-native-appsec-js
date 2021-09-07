@@ -41,3 +41,11 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
   })
 })
+
+describe('load tests', () => {
+  // TODO: how to control memory impact of the addon
+})
+
+describe('worker tests', () => {
+  // TODO: tests on how this works with workers
+})

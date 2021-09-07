@@ -77,6 +77,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value v
   }
   if (val.IsString()) {
     mlog("creating String");
+    // TODO: check string length here
     return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
   }
   if (val.IsNumber()) {
