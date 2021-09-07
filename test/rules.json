@@ -1,0 +1,30 @@
+{
+  "version":"1.0",
+  "events":[
+    {
+      "id":"id",
+      "name": "some name",
+      "tags":{
+        "type":"security_scanner",
+        "crs_id":"0"
+      },
+      "conditions":[
+        {
+          "operation":"phrase_match",
+          "parameters":{
+            "inputs":[
+              "server.request.headers.no_cookies"
+            ],
+            "list":[
+              "hello world"
+            ]
+          }
+        }
+      ],
+      "transformers":[
+        "lowercase"
+      ],
+      "action":"record"
+    }
+  ]
+}
