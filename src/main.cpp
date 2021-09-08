@@ -174,14 +174,21 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   // there is not error. We need to collect perf and potential error data
   Napi::Object res = Napi::Object::New(env);
-  res.Set(
-    Napi::String::New(env, "perfData"),
-    Napi::String::New(env, result.perfData)
-  );
-  res.Set(
-    Napi::String::New(env, "perfTotalRuntime"),
-    Napi::Number::New(env, result.perfTotalRuntime)
-  );
+  if(result.perfData) {
+    mlog("Set perfData");
+    res.Set(
+      Napi::String::New(env, "perfData"),
+      Napi::String::New(env, result.perfData)
+    );
+  }
+  if(result.perfTotalRuntime) {
+    mlog("Set perfTotalRuntime");
+    res.Set(
+      Napi::String::New(env, "perfTotalRuntime"),
+      Napi::Number::New(env, result.perfTotalRuntime)
+    );
+  }
+  mlog("Set perf results ok");
   if (code != DDWAF_GOOD) {
     res.Set(
       Napi::String::New(env, "data"),

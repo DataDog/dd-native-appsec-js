@@ -5,15 +5,16 @@
   "main": "index.js",
   "libddwaf_version": "1.0.7",
   "bin": {
-    "appsec-reinstall": "bin/appsec-resintall.js"
+    "appsec-reinstall": "bin/appsec-reinstall.js"
   },
   "scripts": {
-    "install": "node scripts/install.js",
+    "install": "node bin/appsec-reinstall.js",
     "rebuild": "node-gyp rebuild",
     "dev": "npm run rebuild && node scripts/dev.js",
     "build-test-bundle": "npm run dev && npm t && node scripts/bundle-addon.js",
     "lint": "eslint .",
-    "test": "mocha"
+    "test": "mocha",
+    "licenses": "node scripts/check_licenses.js"
   },
   "repository": {
     "type": "git",
@@ -29,9 +30,7 @@
     "url": "https://github.com/DataDog/dd-native-appsec-js/issues"
   },
   "homepage": "https://github.com/DataDog/dd-native-appsec-js#readme",
-  "TODO(@cvlad)": "add engine claim",
   "devDependencies": {
-    "@hapi/wreck": "^17.1.0",
     "eslint": "^7.31.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.23.4",
@@ -44,6 +43,7 @@
   },
   "dependencies": {
     "detect-libc": "^1.0.3",
+    "minimist": "^1.2.5",
     "tar": "^6.1.11"
   },
   "engines": {
@@ -56,9 +56,9 @@
     "README.md",
     "vendor/*",
     "lib/*",
+    "bin/*",
     "LICENSE",
     "LICENSE-3rdparty.csv",
-    "scripts/install.js",
     "scripts/lib.js"
   ]
 }

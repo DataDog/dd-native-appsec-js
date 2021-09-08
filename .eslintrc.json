@@ -9,6 +9,7 @@
   "env": {
     "node" : true
   },
+  "ignorePatterns": ["bin/*.js"],
   "rules": {
     "max-len": [2, 120, 2],
     "no-var": 2,
