@@ -40,8 +40,8 @@ jobs:
             arch: x64
           - name: windows 32 bits # - TODO: windows support when we have a static lib
             os: windows-2016
-            artifact: win32-ia32-unknown
-            arch: ia32
+            artifact: win32-x32-unknown
+            arch: x32
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2

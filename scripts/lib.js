@@ -18,7 +18,7 @@ const getDirName = module.exports.getDirName = function () {
       if (arch === 'x64') {
         return `libddwaf-${pkg.libddwaf_version}-Windows-x64`
       }
-      if (arch === 'ia32') {
+      if (arch === 'x32') {
         return `libddwaf-${pkg.libddwaf_version}-windows-win32.tar.gz`
       }
       break
