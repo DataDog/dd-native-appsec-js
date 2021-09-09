@@ -33,15 +33,22 @@ jobs:
           - name: macos
             os: macos-latest
             artifact: darwin-x64-unknown
+            arch: x64
           - name: windows 64 bits # - TODO: windows support when we have a static lib
             os: windows-2016
             artifact: win32-x64-unknown
+            arch: x64
+          - name: windows 32 bits # - TODO: windows support when we have a static lib
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: ia32
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          architecture: ${{ matrix.target.arch }}
       - run: npm ci --ignore-scripts
       - run: node scripts/setup.js
       - run: npm run build-test-bundle
