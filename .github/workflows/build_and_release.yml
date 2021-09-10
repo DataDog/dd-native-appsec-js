@@ -36,15 +36,22 @@ jobs:
           - name: macos
             os: macos-latest
             artifact: darwin-x64-unknown
-          - name: windows 64 bits # - TODO: windows support when we have a static lib
+            arch: x64
+          - name: windows 64 bits
             os: windows-2016
             artifact: win32-x64-unknown
+            arch: x64
+          - name: windows 32 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x86
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          architecture: ${{ matrix.target.arch }}
       - run: npm ci --ignore-scripts
       - run: node scripts/setup.js
       - run: npm run build-test-bundle
@@ -69,7 +76,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - run: npm ci --ignore-scripts # TODO: understand why it builds per default
+      - run: npm ci --ignore-scripts
       - run: node scripts/setup.js
         env:
           PLATFORM: 'linux'
@@ -110,15 +117,26 @@ jobs:
           - name: macos
             os: macos-latest
             artifact: darwin-x64-unknown
-          - name: windows 64 bits # - TODO: windows support when we have a static lib
+            arch: x64
+          - name: windows 64 bits
             os: windows-2016
             artifact: win32-x64-unknown
+            arch: x64
+          - name: windows 32 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x86
+          - name: windows 32 bits on 64 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x64
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          architecture: ${{ matrix.target.arch }}
       - uses: actions/download-artifact@v2
         with:
           name: release
@@ -143,7 +161,7 @@ jobs:
       - run: docker run test
 
   all-good:
-    needs: [ tests-release-native,  tests-release-native, lint, licenses]
+    needs: [ tests-release-native,  tests-release-docker, lint, licenses]
     runs-on: ubuntu-latest
     steps:
       - run: echo '🚀🚀🚀🚀🚀'
