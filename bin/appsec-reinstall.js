@@ -49,10 +49,6 @@ async function install () {
   fs.mkdirSync(path.join(__dirname, '..', 'vendor', dir), { recursive: true })
   fs.renameSync(path.join(process.cwd(), 'appsec.node').split('\\').join('\\\\')
     , path.join(__dirname, '..', 'vendor', dir, 'appsec.node').split('\\').join('\\\\'))
-  if (fs.existsSync(path.join(process.cwd(), 'ddwaf.dll').split('\\').join('\\\\'))) {
-    fs.renameSync(path.join(process.cwd(), 'ddwaf.dll').split('\\').join('\\\\'),
-      path.join(__dirname, '..', 'vendor', dir, 'ddwaf.dll').split('\\').join('\\\\'))
-  }
   fs.writeFileSync(path.join(__dirname, '..', 'install.json').split('\\').join('\\\\')
     , JSON.stringify({ target: dir }, null, 2))
 }
