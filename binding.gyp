@@ -14,6 +14,11 @@
       "src/convert.cpp",
       "src/main.cpp"
     ],
+    'ldflags': [
+      '-static-libstdc++',
+      '-static-libgcc',
+      '-lpthread',
+    ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
       "MACOSX_DEPLOYMENT_TARGET": "10.10",
