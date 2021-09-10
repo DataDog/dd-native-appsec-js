@@ -1,4 +1,4 @@
-FROM $BUILD_ARG
+FROM $BASE_IMAGE
 
 WORKDIR /build
 COPY ./package.json .

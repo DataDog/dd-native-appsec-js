@@ -116,7 +116,7 @@ jobs:
           path: ${{ matrix.target.artifact }}.tgz
 
   bundle:
-    needs: ['build-native', 'build-docker']
+    needs: ['build-native', 'build-docker', 'cross-build']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -174,6 +174,13 @@ jobs:
           name: release
       - run: docker build -t test -f ./docker/test.Dockerfile --build-arg BASE_IMAGE=${{ matrix.target }} .
       - run: docker run test
+
+  tests-release-cross-build:
+    needs: ['bundle']
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'hello'
+
 
   all-good:
     needs: [ tests-release-native,  tests-release-native, lint, licenses]
