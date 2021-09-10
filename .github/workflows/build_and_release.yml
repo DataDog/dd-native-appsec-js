@@ -14,21 +14,6 @@ env:
   LIBDDWAF_VERSION: 1.0.8
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm ci
-      - run: npm run lint
-
-  licenses:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm run licenses
-
   build-native:
     strategy:
       matrix:
@@ -88,6 +73,19 @@ jobs:
         with:
           name: ${{ matrix.target.artifact }}
           path: ${{ matrix.target.artifact }}.tgz
+
+  static-checks:
+    strategy:
+      matrix:
+        run:
+          - lint
+          - licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: npm ci
+      - run: npm run ${{ matrix.run }}
 
   bundle:
     needs: ['build-native', 'build-docker']
@@ -160,8 +158,32 @@ jobs:
       - run: docker build -t test -f ./docker/test.Dockerfile --build-arg BASE_IMAGE=${{ matrix.target }} .
       - run: docker run test
 
+  tests-release-build-host-to-alpine:
+    needs: ['bundle']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+          architecture: ${{ matrix.target.arch }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: release
+      - run: node scripts/rename.js
+      - run: npm i -S datadog-native-appsec-0.0.0.tgz
+      - run: npm i
+      - run: rm .dockerignore
+      - run: ./node_modules/.bin/appsec-reinstall -p linux --libc musl
+      - run: docker build -f docker/alpine-install-test.Dockerfile -t test .
+      - run: docker run test
+
   all-good:
-    needs: [ tests-release-native,  tests-release-docker, lint, licenses]
+    needs:
+      - tests-release-native
+      - tests-release-docker
+      - tests-release-build-host-to-alpine
+      - static-checks
     runs-on: ubuntu-latest
     steps:
       - run: echo '🚀🚀🚀🚀🚀'
