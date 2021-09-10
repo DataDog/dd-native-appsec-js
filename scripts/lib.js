@@ -29,6 +29,7 @@ const getLinuxDirname = function () {
   if (!archPart) {
     throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
   }
+  console.log('->', `libddwaf-${pkg.libddwaf_version}-linux-${archPart}`)
   return `libddwaf-${pkg.libddwaf_version}-linux-${archPart}`
 }
 
