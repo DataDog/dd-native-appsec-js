@@ -78,7 +78,7 @@ jobs:
           PLATFORM: 'linux'
           LIBC: ${{ matrix.target.libc }}
           ARCH: ${{ matrix.target.arch }}
-      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} --build-arg BUILD_ARG=${{ matrix.target.from }} --platform linux/${{ matrix.target.arch }} .
+      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} --build-arg BASE_IMAGE=${{ matrix.target.from }} --platform linux/${{ matrix.target.arch }} .
       - run: docker run --name builder --platform linux/${{ matrix.target.arch }} build
       - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
       - uses: actions/upload-artifact@v2
