@@ -131,8 +131,8 @@ jobs:
     strategy:
       matrix:
         target:
-          - node:14
-          - node:14-alpine
+          - node:14@sha256:4164d987bfceb62b17db4938d535dd31fc50d6ee0b4e00ac7a774f82af408d48
+          - node:14-alpine@sha256:8c94a0291133e16b92be5c667e0bc35930940dfa7be544fb142e25f8e4510a45
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
