@@ -53,31 +53,55 @@ jobs:
           name: ${{ matrix.target.artifact }}
           path: ${{ matrix.target.artifact }}.tgz
 
+  cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          # TODO: musl x arm support
+          # TODO: arm v7 (need upstream builds)
+          - dockerfile: arm.Dockerfile
+            libc: glibc
+            arch: arm64
+            artifact: linux-arm64-glibc
+    steps:
+      - uses: docker/setup-qemu-action@v1
+      - name: docker/setup-buildx-action@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: npm ci --ignore-scripts
+      - run: node scripts/setup.js
+        env:
+          PLATFORM: 'linux'
+          LIBC: ${{ matrix.target.libc }}
+          ARCH: ${{ matrix.target.arch }}
+#      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} .
+#      - run: docker run --name builder build
+#      - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
+#      - uses: actions/upload-artifact@v2
+#        with:
+#          name: ${{ matrix.target.artifact }}
+#          path: ${{ matrix.target.artifact }}.tgz
+
   build-docker:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
-          - dockerfile: Dockerfile
+          - dockerfile: glibc.Dockerfile
             libc: glibc
             artifact: linux-x64-glibc
-            arch: x64
-          - dockerfile: alpine.Dockerfile
+          - dockerfile: musl.Dockerfile
             libc: musl
             artifact: linux-x64-musl
-            arch: x64
     steps:
-      - uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-      - run: |
-          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - run: npm ci --ignore-scripts # TODO: understand why it builds per default
+      - run: npm ci --ignore-scripts
       - run: node scripts/setup.js
         env:
           PLATFORM: 'linux'

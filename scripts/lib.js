@@ -8,6 +8,29 @@ const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 const libC = process.env.LIBC || detectLib.family
 let libName = 'libddwaf.a'
+
+const getLinuxDirname = function () {
+  let archPart = '';
+  if (os.arch() === 'x64') {
+    if (libC === detectLib.GLIBC) {
+      archPart = 'x86_64-glibc'
+    }
+    if (libC === detectLib.MUSL) {
+      archPart = 'x86_64-muslc'
+    }
+  }
+  if (os.arch() === 'arm64') {
+    if (libC !== detectLib.GLIBC) {
+      throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
+    }
+    archPart = 'aarch64-static'
+  }
+  if (!archPart) {
+    throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
+  }
+  return `libddwaf-${pkg.libddwaf_version}-linux-${archPart}`
+}
+
 const getDirName = module.exports.getDirName = function () {
   // TODO: override arch to download binaries out of docker and copy them then
   switch (platform) {
@@ -21,15 +44,9 @@ const getDirName = module.exports.getDirName = function () {
       // TODO: windows 32 bits
       break
     case 'linux':
-      if (libC === detectLib.GLIBC) {
-        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-glibc`
-      }
-      if (libC === detectLib.MUSL) {
-        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-muslc`
-      }
-      break
+      return getLinuxDirname()
   }
-  throw new Error(`Platform: ${platform} - ${arch} is unsupported`)
+  throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
 }
 
 const dirname = getDirName()
