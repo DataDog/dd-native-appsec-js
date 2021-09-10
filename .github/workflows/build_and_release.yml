@@ -3,8 +3,11 @@ name: Build and release
 on:
   push:
     branches: [ main ]
+    tags:
+      - v*
   pull_request:
     branches: [ main ]
+
 
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
