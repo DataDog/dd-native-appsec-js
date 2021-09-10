@@ -61,6 +61,7 @@ jobs:
           # TODO: musl x arm support
           # TODO: arm v7 (need upstream builds)
           - dockerfile: arm.Dockerfile
+            from: arm64v8/node:14@sha256:d33aee525aab1318a8074bba102d9c55bb82d30454ef233acab0aca1d3cd6c97
             libc: glibc
             arch: arm64
             artifact: linux-arm64-glibc
@@ -77,14 +78,13 @@ jobs:
           PLATFORM: 'linux'
           LIBC: ${{ matrix.target.libc }}
           ARCH: ${{ matrix.target.arch }}
-      - run: ls
-#      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} .
-#      - run: docker run --name builder build
-#      - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
-#      - uses: actions/upload-artifact@v2
-#        with:
-#          name: ${{ matrix.target.artifact }}
-#          path: ${{ matrix.target.artifact }}.tgz
+      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} --build-arg BUILD_ARG=${{ matrix.target.from }} --platform linux/${{ matrix.target.arch }} .
+      - run: docker run --name builder --platform linux/${{ matrix.target.arch }} build
+      - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target.artifact }}
+          path: ${{ matrix.target.artifact }}.tgz
 
   build-docker:
     runs-on: ubuntu-latest
