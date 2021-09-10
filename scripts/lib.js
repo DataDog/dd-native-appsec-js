@@ -10,7 +10,7 @@ const libC = process.env.LIBC || detectLib.family
 let libName = 'libddwaf.a'
 
 const getLinuxDirname = function () {
-  let archPart = '';
+  let archPart = ''
   if (os.arch() === 'x64') {
     if (libC === detectLib.GLIBC) {
       archPart = 'x86_64-glibc'
