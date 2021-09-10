@@ -11,6 +11,7 @@ let libName = 'libddwaf.a'
 
 const getLinuxDirname = function () {
   let archPart = ''
+  console.log({ platform, arch, libC })
   if (os.arch() === 'x64') {
     if (libC === detectLib.GLIBC) {
       archPart = 'x86_64-glibc'
