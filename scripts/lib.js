@@ -11,8 +11,7 @@ let libName = 'libddwaf.a'
 
 const getLinuxDirname = function () {
   let archPart = ''
-  console.log({ platform, arch, libC })
-  if (os.arch() === 'x64') {
+  if (arch === 'x64') {
     if (libC === detectLib.GLIBC) {
       archPart = 'x86_64-glibc'
     }
@@ -20,7 +19,7 @@ const getLinuxDirname = function () {
       archPart = 'x86_64-muslc'
     }
   }
-  if (os.arch() === 'arm64') {
+  if (arch === 'arm64') {
     if (libC !== detectLib.GLIBC) {
       throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
     }
@@ -29,7 +28,6 @@ const getLinuxDirname = function () {
   if (!archPart) {
     throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
   }
-  console.log('->', `libddwaf-${pkg.libddwaf_version}-linux-${archPart}`)
   return `libddwaf-${pkg.libddwaf_version}-linux-${archPart}`
 }
 
