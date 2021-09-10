@@ -12,20 +12,20 @@ const getDirName = module.exports.getDirName = function () {
   // TODO: override arch to download binaries out of docker and copy them then
   switch (platform) {
     case 'darwin':
-      return `libddwaf-${pkg.libddwaf_version}-Darwin-x86_64`
+      return `libddwaf-${pkg.libddwaf_version}-darwin-x86_64`
     case 'win32':
       libName = 'ddwaf.lib'
       if (arch === 'x64') {
-        return `libddwaf-${pkg.libddwaf_version}-Windows-x64`
+        return `libddwaf-${pkg.libddwaf_version}-windows-x64`
       }
       // TODO: windows 32 bits
       break
     case 'linux':
       if (libC === detectLib.GLIBC) {
-        return `libddwaf-${pkg.libddwaf_version}-Linux-x86_64-glibc`
+        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-glibc`
       }
       if (libC === detectLib.MUSL) {
-        return `libddwaf-${pkg.libddwaf_version}-Linux-x86_64-muslc`
+        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-muslc`
       }
       break
   }
