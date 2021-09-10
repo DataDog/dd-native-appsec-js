@@ -3,7 +3,7 @@
   "targets": [{
     "target_name": "appsec",
     "include_dirs": [
-      "src",
+      ".",
       "<!@(node -p \"require('./scripts/lib.js').include\")",
       "<!@(node -p \"require('node-addon-api').include\")"
     ],
