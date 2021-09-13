@@ -27,7 +27,7 @@ const getLinuxDirname = function () {
     if (libC !== detectLib.GLIBC) {
       throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
     }
-    archPart = 'aarch64'
+    archPart = 'aarch64-static'
   }
   if (!archPart) {
     throw new Error(`Platform: ${platform} - ${arch} - ${libC || 'unknown'} is unsupported`)
