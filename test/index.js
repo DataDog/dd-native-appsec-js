@@ -21,7 +21,8 @@ describe('DDWAF lifecycle', () => {
     const result = context.run({
       'server.request.headers.no_cookies': 'HELLO world',
       x: new Array(4096).fill('x').join(''),
-      y: new Array(4097).fill('y').join('')
+      y: new Array(4097).fill('y').join(''),
+      z: new Array(4097).fill('z')
     }, 10000)
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)

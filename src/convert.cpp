@@ -30,6 +30,7 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
   }
   // TODO(@vdeturckheim): handle arrays with
   // more than DDWAF_MAX_ARRAY_LENGTH chars
+  len = len < DDWAF_MAX_ARRAY_LENGTH ? len : DDWAF_MAX_ARRAY_LENGTH;
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
