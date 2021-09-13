@@ -231,6 +231,7 @@ jobs:
       - tests-release-native
       - tests-release-docker
       - tests-release-build-host-to-alpine
+      - tests-release-cross-build
       - static-checks
       - cpp-lint
     runs-on: ubuntu-latest
