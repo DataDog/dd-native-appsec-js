@@ -1,17 +1,23 @@
+/**
+* Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
+* This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
+**/
+#ifndef SRC_MAIN_H_
+#define SRC_MAIN_H_
 #include <napi.h>
-#include "ddwaf.h"
+#include <ddwaf.h>
 
-// TODO: logs with ddwaf_set_log_cb
-// TODO: fix issue when used with workers
+// TODO(@vdeturckheim): logs with ddwaf_set_log_cb
+// TODO(@vdeturckheim): fix issue when used with workers
 
 class DDWAF : public Napi::ObjectWrap<DDWAF> {
-  public:
+ public:
     // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     static Napi::Value version(const Napi::CallbackInfo& info);
 
     // JS constructor
-    DDWAF(const Napi::CallbackInfo& info);
+    explicit DDWAF(const Napi::CallbackInfo& info);
 
     // JS instance methods
     Napi::Value createContext(const Napi::CallbackInfo& info);
@@ -19,18 +25,18 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);
     void dispose(const Napi::CallbackInfo& info);
 
-  private:
+ private:
     bool _disposed;
     ddwaf_handle _handle;
 };
 
 class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
-  public:
+ public:
     // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
     // JS constructor
-    DDWAFContext(const Napi::CallbackInfo& info);
+    explicit DDWAFContext(const Napi::CallbackInfo& info);
 
     // JS instance methods
     Napi::Value run(const Napi::CallbackInfo& info);
@@ -41,7 +47,8 @@ class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
     // C++ only instance method
     bool init(ddwaf_handle handle);
 
-  private:
+ private:
     bool _disposed;
     ddwaf_context _context;
 };
+#endif  // SRC_MAIN_H_

@@ -14,21 +14,6 @@ env:
   LIBDDWAF_VERSION: 1.0.8
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm ci
-      - run: npm run lint
-
-  licenses:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm run licenses
-
   build-native:
     strategy:
       matrix:
@@ -36,15 +21,22 @@ jobs:
           - name: macos
             os: macos-latest
             artifact: darwin-x64-unknown
-          - name: windows 64 bits # - TODO: windows support when we have a static lib
+            arch: x64
+          - name: windows 64 bits
             os: windows-2016
             artifact: win32-x64-unknown
+            arch: x64
+          - name: windows 32 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x86
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          architecture: ${{ matrix.target.arch }}
       - run: npm ci --ignore-scripts
       - run: node scripts/setup.js
       - run: npm run build-test-bundle
@@ -115,6 +107,27 @@ jobs:
           name: ${{ matrix.target.artifact }}
           path: ${{ matrix.target.artifact }}.tgz
 
+  static-checks:
+    strategy:
+      matrix:
+        run:
+          - lint
+          - licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: npm ci
+      - run: npm run ${{ matrix.run }}
+
+  cpp-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v1
+      - run: pip install cpplint
+      - run: cpplint --recursive ./src
+
   bundle:
     needs: ['build-native', 'build-docker', 'cross-build']
     runs-on: ubuntu-latest
@@ -143,15 +156,26 @@ jobs:
           - name: macos
             os: macos-latest
             artifact: darwin-x64-unknown
-          - name: windows 64 bits # - TODO: windows support when we have a static lib
+            arch: x64
+          - name: windows 64 bits
             os: windows-2016
             artifact: win32-x64-unknown
+            arch: x64
+          - name: windows 32 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x86
+          - name: windows 32 bits on 64 bits
+            os: windows-2016
+            artifact: win32-ia32-unknown
+            arch: x64
     runs-on: ${{ matrix.target.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          architecture: ${{ matrix.target.arch }}
       - uses: actions/download-artifact@v2
         with:
           name: release
@@ -175,6 +199,26 @@ jobs:
       - run: docker build -t test -f ./docker/test.Dockerfile --build-arg BASE_IMAGE=${{ matrix.target }} .
       - run: docker run test
 
+  tests-release-build-host-to-alpine:
+    needs: ['bundle']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+          architecture: ${{ matrix.target.arch }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: release
+      - run: node scripts/rename.js
+      - run: npm i -S datadog-native-appsec-0.0.0.tgz
+      - run: npm i
+      - run: rm .dockerignore
+      - run: ./node_modules/.bin/appsec-reinstall -p linux --libc musl
+      - run: docker build -f docker/alpine-install-test.Dockerfile -t test .
+      - run: docker run test
+
   tests-release-cross-build:
     needs: ['bundle']
     runs-on: ubuntu-latest
@@ -183,7 +227,12 @@ jobs:
 
 
   all-good:
-    needs: [ tests-release-native,  tests-release-native, lint, licenses]
+    needs:
+      - tests-release-native
+      - tests-release-docker
+      - tests-release-build-host-to-alpine
+      - static-checks
+      - cpp-lint
     runs-on: ubuntu-latest
     steps:
       - run: echo '🚀🚀🚀🚀🚀'

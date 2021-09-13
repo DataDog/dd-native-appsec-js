@@ -1,3 +1,7 @@
+/**
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
+ **/
 'use strict'
 const path = require('path')
 const os = require('os')
@@ -41,7 +45,9 @@ const getDirName = module.exports.getDirName = function () {
       if (arch === 'x64') {
         return `libddwaf-${pkg.libddwaf_version}-windows-x64`
       }
-      // TODO: windows 32 bits
+      if (arch === 'ia32') {
+        return `libddwaf-${pkg.libddwaf_version}-windows-win32`
+      }
       break
     case 'linux':
       return getLinuxDirname()
