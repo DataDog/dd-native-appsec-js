@@ -1,3 +1,9 @@
+/**
+* Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
+* This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
+**/
+#ifndef SRC_LOG_H_
+#define SRC_LOG_H_
 #define DEBUG 0
 
 #if DEBUG == 1
@@ -10,3 +16,5 @@
 #else
 #define mlog(X, ...) { }
 #endif
+
+#endif  // SRC_LOG_H_

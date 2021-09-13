@@ -1,3 +1,7 @@
+/**
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
+ **/
 const { it, describe } = require('mocha')
 const assert = require('assert')
 
@@ -14,7 +18,11 @@ describe('DDWAF lifecycle', () => {
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
-    const result = context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 10000)
+    const result = context.run({
+      'server.request.headers.no_cookies': 'HELLO world',
+      x: new Array(4096).fill('x').join(''),
+      y: new Array(4097).fill('y').join('')
+    }, 10000)
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)
     assert(!context.disposed)
