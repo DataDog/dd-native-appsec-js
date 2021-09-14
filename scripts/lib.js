@@ -18,7 +18,7 @@ const getDirName = module.exports.getDirName = function () {
     case 'darwin':
       return `libddwaf-${pkg.libddwaf_version}-darwin-x86_64`
     case 'win32':
-      libName = 'ddwaf.lib'
+      libName = 'ddwaf_static.lib'
       if (arch === 'x64') {
         return `libddwaf-${pkg.libddwaf_version}-windows-x64`
       }
