@@ -11,7 +11,7 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  LIBDDWAF_VERSION: 1.0.8
+  LIBDDWAF_VERSION: 1.0.10
 
 jobs:
   build-native:

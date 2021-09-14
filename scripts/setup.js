@@ -28,10 +28,6 @@ async function download () {
   if (libName.includes('lib64')) {
     fs.renameSync(path.join(process.cwd(), dir, 'lib64'), path.join(process.cwd(), dir, 'lib'))
   }
-  if (fs.existsSync(path.join(process.cwd(), dir, 'lib', 'static'))) {
-    fs.renameSync(path.join(process.cwd(), dir, 'lib', 'static', 'ddwaf.lib'),
-      path.join(process.cwd(), dir, 'lib', 'ddwaf.lib'))
-  }
 }
 
 download()
