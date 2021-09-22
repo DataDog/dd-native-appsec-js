@@ -14,9 +14,6 @@ $ npm install --ignore-scripts
 $ node scripts/setup.js
 ```
 
-If libddwaf is in a private repository, you will need to set up an environment variable named GH_TOKEN with a Github
-token that has read access to libddwaf.
-
 ### Download another release of libddwaf
 
 The `scripts/setup.js` accepts the following environment variables:
