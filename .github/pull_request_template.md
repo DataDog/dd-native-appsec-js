@@ -25,7 +25,7 @@ running on one of the supported platforms.
 
 <!-- Place an '[x]' (no spaces) in all applicable fields. Please remove unrelated fields. -->
 
-- [ ] The CHAMGELOG.md has been updated
+- [ ] The CHANGELOG.md has been updated
 - [ ] Unit tests have been updated and pass
 - [ ] If known, an appropriate milestone has been selected
 
