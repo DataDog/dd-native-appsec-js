@@ -18,6 +18,7 @@
       '-static-libstdc++',
       '-static-libgcc',
       '-lpthread',
+      '-lc++abi',
     ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
@@ -32,7 +33,7 @@
     "conditions": [
       ["OS == 'linux'", {
         "cflags": [
-          "-std=c++11",
+          "-std=c++14",
           "-Wall",
           "-Werror"
         ],

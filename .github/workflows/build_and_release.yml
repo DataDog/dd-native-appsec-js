@@ -45,15 +45,48 @@ jobs:
           name: ${{ matrix.target.artifact }}
           path: ${{ matrix.target.artifact }}.tgz
 
+  cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          # TODO: musl x arm support
+          # TODO: arm v7 (need upstream builds)
+          - dockerfile: arm.Dockerfile
+            from: arm64v8/node:14@sha256:d33aee525aab1318a8074bba102d9c55bb82d30454ef233acab0aca1d3cd6c97
+            libc: glibc
+            arch: arm64
+            artifact: linux-arm64-glibc
+    steps:
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - run: npm ci --ignore-scripts
+      - run: node scripts/setup.js
+        env:
+          PLATFORM: 'linux'
+          LIBC: ${{ matrix.target.libc }}
+          ARCH: ${{ matrix.target.arch }}
+      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} --build-arg BASE_IMAGE=${{ matrix.target.from }} --platform linux/${{ matrix.target.arch }} .
+      - run: docker run --name builder --platform linux/${{ matrix.target.arch }} build
+      - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target.artifact }}
+          path: ${{ matrix.target.artifact }}.tgz
+
   build-docker:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target:
-          - dockerfile: Dockerfile
+          - dockerfile: glibc.Dockerfile
             libc: glibc
             artifact: linux-x64-glibc
-          - dockerfile: alpine.Dockerfile
+          - dockerfile: musl.Dockerfile
             libc: musl
             artifact: linux-x64-musl
     steps:
@@ -96,7 +129,7 @@ jobs:
       - run: cpplint --recursive ./src
 
   bundle:
-    needs: ['build-native', 'build-docker']
+    needs: ['build-native', 'build-docker', 'cross-build']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -186,11 +219,19 @@ jobs:
       - run: docker build -f docker/alpine-install-test.Dockerfile -t test .
       - run: docker run test
 
+  tests-release-cross-build:
+    needs: ['bundle']
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'hello'
+
+
   all-good:
     needs:
       - tests-release-native
       - tests-release-docker
       - tests-release-build-host-to-alpine
+      - tests-release-cross-build
       - static-checks
       - cpp-lint
     runs-on: ubuntu-latest
