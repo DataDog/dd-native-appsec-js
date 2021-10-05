@@ -13,7 +13,7 @@ const pkg = require('../package.json')
 const lib = require('./lib')
 const path = require('path')
 
-assert(process.env.GH_TOKEN, 'GH_TOKEN must be set') // TODO: remove when libddwaf is open sourced
+assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
 
 async function download () {
   const dir = lib.getDirName()

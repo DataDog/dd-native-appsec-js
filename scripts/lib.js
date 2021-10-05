@@ -6,19 +6,27 @@
 const path = require('path')
 const os = require('os')
 const pkg = require('../package.json')
-const detectLib = require('detect-libc')
 
 const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
-const libC = process.env.LIBC || detectLib.family
-let libName = 'libddwaf.a'
+
+const getLibName = module.exports.getLibName = function () {
+  switch (platform) {
+    case 'darwin':
+      return 'libddwaf.a'
+    case 'win32':
+      return 'ddwaf_static.lib'
+    case 'linux':
+      return 'libddwaf.so'
+  }
+}
+
 const getDirName = module.exports.getDirName = function () {
   // TODO: override arch to download binaries out of docker and copy them then
   switch (platform) {
     case 'darwin':
       return `libddwaf-${pkg.libddwaf_version}-darwin-x86_64`
     case 'win32':
-      libName = 'ddwaf_static.lib'
       if (arch === 'x64') {
         return `libddwaf-${pkg.libddwaf_version}-windows-x64`
       }
@@ -27,20 +35,13 @@ const getDirName = module.exports.getDirName = function () {
       }
       break
     case 'linux':
-      if (libC === detectLib.GLIBC) {
-        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-glibc`
-      }
-      if (libC === detectLib.MUSL) {
-        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64-muslc`
-      }
-      break
+      return `libddwaf-${pkg.libddwaf_version}-linux-x86_64`
   }
   throw new Error(`Platform: ${platform} - ${arch} is unsupported`)
 }
 
 const dirname = getDirName()
+const libName = getLibName()
 
 module.exports.include = path.join(__dirname, '..', dirname, 'include').split('\\').join('\\\\')
 module.exports.lib = path.join(__dirname, '..', dirname, 'lib', libName).split('\\').join('\\\\')
-
-// console.log(module.exports);

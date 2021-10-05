@@ -5,12 +5,22 @@
 'use strict'
 const path = require('path')
 const os = require('os')
+const fs = require('fs')
 const tar = require('tar')
 const detectLib = require('detect-libc')
+
+const Lib = require('./lib')
 
 async function bundleAddon () {
   const files = ['appsec.node']
 
+  if (os.platform() === 'linux') {
+    fs.copyFileSync(
+      Lib.lib,
+      path.join(__dirname, '..', 'build', 'Release', Lib.getLibName()).split('\\').join('\\\\')
+    )
+    files.push(Lib.getLibName())
+  }
   await tar.c({
     cwd: path.join(__dirname, '..', 'build', 'Release'),
     file: `${os.platform()}-${os.arch()}-${detectLib.family || 'unknown'}.tgz`,

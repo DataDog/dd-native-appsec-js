@@ -7,6 +7,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const detectLibc = require('detect-libc')
+const Lib = require('./lib')
 
 fs.mkdirSync(path.join(__dirname, '..', 'vendor',
   `${os.platform()}-${os.arch()}-${detectLibc.family || 'unknown'}`).split('\\').join('\\\\'), { recursive: true })
@@ -14,4 +15,10 @@ fs.copyFileSync(
   path.join(__dirname, '..', 'build', 'Release', 'appsec.node').split('\\').join('\\\\'),
   path.join(__dirname, '..', 'vendor', `${os.platform()}-${os.arch()}-${detectLibc.family || 'unknown'}`
     , 'appsec.node').split('\\').join('\\\\')
+)
+
+fs.copyFileSync(
+  Lib.lib,
+  path.join(__dirname, '..', 'vendor', `${os.platform()}-${os.arch()}-${detectLibc.family || 'unknown'}`
+    , Lib.getLibName()).split('\\').join('\\\\')
 )
