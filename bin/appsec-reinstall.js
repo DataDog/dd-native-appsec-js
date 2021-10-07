@@ -50,6 +50,10 @@ async function install () {
   fs.mkdirSync(path.join(__dirname, '..', 'vendor', dir), { recursive: true })
   fs.renameSync(path.join(process.cwd(), 'appsec.node').split('\\').join('\\\\')
     , path.join(__dirname, '..', 'vendor', dir, 'appsec.node').split('\\').join('\\\\'))
+  if (args.platform === 'linux') {
+    fs.renameSync(path.join(process.cwd(), 'libddwaf.so').split('\\').join('\\\\')
+      , path.join(__dirname, '..', 'vendor', dir, 'libddwaf.so').split('\\').join('\\\\'))
+  }
   fs.writeFileSync(path.join(__dirname, '..', 'install.json').split('\\').join('\\\\')
     , JSON.stringify({ target: dir }, null, 2))
 }
