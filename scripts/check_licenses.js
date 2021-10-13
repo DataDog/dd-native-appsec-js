@@ -18,7 +18,8 @@ let index = 0
 const licenses = {
   require: new Set(),
   dev: new Set(),
-  file: new Set()
+  file: new Set(),
+  native: new Set()
 }
 
 const lineReader = readline.createInterface({
@@ -56,7 +57,7 @@ function checkLicenses (typeDeps, type) {
   }
 
   for (const dep of licenses[type]) {
-    if (!typeDeps.has(dep)) {
+    if (!typeDeps.has(dep) && dep) {
       extraneous.push(dep)
     }
   }
