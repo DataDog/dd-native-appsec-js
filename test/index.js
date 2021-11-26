@@ -36,6 +36,16 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => waf.createContext())
   })
 
+  it('should support case_sensitive', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.response.status': '404'
+    }, 10000)
+    assert.strictEqual(result.action, 'monitor')
+    assert(result.data)
+  })
+
   it('should refuse invalid rule', () => {
     assert.throws(() => new DDWAF({}))
   })

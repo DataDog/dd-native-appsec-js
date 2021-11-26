@@ -25,6 +25,32 @@
         "lowercase"
       ],
       "action":"record"
+    },
+    {
+      "id": "nfd-000-001",
+      "name": "weird case",
+      "tags": {
+        "type": "security_scanner"
+      },
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.response.status"
+              }
+            ],
+            "regex": "^404$",
+            "options": {
+              "case_sensitive": true
+            }
+          }
+        }
+      ],
+      "transformers": [
+        "lowercase"
+      ]
     }
   ]
 }
