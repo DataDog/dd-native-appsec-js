@@ -101,9 +101,9 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
     return ddwaf_object_signed(object, val.ToNumber().Int64Value());
   }
   if(val.IsBoolean()) {
-      mlog("creating Boolean");
-      int64_t nb = val.ToBoolean().Value() ? 1 : 0;
-      return ddwaf_object_signed(object, nb);
+    mlog("creating Boolean");
+    int64_t nb = val.ToBoolean().Value() ? 1 : 0;
+    return ddwaf_object_signed(object, nb);
   }
   if (val.IsArray()) {
     mlog("creating Array");
