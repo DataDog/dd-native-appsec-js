@@ -8,6 +8,7 @@
     "appsec-reinstall": "bin/appsec-reinstall.js"
   },
   "scripts": {
+    "install": "",
     "rebuild": "node-gyp rebuild",
     "dev": "npm run rebuild && node scripts/dev.js",
     "build-test-bundle": "npm run dev && npm t && node scripts/bundle-addon.js",
