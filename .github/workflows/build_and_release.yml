@@ -105,6 +105,9 @@ jobs:
           path: artifacts
       - run: mkdir -p vendor
       - run: mv artifacts/*/*.tgz vendor/
+      - name: unpack
+        run: tar -xvf *.tgz
+        working-directory: vendor/
       - run: npm pack .
       - uses: actions/upload-artifact@v2
         with:
