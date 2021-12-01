@@ -108,6 +108,9 @@ jobs:
       - name: unpack
         run: ls
         working-directory: vendor
+      - name: unpack
+        run: tar -xvzf *.tgz
+        working-directory: vendor
       - run: npm pack .
       - uses: actions/upload-artifact@v2
         with:
