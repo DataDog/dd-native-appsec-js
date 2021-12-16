@@ -4,7 +4,7 @@
 **/
 #ifndef SRC_LOG_H_
 #define SRC_LOG_H_
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG == 1
 #include <stdio.h>
