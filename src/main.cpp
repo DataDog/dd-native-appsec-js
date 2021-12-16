@@ -180,7 +180,6 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data,
                                   &result, (uint64_t) timeout);
-  mlog("Run result action %i", result.action);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -198,12 +197,11 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   // there is not error. We need to collect perf and potential error data
   Napi::Object res = Napi::Object::New(env);
-  if (result.timeout) {
-    mlog("Set timeout");
-    res.Set(
-      Napi::String::New(env, "timeout"),
-      Napi::Boolean::New(env, result.timeout));
-  }
+  mlog("Set timeout");
+  res.Set(
+    Napi::String::New(env, "timeout"),
+    Napi::Boolean::New(env, result.timeout)
+  );
   if (result.perfData) {
     mlog("Set perfData");
     res.Set(

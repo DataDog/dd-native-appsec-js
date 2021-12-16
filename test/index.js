@@ -25,6 +25,7 @@ describe('DDWAF lifecycle', () => {
       z: new Array(4097).fill('z')
     }, 10000)
     assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.timeout, false)
     assert(result.data)
     assert(!context.disposed)
     context.dispose()
