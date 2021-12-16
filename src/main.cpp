@@ -200,8 +200,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   mlog("Set timeout");
   res.Set(
     Napi::String::New(env, "timeout"),
-    Napi::Boolean::New(env, result.timeout)
-  );
+    Napi::Boolean::New(env, result.timeout));
   if (result.perfData) {
     mlog("Set perfData");
     res.Set(
