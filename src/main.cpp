@@ -180,7 +180,6 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data,
                                   &result, (uint64_t) timeout);
-  mlog("Run result action %i", result.action);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -193,14 +192,15 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     case DDWAF_ERR_INVALID_ARGUMENT:
       Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
       return info.Env().Null();
-    case DDWAF_ERR_TIMEOUT:
-      Napi::Error::New(env, "ddwaf timeout").ThrowAsJavaScriptException();
-      return info.Env().Null();
     default:
       break;
   }
   // there is not error. We need to collect perf and potential error data
   Napi::Object res = Napi::Object::New(env);
+  mlog("Set timeout");
+  res.Set(
+    Napi::String::New(env, "timeout"),
+    Napi::Boolean::New(env, result.timeout));
   if (result.perfData) {
     mlog("Set perfData");
     res.Set(

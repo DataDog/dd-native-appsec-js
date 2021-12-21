@@ -5,6 +5,7 @@
 type rules = object;
 
 type result = {
+  timeout: boolean;
   perfData?: string;
   perfTotalRuntime?: number;
   data?: string;
