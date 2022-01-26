@@ -3,7 +3,7 @@
   "version": "0.7.0",
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
-  "libddwaf_version": "1.0.16",
+  "libddwaf_version": "1.0.17",
   "bin": {
     "appsec-reinstall": "bin/appsec-reinstall.js"
   },
