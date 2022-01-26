@@ -7,13 +7,13 @@ This package supports the following platforms:
 
 * **Node.js version:** 12 and higher
 * **Operating Systems:**
-  * MacOS on intel architectures
+  * MacOS x64 on intel architectures
   * Windows
     * x86
     * x64
   * Linux
-    * x86 with glibc
-    * x86 with musl
+    * x64 with glibc
+    * x64 with musl
 
 Therefore, unsupported platforms include:
 * AIX
