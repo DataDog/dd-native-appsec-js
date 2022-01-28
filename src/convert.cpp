@@ -9,12 +9,6 @@
 #include "src/convert.h"
 #include "src/log.h"
 
-/** TODO
-USE
-#define DDWAF_MAX_STRING_LENGTH 4096
-#define DDWAF_MAX_MAP_DEPTH 20
-#define DDWAF_MAX_ARRAY_LENGTH 256
-**/
 
 ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
                                               Napi::Array arr, int depth) {
@@ -46,7 +40,8 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
 ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
                                               Napi::Object obj, int depth) {
   Napi::Array properties = obj.GetPropertyNames();
-  uint32_t len = properties.Length();
+  uint32_t p_len = properties.Length();
+  uint32_t len = p_len > DDWAF_MAX_ARRAY_LENGTH ? DDWAF_MAX_ARRAY_LENGTH : p_len;
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
     return nullptr;

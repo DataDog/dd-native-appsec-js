@@ -62,6 +62,31 @@ describe('DDWAF lifecycle', () => {
   })
 })
 
+describe('limit tests', () => {
+  it('should ignore elements too far in the objects', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    const result0 = context.run({
+      'server.response.status': {
+        a0: '404'
+      }
+    }, 10000)
+    assert.strictEqual(result0.action, 'monitor')
+
+    const item = {};
+    for (let i = 0; i < 1000; ++i) {
+      item[`a${i}`] = `${i}`
+    }
+
+    const result = context.run({
+      'server.response.status': item
+    }, 10000)
+    assert.strictEqual(result.action, undefined)
+    assert(!result.data)
+  })
+})
+
 describe('load tests', () => {
   // TODO: how to control memory impact of the addon
 })
