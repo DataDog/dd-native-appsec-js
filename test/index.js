@@ -74,7 +74,7 @@ describe('limit tests', () => {
     }, 10000)
     assert.strictEqual(result0.action, 'monitor')
 
-    const item = {};
+    const item = {}
     for (let i = 0; i < 1000; ++i) {
       item[`a${i}`] = `${i}`
     }

@@ -41,7 +41,8 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
                                               Napi::Object obj, int depth) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t p_len = properties.Length();
-  uint32_t len = p_len > DDWAF_MAX_ARRAY_LENGTH ? DDWAF_MAX_ARRAY_LENGTH : p_len;
+  uint32_t len = p_len > DDWAF_MAX_ARRAY_LENGTH ?
+                                  DDWAF_MAX_ARRAY_LENGTH : p_len;
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
     return nullptr;
