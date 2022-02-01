@@ -83,7 +83,7 @@ describe('DDWAF lifecycle', () => {
 
     const waf = new DDWAF(rules)
 
-    for (const [value, expected] of possibleKeys){
+    for (const [value, expected] of possibleKeys) {
       const context = waf.createContext()
 
       let result
@@ -124,7 +124,7 @@ describe('DDWAF lifecycle', () => {
 
     const waf = new DDWAF(rules)
 
-    for (const [value, expected] of possibleValues){
+    for (const [value, expected] of possibleValues) {
       const context = waf.createContext()
 
       let result
