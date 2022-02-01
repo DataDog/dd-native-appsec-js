@@ -159,8 +159,8 @@ describe('DDWAF lifecycle', () => {
     const result = context.run({
       'server.request.headers.no_cookies': createNestedObject(100, { 'header': 'hello world' })
     }, 10000)
-    assert.strictEqual(result.action, 'monitor')
-    assert(result.data)
+    assert(!result.action)
+    assert(!result.data)
   })
 })
 
