@@ -113,7 +113,7 @@ describe('DDWAF lifecycle', () => {
       [42.42, ''],
       [Infinity, ''],
       [NaN, ''],
-      // [42n, ''], TODO: add serialization for BigInts in convert.cpp
+      [42n, ''],
       ['str', ''],
       [Symbol(), ''],
       [{ a: 1, b: 2 }, ''],
@@ -145,15 +145,17 @@ describe('DDWAF lifecycle', () => {
     }
   })
 
+  it('should match a moderately deeply nested object', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(5, { 'header': 'hello world' })
+    }, 10000)
+    assert.strictEqual(result.action, 'monitor')
+    assert(result.data)
+  })
+
   it('should not match an extremely deeply nested object', () => {
-    function createNestedObject(n, obj) {
-      if (n > 0) {
-        return { a: createNestedObject(n - 1, obj) }
-      }
-
-      return obj
-    }
-
     const waf = new DDWAF(rules)
     const context = waf.createContext()
     const result = context.run({
@@ -171,3 +173,11 @@ describe('load tests', () => {
 describe('worker tests', () => {
   // TODO: tests on how this works with workers
 })
+
+function createNestedObject(n, obj) {
+  if (n > 0) {
+    return { a: createNestedObject(n - 1, obj) }
+  }
+
+  return obj
+}
