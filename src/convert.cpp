@@ -114,8 +114,8 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
     mlog("creating Object");
     return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1);
   }
-  mlog("returning nullptr");
-  return nullptr;
+  mlog("returning empty map");
+  return ddwaf_object_map(object);
 }
 
 ddwaf_object* to_ddwaf_object(ddwaf_object *object,
