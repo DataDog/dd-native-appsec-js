@@ -70,7 +70,6 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    // TODO(@vdeturckheim): this could be nullptr
     to_ddwaf_object(&val, env, valV, depth);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
