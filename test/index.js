@@ -144,6 +144,24 @@ describe('DDWAF lifecycle', () => {
       // assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
   })
+
+  it('should not match an extremely deeply nested object', () => {
+    function createNestedObject(n, obj) {
+      if (n > 0) {
+        return { a: createNestedObject(n - 1, obj) }
+      }
+
+      return obj
+    }
+
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(100, { 'header': 'hello world' })
+    }, 10000)
+    assert.strictEqual(result.action, 'monitor')
+    assert(result.data)
+  })
 })
 
 describe('load tests', () => {
