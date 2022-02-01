@@ -85,7 +85,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_MAP_DEPTH) {
     mlog("Max depth reached");
-    return ddwaf_object_invalid(object);
+    return ddwaf_object_map(object);
   }
   if (val.IsString()) {
     mlog("creating String");
