@@ -70,7 +70,6 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    // TODO(@vdeturckheim): this could be nullptr
     to_ddwaf_object(&val, env, valV, depth);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
@@ -85,7 +84,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_MAP_DEPTH) {
     mlog("Max depth reached");
-    return ddwaf_object_invalid(object);
+    return ddwaf_object_map(object);
   }
   if (val.IsString()) {
     mlog("creating String");
@@ -114,8 +113,9 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
     mlog("creating Object");
     return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1);
   }
-  mlog("returning nullptr");
-  return nullptr;
+  mlog("creating empty map");
+  // we use empty maps for now instead of null. See issue !43
+  return ddwaf_object_map(object);
 }
 
 ddwaf_object* to_ddwaf_object(ddwaf_object *object,

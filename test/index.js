@@ -60,6 +60,110 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, -1))
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
   })
+
+  it('should parse keys correctly', () => {
+    const possibleKeys = new Map([
+      [undefined, 'undefined'],
+      [null, 'null'],
+      [false, 'false'],
+      [true, 'true'],
+      [42, '42'],
+      [-42, '-42'],
+      [42.42, '42.42'],
+      [Infinity, 'Infinity'],
+      [NaN, 'NaN'],
+      [42n, '42'],
+      ['str', 'str'],
+      // [Symbol(), ''], // we don't have a way to serialize symbols for now
+      [{ a: 1, b: 2 }, '[object Object]'],
+      [['a', 2, 'c'], 'a,2,c'],
+      [/regex/, '/regex/'],
+      [function fn() {}, 'function fn() {}']
+    ])
+
+    const waf = new DDWAF(rules)
+
+    for (const [value, expected] of possibleKeys) {
+      const context = waf.createContext()
+
+      let result
+
+      assert.doesNotThrow(() => {
+        result = context.run({
+          'server.request.headers.no_cookies': {
+            [value]: 'hello world'
+          }
+        }, 10000)
+      })
+
+      assert.strictEqual(result.action, 'monitor')
+      assert(result.data)
+      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].key_path[0], expected)
+    }
+  })
+
+  it('should parse values correctly', () => {
+    const possibleValues = new Map([
+      [undefined, ''],
+      [null, ''],
+      [false, ''],
+      [true, ''],
+      [42, ''],
+      [-42, ''],
+      [42.42, ''],
+      [Infinity, ''],
+      [NaN, ''],
+      [42n, ''],
+      ['str', ''],
+      [Symbol(), ''],
+      [{ a: 1, b: 2 }, ''],
+      [['a', 2, 'c'], ''],
+      [/regex/, ''],
+      [function fn() {}, '']
+    ])
+
+    const waf = new DDWAF(rules)
+
+    for (const [value, expected] of possibleValues) {
+      const context = waf.createContext()
+
+      let result
+
+      assert.doesNotThrow(() => {
+        result = context.run({
+          'server.request.headers.no_cookies': {
+            // TODO: replace "attack" by an actual attack once the WAF supports it
+            'attack': value
+          }
+        }, 10000)
+      })
+
+      // TODO: asserts attack once the WAF supports it
+      // assert.strictEqual(result.action, 'monitor')
+      // assert(result.data)
+      // assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+    }
+  })
+
+  it('should match a moderately deeply nested object', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(5, { 'header': 'hello world' })
+    }, 10000)
+    assert.strictEqual(result.action, 'monitor')
+    assert(result.data)
+  })
+
+  it('should not match an extremely deeply nested object', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(100, { 'header': 'hello world' })
+    }, 10000)
+    assert(!result.action)
+    assert(!result.data)
+  })
 })
 
 describe('load tests', () => {
@@ -69,3 +173,11 @@ describe('load tests', () => {
 describe('worker tests', () => {
   // TODO: tests on how this works with workers
 })
+
+function createNestedObject(n, obj) {
+  if (n > 0) {
+    return { a: createNestedObject(n - 1, obj) }
+  }
+
+  return obj
+}
