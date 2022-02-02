@@ -114,6 +114,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
     return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1);
   }
   mlog("creating empty map");
+  // we use empty maps for now instead of null. See issue !43
   return ddwaf_object_map(object);
 }
 
