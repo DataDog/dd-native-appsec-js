@@ -53,6 +53,33 @@
       "transformers": [
         "lowercase"
       ]
+    },
+    {
+      "id": "id2",
+      "name": "some name",
+      "tags": {
+        "type": "security_scanner",
+        "crs_id": "0",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.request.headers.query"
+              }
+            ],
+            "list": [
+              "this is an attack"
+            ]
+          },
+          "operator": "phrase_match"
+        }
+      ],
+      "transformers": [
+        "lowercase"
+      ]
     }
   ]
 }
