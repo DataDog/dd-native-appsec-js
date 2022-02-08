@@ -1,0 +1,3 @@
+[submodule "test/blns"]
+	path = test/blns
+	url = git@github.com:minimaxir/big-list-of-naughty-strings.git
