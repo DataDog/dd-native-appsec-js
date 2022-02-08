@@ -80,6 +80,29 @@
       "transformers": [
         "lowercase"
       ]
+    },
+    {
+      "id": "*lord",
+      "name": "match_all",
+      "tags": {
+        "type": "security_scanner"
+      },
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {
+                "address": "atk"
+              }
+            ],
+            "regex": ".*",
+            "options": {
+              "case_sensitive": false
+            }
+          }
+        }
+      ]
     }
   ]
 }
