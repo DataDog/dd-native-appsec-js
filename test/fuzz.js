@@ -11,7 +11,7 @@ const waf = new DDWAF(rules)
 
 const TIMEOUT = 20000
 
-const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffer.js
+const ENCODINGS_0 = [ // from https://github.com/nodejs/node/blob/master/lib/buffer.js
   'utf8',
   'ucs2',
   'utf16le',
@@ -21,6 +21,14 @@ const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffe
   'base64url',
   'hex'
 ]
+const ENCODINGS = []
+for (const encoding of ENCODINGS_0) {
+  try {
+    Buffer.from('hello', encoding)
+    ENCODINGS.push(encoding)
+  } catch (_) {
+  }
+}
 
 const test = function (entry, encoding = 'utf8') {
   const context = waf.createContext()
