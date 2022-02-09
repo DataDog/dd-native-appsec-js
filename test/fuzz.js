@@ -26,7 +26,7 @@ for (const encoding of ENCODINGS_0) {
   try {
     Buffer.from('hello', encoding)
     ENCODINGS.push(encoding)
-  } catch(_) {
+  } catch (_) {
   }
 }
 
