@@ -36,7 +36,7 @@ const test = function (entry, encoding = 'utf8') {
     atk: entry
   }, TIMEOUT)
   assert(!!r1)
-  assert(!!r1.data)
+  assert(r1.data)
   // FIXME: there is a reporting issue with alternative encodings
   // const actual = Buffer.from(JSON.parse(r1.data)[0].rule_matches[0].parameters[0].value, encoding);
   // const expected = Buffer.from(entry, encoding);
