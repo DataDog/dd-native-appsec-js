@@ -72,13 +72,13 @@ describe('DDWAF lifecycle', () => {
       [42.42, '42.42'],
       [Infinity, 'Infinity'],
       [NaN, 'NaN'],
-      [42n, '42'],
+      [BigInt(42), '42'],
       ['str', 'str'],
       // [Symbol(), ''], // we don't have a way to serialize symbols for now
       [{ a: 1, b: 2 }, '[object Object]'],
       [['a', 2, 'c'], 'a,2,c'],
       [/regex/, '/regex/'],
-      [function fn() {}, 'function fn() {}']
+      [function fn () {}, 'function fn () {}']
     ])
 
     const waf = new DDWAF(rules)
@@ -113,18 +113,18 @@ describe('DDWAF lifecycle', () => {
       [42.42, ''],
       [Infinity, ''],
       [NaN, ''],
-      [42n, ''],
+      [BigInt(42), ''],
       ['str', ''],
-      [Symbol(), ''],
+      [Symbol(''), ''],
       [{ a: 1, b: 2 }, ''],
       [['a', 2, 'c'], ''],
       [/regex/, ''],
-      [function fn() {}, '']
+      [function fn () {}, '']
     ])
 
     const waf = new DDWAF(rules)
 
-    for (const [value, expected] of possibleValues) {
+    for (const [value] of possibleValues) {
       const context = waf.createContext()
 
       let result
@@ -133,10 +133,11 @@ describe('DDWAF lifecycle', () => {
         result = context.run({
           'server.request.headers.no_cookies': {
             // TODO: replace "attack" by an actual attack once the WAF supports it
-            'attack': value
+            attack: value
           }
         }, 10000)
       })
+      assert(result)
 
       // TODO: asserts attack once the WAF supports it
       // assert.strictEqual(result.action, 'monitor')
@@ -149,7 +150,7 @@ describe('DDWAF lifecycle', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
     const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(5, { 'header': 'hello world' })
+      'server.request.headers.no_cookies': createNestedObject(5, { header: 'hello world' })
     }, 10000)
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)
@@ -159,7 +160,7 @@ describe('DDWAF lifecycle', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
     const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(100, { 'header': 'hello world' })
+      'server.request.headers.no_cookies': createNestedObject(100, { header: 'hello world' })
     }, 10000)
     assert(!result.action)
     assert(!result.data)
@@ -199,7 +200,7 @@ describe('worker tests', () => {
   // TODO: tests on how this works with workers
 })
 
-function createNestedObject(n, obj) {
+function createNestedObject (n, obj) {
   if (n > 0) {
     return { a: createNestedObject(n - 1, obj) }
   }
