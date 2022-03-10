@@ -190,6 +190,24 @@ describe('limit tests', () => {
     assert.strictEqual(result.action, undefined)
     assert(!result.data)
   })
+
+  it('should not limit the rules object', () => {
+    const waf = new DDWAF(rules)
+    
+    let context = waf.createContext()
+    let result = context.run({
+      'server.request.body': { 'a': ".htaccess" }
+    }, 10000)
+    assert(result.action)
+    assert(result.data)
+
+    context = waf.createContext()
+    result = context.run({
+      'server.request.body': { 'a': "yarn.lock" }
+    }, 10000)
+    assert(result.action)
+    assert(result.data)
+  })
 })
 
 describe('load tests', () => {
