@@ -11,7 +11,7 @@
 
 
 ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
-                                              Napi::Array arr, int depth) {
+                                              Napi::Array arr, int depth, bool lim) { 
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
@@ -24,11 +24,13 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
   }
   // TODO(@vdeturckheim): handle arrays with
   // more than DDWAF_MAX_ARRAY_LENGTH chars
-  len = len < DDWAF_MAX_ARRAY_LENGTH ? len : DDWAF_MAX_ARRAY_LENGTH;
+  if (lim && len > DDWAF_MAX_ARRAY_LENGTH) {
+    len = DDWAF_MAX_ARRAY_LENGTH;
+  }
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth);
+    to_ddwaf_object(&val, env, item, depth, lim);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
@@ -38,11 +40,12 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
 }
 
 ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
-                                              Napi::Object obj, int depth) {
+                                              Napi::Object obj, int depth, bool lim) {
   Napi::Array properties = obj.GetPropertyNames();
-  uint32_t p_len = properties.Length();
-  uint32_t len = p_len > DDWAF_MAX_ARRAY_LENGTH ?
-                                  DDWAF_MAX_ARRAY_LENGTH : p_len;
+  uint32_t len = properties.Length();
+  if (lim && len > DDWAF_MAX_ARRAY_LENGTH) {
+    len = DDWAF_MAX_ARRAY_LENGTH;
+  }
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
     return nullptr;
@@ -66,7 +69,7 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth);
+    to_ddwaf_object(&val, env, valV, depth, lim);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
@@ -76,7 +79,7 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
 }
 
 ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
-                                                Napi::Value val, int depth) {
+                                                Napi::Value val, int depth, bool lim) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_MAP_DEPTH) {
     mlog("Max depth reached");
@@ -85,7 +88,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
   if (val.IsString()) {
     mlog("creating String");
     std::string str = val.ToString().Utf8Value();
-    if (str.length() > DDWAF_MAX_STRING_LENGTH) {
+    if (lim && str.length() > DDWAF_MAX_STRING_LENGTH) {
       str = str.substr(DDWAF_MAX_STRING_LENGTH - 1);
     }
     return ddwaf_object_string(object, str.c_str());
@@ -103,18 +106,13 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
   if (val.IsArray()) {
     mlog("creating Array");
     return to_ddwaf_object_array(object, env,
-              val.ToObject().As<Napi::Array>(), depth + 1);
+              val.ToObject().As<Napi::Array>(), depth + 1, lim);
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim);
   }
   mlog("creating empty map");
   // we use empty maps for now instead of null. See issue !43
   return ddwaf_object_map(object);
-}
-
-ddwaf_object* to_ddwaf_object(ddwaf_object *object,
-                          Napi::Env env, Napi::Value val) {
-  return to_ddwaf_object(object, env, val, 0);
 }
