@@ -9,7 +9,7 @@
   },
   "scripts": {
     "install": "node bin/appsec-reinstall.js",
-    "rebuild": "node-gyp rebuild",
+    "rebuild": "node ./node_modules/node-gyp/bin/node-gyp.js rebuild",
     "dev": "npm run rebuild && node scripts/dev.js",
     "build-test-bundle": "npm run dev && npm t && node scripts/bundle-addon.js",
     "lint": "eslint .",
