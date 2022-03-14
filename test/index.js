@@ -145,26 +145,6 @@ describe('DDWAF lifecycle', () => {
       // assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
   })
-
-  it('should match a moderately deeply nested object', () => {
-    const waf = new DDWAF(rules)
-    const context = waf.createContext()
-    const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(5, { header: 'hello world' })
-    }, 10000)
-    assert.strictEqual(result.action, 'monitor')
-    assert(result.data)
-  })
-
-  it('should not match an extremely deeply nested object', () => {
-    const waf = new DDWAF(rules)
-    const context = waf.createContext()
-    const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(100, { header: 'hello world' })
-    }, 10000)
-    assert(!result.action)
-    assert(!result.data)
-  })
 })
 
 describe('limit tests', () => {
@@ -189,6 +169,44 @@ describe('limit tests', () => {
     }, 10000)
     assert.strictEqual(result.action, undefined)
     assert(!result.data)
+  })
+
+  it('should match a moderately deeply nested object', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(5, { header: 'hello world' })
+    }, 10000)
+    assert.strictEqual(result.action, 'monitor')
+    assert(result.data)
+  })
+
+  it('should not match an extremely deeply nested object', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const result = context.run({
+      'server.request.headers.no_cookies': createNestedObject(100, { header: 'hello world' })
+    }, 10000)
+    assert(!result.action)
+    assert(!result.data)
+  })
+
+  it('should not limit the rules object', () => {
+    const waf = new DDWAF(rules)
+
+    let context = waf.createContext()
+    let result = context.run({
+      'server.request.body': { a: '.htaccess' }
+    }, 10000)
+    assert(result.action)
+    assert(result.data)
+
+    context = waf.createContext()
+    result = context.run({
+      'server.request.body': { a: 'yarn.lock' }
+    }, 10000)
+    assert(result.action)
+    assert(result.data)
   })
 })
 

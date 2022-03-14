@@ -64,7 +64,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   }
   ddwaf_object rules;
   mlog("building rules");
-  to_ddwaf_object(&rules, env, info[0]);
+  to_ddwaf_object(&rules, env, info[0], 0, false);
   mlog("Init WAF");
   ddwaf_handle handle = ddwaf_init(&rules, nullptr);
   if (handle == nullptr) {
@@ -176,7 +176,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   ddwaf_result result;
   ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0]);
+  to_ddwaf_object(&data, env, info[0], 0, true);
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data,
                                   &result, (uint64_t) timeout);
