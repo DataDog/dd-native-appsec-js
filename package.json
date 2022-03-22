@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "detect-libc": "^1.0.3",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "tar": "^6.1.11"
   },
   "engines": {
