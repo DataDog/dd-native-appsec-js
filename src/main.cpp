@@ -204,7 +204,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   if (result.total_runtime) {
     mlog("Set total_runtime");
     res.Set(
-      Napi::String::New(env, "total_runtime"),
+      Napi::String::New(env, "totalRuntime"),
       Napi::Number::New(env, result.total_runtime));
   }
   if (code != DDWAF_GOOD) {
