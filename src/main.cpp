@@ -66,7 +66,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, nullptr);
+  ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
   if (handle == nullptr) {
       Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
       return;
