@@ -124,7 +124,7 @@ describe('DDWAF lifecycle', () => {
 
     const waf = new DDWAF(rules)
 
-    for (const [value] of possibleValues) {
+    for (const [value, expected] of possibleValues) {
       const context = waf.createContext()
 
       let result
@@ -133,16 +133,16 @@ describe('DDWAF lifecycle', () => {
         result = context.run({
           'server.request.headers.no_cookies': {
             // TODO: replace "attack" by an actual attack once the WAF supports it
-            attack: value
+            'kattack': value
           }
         }, 10000)
       })
       assert(result)
 
       // TODO: asserts attack once the WAF supports it
-      // assert.strictEqual(result.action, 'monitor')
-      // assert(result.data)
-      // assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      assert.strictEqual(result.action, 'monitor')
+      assert(result.data)
+      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
   })
 })
