@@ -132,7 +132,7 @@ describe('DDWAF lifecycle', () => {
       assert.doesNotThrow(() => {
         result = context.run({
           'server.request.headers.no_cookies': {
-            'kattack': value
+            kattack: value
           }
         }, 10000)
       })
