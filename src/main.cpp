@@ -66,7 +66,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, nullptr);
+  ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
   if (handle == nullptr) {
       Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
       return;
@@ -201,19 +201,12 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   res.Set(
     Napi::String::New(env, "timeout"),
     Napi::Boolean::New(env, result.timeout));
-  if (result.perfData) {
-    mlog("Set perfData");
+  if (result.total_runtime) {
+    mlog("Set total_runtime");
     res.Set(
-      Napi::String::New(env, "perfData"),
-      Napi::String::New(env, result.perfData));
+      Napi::String::New(env, "totalRuntime"),
+      Napi::Number::New(env, result.total_runtime));
   }
-  if (result.perfTotalRuntime) {
-    mlog("Set perfTotalRuntime");
-    res.Set(
-      Napi::String::New(env, "perfTotalRuntime"),
-      Napi::Number::New(env, result.perfTotalRuntime));
-  }
-  mlog("Set perf results ok");
   if (code != DDWAF_GOOD) {
     res.Set(
       Napi::String::New(env, "data"),

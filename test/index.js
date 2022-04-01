@@ -61,7 +61,7 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
   })
 
-  it('should parse keys correctly', () => {
+  it('should parse keys correctly and match on value', () => {
     const possibleKeys = new Map([
       [undefined, 'undefined'],
       [null, 'null'],
@@ -102,29 +102,29 @@ describe('DDWAF lifecycle', () => {
     }
   })
 
-  it('should parse values correctly', () => {
-    const possibleValues = new Map([
-      [undefined, ''],
-      [null, ''],
-      [false, ''],
-      [true, ''],
-      [42, ''],
-      [-42, ''],
-      [42.42, ''],
-      [Infinity, ''],
-      [NaN, ''],
-      [BigInt(42), ''],
-      ['str', ''],
-      [Symbol(''), ''],
-      [{ a: 1, b: 2 }, ''],
-      [['a', 2, 'c'], ''],
-      [/regex/, ''],
-      [function fn () {}, '']
+  it('should parse values correctly and match on key', () => {
+    const possibleValues = new Set([
+      undefined,
+      null,
+      false,
+      true,
+      42,
+      -42,
+      42.42,
+      Infinity,
+      NaN,
+      BigInt(42),
+      'str',
+      Symbol(''),
+      { a: 1, b: 2 },
+      ['a', 2, 'c'],
+      /regex/,
+      function fn () {}
     ])
 
     const waf = new DDWAF(rules)
 
-    for (const [value] of possibleValues) {
+    for (const value of possibleValues) {
       const context = waf.createContext()
 
       let result
@@ -132,17 +132,14 @@ describe('DDWAF lifecycle', () => {
       assert.doesNotThrow(() => {
         result = context.run({
           'server.request.headers.no_cookies': {
-            // TODO: replace "attack" by an actual attack once the WAF supports it
-            attack: value
+            kattack: value
           }
         }, 10000)
       })
-      assert(result)
 
-      // TODO: asserts attack once the WAF supports it
-      // assert.strictEqual(result.action, 'monitor')
-      // assert(result.data)
-      // assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      assert.strictEqual(result.action, 'monitor')
+      assert(result.data)
+      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'kattack')
     }
   })
 })

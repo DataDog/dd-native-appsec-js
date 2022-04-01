@@ -6,8 +6,7 @@ type rules = object;
 
 type result = {
   timeout: boolean;
-  perfData?: string;
-  perfTotalRuntime?: number;
+  totalRuntime?: number;
   data?: string;
   action?: 'monitor' | 'block';
 };

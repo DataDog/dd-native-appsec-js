@@ -29,6 +29,33 @@
       ]
     },
     {
+      "id": "key_attack",
+      "name": "match on a key",
+      "tags": {
+        "type": "security_scanner",
+        "crs_id": "0",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.request.headers.no_cookies"
+              }
+            ],
+            "list": [
+              "kattack"
+            ]
+          },
+          "operator": "phrase_match"
+        }
+      ],
+      "transformers": [
+        "keys_only"
+      ]
+    },
+    {
       "id": "nfd-000-001",
       "name": "weird case",
       "tags": {
