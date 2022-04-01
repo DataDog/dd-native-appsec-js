@@ -139,7 +139,7 @@ describe('DDWAF lifecycle', () => {
 
       assert.strictEqual(result.action, 'monitor')
       assert(result.data)
-      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      assert.strictEqual(result.data, expected)
     }
   })
 })
