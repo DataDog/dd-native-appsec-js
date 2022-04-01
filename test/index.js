@@ -132,14 +132,11 @@ describe('DDWAF lifecycle', () => {
       assert.doesNotThrow(() => {
         result = context.run({
           'server.request.headers.no_cookies': {
-            // TODO: replace "attack" by an actual attack once the WAF supports it
             'kattack': value
           }
         }, 10000)
       })
-      assert(result)
 
-      // TODO: asserts attack once the WAF supports it
       assert.strictEqual(result.action, 'monitor')
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
