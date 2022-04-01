@@ -61,7 +61,7 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
   })
 
-  it('should parse keys correctly', () => {
+  it('should parse keys correctly and match on value', () => {
     const possibleKeys = new Map([
       [undefined, 'undefined'],
       [null, 'null'],
@@ -102,29 +102,29 @@ describe('DDWAF lifecycle', () => {
     }
   })
 
-  it('should parse values correctly', () => {
-    const possibleValues = new Map([
-      [undefined, ''],
-      [null, ''],
-      [false, ''],
-      [true, ''],
-      [42, ''],
-      [-42, ''],
-      [42.42, ''],
-      [Infinity, ''],
-      [NaN, ''],
-      [BigInt(42), ''],
-      ['str', ''],
-      [Symbol(''), ''],
-      [{ a: 1, b: 2 }, ''],
-      [['a', 2, 'c'], ''],
-      [/regex/, ''],
-      [function fn () {}, '']
+  it('should parse values correctly and match on key', () => {
+    const possibleValues = new Set([
+      undefined,
+      null,
+      false,
+      true,
+      42,
+      -42,
+      42.42,
+      Infinity,
+      NaN,
+      BigInt(42),
+      'str',
+      Symbol(''),
+      { a: 1, b: 2 },
+      ['a', 2, 'c'],
+      /regex/,
+      function fn () {}
     ])
 
     const waf = new DDWAF(rules)
 
-    for (const [value, expected] of possibleValues) {
+    for (const value of possibleValues) {
       const context = waf.createContext()
 
       let result
@@ -139,7 +139,7 @@ describe('DDWAF lifecycle', () => {
 
       assert.strictEqual(result.action, 'monitor')
       assert(result.data)
-      assert.strictEqual(result.data, expected)
+      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'kattack')
     }
   })
 })
