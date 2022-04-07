@@ -181,7 +181,6 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data,
                                   &result, (uint64_t) timeout);
-  ddwaf_object_free(&data);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
