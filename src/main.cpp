@@ -67,6 +67,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   to_ddwaf_object(&rules, env, info[0], 0, false);
   mlog("Init WAF");
   ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
+  ddwaf_object_free(&rules);
   if (handle == nullptr) {
       Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
       return;
@@ -222,6 +223,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
       Napi::String::New(env, "action"),
       Napi::String::New(env, "block"));
   }
+  ddwaf_result_free(&result);
   return res;
 }
 Napi::Value DDWAFContext::GetDisposed(const Napi::CallbackInfo& info) {
