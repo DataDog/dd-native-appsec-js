@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 'use strict'
-const assert = require('assert')
+// const assert = require('assert')
 const childProcess = require('child_process')
 const fs = require('fs')
 
@@ -13,7 +13,8 @@ const pkg = require('../package.json')
 const lib = require('./lib')
 const path = require('path')
 
-assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
+// only relevant if libddwaf repo is private
+// assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
 
 async function download () {
   const dir = lib.getDirName()
