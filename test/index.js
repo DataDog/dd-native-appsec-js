@@ -9,6 +9,8 @@ const { DDWAF } = require('..')
 const pkg = require('../package.json')
 const rules = require('./rules.json')
 
+const TIMEOUT = 9999e3
+
 describe('DDWAF lifecycle', () => {
   it('should return the version', () => {
     const v = DDWAF.version()
@@ -23,14 +25,14 @@ describe('DDWAF lifecycle', () => {
       x: new Array(4096).fill('x').join(''),
       y: new Array(4097).fill('y').join(''),
       z: new Array(4097).fill('z')
-    }, 10000)
+    }, TIMEOUT)
     assert.strictEqual(result.action, 'monitor')
     assert.strictEqual(result.timeout, false)
     assert(result.data)
     assert(!context.disposed)
     context.dispose()
     assert(context.disposed)
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 10000))
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, TIMEOUT))
     assert(!waf.disposed)
     waf.dispose()
     assert(waf.disposed)
@@ -42,7 +44,7 @@ describe('DDWAF lifecycle', () => {
     const context = waf.createContext()
     const result = context.run({
       'server.response.status': '404'
-    }, 10000)
+    }, TIMEOUT)
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)
   })
@@ -56,7 +58,7 @@ describe('DDWAF lifecycle', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
     assert.throws(() => context.run())
-    assert.throws(() => context.run('', 10000))
+    assert.throws(() => context.run('', TIMEOUT))
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, -1))
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
   })
@@ -93,7 +95,7 @@ describe('DDWAF lifecycle', () => {
           'server.request.headers.no_cookies': {
             [value]: 'hello world'
           }
-        }, 10000)
+        }, TIMEOUT)
       })
 
       assert.strictEqual(result.action, 'monitor')
@@ -134,7 +136,7 @@ describe('DDWAF lifecycle', () => {
           'server.request.headers.no_cookies': {
             kattack: value
           }
-        }, 10000)
+        }, TIMEOUT)
       })
 
       assert.strictEqual(result.action, 'monitor')
@@ -153,7 +155,7 @@ describe('limit tests', () => {
       'server.response.status': {
         a0: '404'
       }
-    }, 10000)
+    }, TIMEOUT)
     assert.strictEqual(result0.action, 'monitor')
 
     const item = {}
@@ -163,7 +165,7 @@ describe('limit tests', () => {
 
     const result = context.run({
       'server.response.status': item
-    }, 10000)
+    }, TIMEOUT)
     assert.strictEqual(result.action, undefined)
     assert(!result.data)
   })
@@ -173,7 +175,7 @@ describe('limit tests', () => {
     const context = waf.createContext()
     const result = context.run({
       'server.request.headers.no_cookies': createNestedObject(5, { header: 'hello world' })
-    }, 10000)
+    }, TIMEOUT)
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)
   })
@@ -183,7 +185,7 @@ describe('limit tests', () => {
     const context = waf.createContext()
     const result = context.run({
       'server.request.headers.no_cookies': createNestedObject(100, { header: 'hello world' })
-    }, 10000)
+    }, TIMEOUT)
     assert(!result.action)
     assert(!result.data)
   })
@@ -194,14 +196,14 @@ describe('limit tests', () => {
     let context = waf.createContext()
     let result = context.run({
       'server.request.body': { a: '.htaccess' }
-    }, 10000)
+    }, TIMEOUT)
     assert(result.action)
     assert(result.data)
 
     context = waf.createContext()
     result = context.run({
       'server.request.body': { a: 'yarn.lock' }
-    }, 10000)
+    }, TIMEOUT)
     assert(result.action)
     assert(result.data)
   })

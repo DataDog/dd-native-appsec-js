@@ -9,7 +9,7 @@ const blns = require('./blns/blns.json')
 
 const waf = new DDWAF(rules)
 
-const TIMEOUT = 20000
+const TIMEOUT = 9999e3
 
 const ENCODINGS_0 = [ // from https://github.com/nodejs/node/blob/master/lib/buffer.js
   'utf8',
