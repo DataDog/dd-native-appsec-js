@@ -11,7 +11,7 @@
 // TODO(@vdeturckheim): fix issue when used with workers
 
 class DDWAF : public Napi::ObjectWrap<DDWAF> {
- public:
+  public:
     // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     static Napi::Value version(const Napi::CallbackInfo& info);
@@ -25,13 +25,13 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);
     void dispose(const Napi::CallbackInfo& info);
 
- private:
+  private:
     bool _disposed;
     ddwaf_handle _handle;
 };
 
 class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
- public:
+  public:
     // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
@@ -47,7 +47,7 @@ class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
     // C++ only instance method
     bool init(ddwaf_handle handle);
 
- private:
+  private:
     bool _disposed;
     ddwaf_context _context;
 };
