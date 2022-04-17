@@ -189,7 +189,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
       return env.Null();
     case DDWAF_ERR_INVALID_ARGUMENT:
       Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
-      // TODO: we should free the data here
+      // TODO(simon-id): we should free the data here
       return env.Null();
     default:
       break;
