@@ -44,15 +44,13 @@ Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
   if (info.Length() < 1) {
-    Napi::Error::New(env,
-                      "Wrong number of arguments, expected 1")
-                      .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Wrong number of arguments, expected 1")
+                                                  .ThrowAsJavaScriptException();
     return;
   }
   if (!info[0].IsObject()) {
-    Napi::TypeError::New(env,
-                          "Wrong argument, expected an object")
-                          .ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "First argument must be an object")
+                                                  .ThrowAsJavaScriptException();
     return;
   }
   ddwaf_object rules;
@@ -62,8 +60,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
   ddwaf_object_free(&rules);
   if (handle == nullptr) {
-      Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
-      return;
+    Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
+    return;
   }
 
   this->_handle = handle;
