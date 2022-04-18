@@ -63,7 +63,7 @@ describe('random strings', () => {
     crypto.randomFillSync(buff)
     for (const encoding of ENCODINGS) {
       const str = buff.toString(encoding)
-      it(`should handle the string ${buff.toString('hex')}`, () => {
+      it(`should handle the string 0x${buff.toString('hex')} in ${encoding}`, () => {
         test(str)
       })
     }
