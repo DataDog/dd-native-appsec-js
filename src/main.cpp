@@ -19,6 +19,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
+    // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
   });
   exports.Set("DDWAF", func);
   return exports;
@@ -54,9 +55,25 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_object rules;
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
+
+  ddwaf_ruleset_info rules_info;
+
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
+  ddwaf_handle handle = ddwaf_init(&rules, nullptr, &rules_info);
   ddwaf_object_free(&rules);
+
+  Napi::Object result = Napi::Object::New(env);
+
+  if (rules_info.version != nullptr) {
+    result.Set("version", Napi::String::New(env, rules_info.version));
+  }
+  result.Set("loaded", Napi::Number::New(env, rules_info.loaded));
+  result.Set("failed", Napi::Number::New(env, rules_info.failed));
+
+  info.This().As<Napi::Object>().Set("rulesInfo", result);
+
+  ddwaf_ruleset_info_free(&rules_info);
+
   if (handle == nullptr) {
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
     return;

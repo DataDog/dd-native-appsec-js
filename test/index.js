@@ -17,6 +17,14 @@ describe('DDWAF lifecycle', () => {
     assert.strictEqual([v.major, v.minor, v.patch].join('.'), pkg.libddwaf_version)
   })
 
+  it('should have rulesInfo', () => {
+    const waf = new DDWAF(rules)
+    assert(waf.rulesInfo)
+    assert.strictEqual(waf.rulesInfo.version, '1.3.1')
+    assert.strictEqual(waf.rulesInfo.loaded, 6)
+    assert.strictEqual(waf.rulesInfo.failed, 0)
+  })
+
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
