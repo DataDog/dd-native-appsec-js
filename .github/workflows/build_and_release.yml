@@ -101,7 +101,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-python@v1
       - run: pip install cpplint
-      - run: cpplint --recursive ./src
+      - run: cpplint --linelength=120 --recursive ./src
 
   bundle:
     needs: ['build-native', 'build-docker']

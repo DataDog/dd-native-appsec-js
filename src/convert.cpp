@@ -10,8 +10,7 @@
 #include "src/log.h"
 
 
-ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
-                                      Napi::Array arr, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env, Napi::Array arr, int depth, bool lim) {
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
@@ -39,8 +38,7 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env,
   return object;
 }
 
-ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
-                                      Napi::Object obj, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env, Napi::Object obj, int depth, bool lim) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
@@ -78,8 +76,7 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env,
   return object;
 }
 
-ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
-                                      Napi::Value val, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value val, int depth, bool lim) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
     mlog("Max depth reached");
@@ -105,8 +102,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env,
   }
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env,
-              val.ToObject().As<Napi::Array>(), depth + 1, lim);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
   }
   if (val.IsObject()) {
     mlog("creating Object");

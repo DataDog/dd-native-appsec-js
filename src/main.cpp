@@ -13,19 +13,15 @@
 Napi::FunctionReference* constructor = new Napi::FunctionReference();
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
-    mlog("Setting up class DDWAF");
-    Napi::Function func = DefineClass(env, "DDWAF", {
-      StaticMethod<&DDWAF::version>("version"),
-      InstanceMethod<&DDWAF::createContext>("createContext"),
-      InstanceMethod<&DDWAF::dispose>("dispose"),
-      InstanceAccessor(
-        "disposed",
-        &DDWAF::GetDisposed,
-        nullptr,
-        napi_enumerable),
-    });
-    exports.Set("DDWAF", func);
-    return exports;
+  mlog("Setting up class DDWAF");
+  Napi::Function func = DefineClass(env, "DDWAF", {
+    StaticMethod<&DDWAF::version>("version"),
+    InstanceMethod<&DDWAF::createContext>("createContext"),
+    InstanceMethod<&DDWAF::dispose>("dispose"),
+    InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
+  });
+  exports.Set("DDWAF", func);
+  return exports;
 }
 
 Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
@@ -35,12 +31,9 @@ Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
   ddwaf_version version;
   ddwaf_get_version(&version);
 
-  result.Set(Napi::String::New(env, "major"),
-      Napi::Number::New(env, version.major));
-  result.Set(Napi::String::New(env, "minor"),
-      Napi::Number::New(env, version.minor));
-  result.Set(Napi::String::New(env, "patch"),
-      Napi::Number::New(env, version.patch));
+  result.Set("major", Napi::Number::New(env, version.major));
+  result.Set("minor", Napi::Number::New(env, version.minor));
+  result.Set("patch", Napi::Number::New(env, version.patch));
   return result;
 }
 
@@ -51,15 +44,11 @@ Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
   if (info.Length() < 1) {
-    Napi::Error::New(env,
-                      "Wrong number of arguments, expected 1")
-                      .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
     return;
   }
   if (!info[0].IsObject()) {
-    Napi::TypeError::New(env,
-                          "Wrong argument, expected an object")
-                          .ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
     return;
   }
   ddwaf_object rules;
@@ -69,8 +58,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_handle handle = ddwaf_init(&rules, nullptr, nullptr);
   ddwaf_object_free(&rules);
   if (handle == nullptr) {
-      Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
-      return;
+    Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
+    return;
   }
 
   this->_handle = handle;
@@ -94,26 +83,21 @@ void DDWAF::dispose(const Napi::CallbackInfo& info) {
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (this->_disposed) {
-    Napi::Error::New(env,
-          "Calling createContext on a disposed DDWAF instance")
-           .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::Error::New(env, "Calling createContext on a disposed DDWAF instance").ThrowAsJavaScriptException();
+    return env.Null();
   }
   mlog("Create context");
   Napi::Value context = constructor->New({});
-  DDWAFContext* raw = Napi::ObjectWrap<DDWAFContext>::Unwrap(
-                                      context.As<Napi::Object>());
+  DDWAFContext* raw = Napi::ObjectWrap<DDWAFContext>::Unwrap(context.As<Napi::Object>());
   // TODO(@vdeturckheim): dispose check
   if (!raw->init(this->_handle)) {
-    Napi::Error::New(env, "Could not create context")
-                           .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Could not create context").ThrowAsJavaScriptException();
     return env.Null();
   }
   return context;
 }
 
-DDWAFContext::DDWAFContext(const Napi::CallbackInfo& info) :
-                          Napi::ObjectWrap<DDWAFContext>(info) {
+DDWAFContext::DDWAFContext(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAFContext>(info) {
   this->_disposed = false;
 }
 
@@ -144,84 +128,63 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   if (this->_disposed) {
-    Napi::Error::New(env,
-                          "Calling run on a disposed context")
-                          .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::Error::New(env, "Calling run on a disposed context").ThrowAsJavaScriptException();
+    return env.Null();
   }
   if (info.Length() < 2) {  // inputs, timeout
-    Napi::Error::New(env,
-                          "Wrong number of arguments, expected 2")
-                          .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::Error::New(env, "Wrong number of arguments, expected 2").ThrowAsJavaScriptException();
+    return env.Null();
   }
   if (!info[0].IsObject()) {
-    Napi::TypeError::New(env,
-                          "First argument must be an object")
-                          .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
+    return env.Null();
   }
   if (!info[1].IsNumber()) {
-    Napi::TypeError::New(env,
-                          "Second argument must be a number")
-                          .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::TypeError::New(env, "Second argument must be a number").ThrowAsJavaScriptException();
+    return env.Null();
   }
   int64_t timeout = info[1].ToNumber().Int64Value();
   if (timeout <= 0) {
-    Napi::TypeError::New(env,
-                         "Second argument must be a positive number")
-                         .ThrowAsJavaScriptException();
-    return info.Env().Null();
+    Napi::TypeError::New(env, "Second argument must be greater than 0").ThrowAsJavaScriptException();
+    return env.Null();
   }
 
   ddwaf_result result;
   ddwaf_object data;
   to_ddwaf_object(&data, env, info[0], 0, true);
 
-  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data,
-                                  &result, (uint64_t) timeout);
+  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
       Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
-      return info.Env().Null();
+      return env.Null();
     case DDWAF_ERR_INVALID_OBJECT:
-      Napi::Error::New(env, "Invalid ddwaf object")
-                          .ThrowAsJavaScriptException();
-      return info.Env().Null();
+      Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      return env.Null();
     case DDWAF_ERR_INVALID_ARGUMENT:
       Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
-      return info.Env().Null();
+      // TODO(simon-id): we should free the data here
+      return env.Null();
     default:
       break;
   }
-  // there is not error. We need to collect perf and potential error data
+  // there is no error. We need to collect perf data
   Napi::Object res = Napi::Object::New(env);
   mlog("Set timeout");
-  res.Set(
-    Napi::String::New(env, "timeout"),
-    Napi::Boolean::New(env, result.timeout));
+  res.Set("timeout", Napi::Boolean::New(env, result.timeout));
   if (result.total_runtime) {
     mlog("Set total_runtime");
-    res.Set(
-      Napi::String::New(env, "totalRuntime"),
-      Napi::Number::New(env, result.total_runtime));
+    res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
   }
   if (code != DDWAF_GOOD) {
-    res.Set(
-      Napi::String::New(env, "data"),
-      Napi::String::New(env, result.data));
+    res.Set("data", Napi::String::New(env, result.data));
   }
   if (code == DDWAF_MONITOR) {
-    res.Set(
-      Napi::String::New(env, "action"),
-      Napi::String::New(env, "monitor"));
+    res.Set("action", Napi::String::New(env, "monitor"));
   }
   if (code == DDWAF_BLOCK) {
-    res.Set(
-      Napi::String::New(env, "action"),
-      Napi::String::New(env, "block"));
+    res.Set("action", Napi::String::New(env, "block"));
   }
   ddwaf_result_free(&result);
   return res;
@@ -231,25 +194,21 @@ Napi::Value DDWAFContext::GetDisposed(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object DDWAFContext::Init(Napi::Env env, Napi::Object exports) {
-    mlog("Setting up class DDWAFContext");
-    Napi::Function func = DefineClass(env, "DDWAFContext", {
-      InstanceMethod<&DDWAFContext::run>("run"),
-      InstanceMethod<&DDWAFContext::dispose>("dispose"),
-      InstanceAccessor(
-        "disposed",
-        &DDWAFContext::GetDisposed,
-        nullptr,
-        napi_enumerable),
-    });
-    *constructor = Napi::Persistent(func);
-    return exports;
+  mlog("Setting up class DDWAFContext");
+  Napi::Function func = DefineClass(env, "DDWAFContext", {
+    InstanceMethod<&DDWAFContext::run>("run"),
+    InstanceMethod<&DDWAFContext::dispose>("dispose"),
+    InstanceAccessor("disposed", &DDWAFContext::GetDisposed, nullptr, napi_enumerable),
+  });
+  *constructor = Napi::Persistent(func);
+  return exports;
 }
 
 // Initialize native add-on
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-    DDWAF::Init(env, exports);
-    DDWAFContext::Init(env, exports);
-    return exports;
+  DDWAF::Init(env, exports);
+  DDWAFContext::Init(env, exports);
+  return exports;
 }
 
 // Register and initialize native add-on

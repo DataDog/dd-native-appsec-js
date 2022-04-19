@@ -18,7 +18,6 @@ declare class DDWAFContext {
   dispose(): void;
 }
 
-
 export class DDWAF {
   static version(): { major: number, minor: number, patch: number };
 
