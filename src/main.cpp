@@ -44,13 +44,11 @@ Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
   if (info.Length() < 1) {
-    Napi::Error::New(env, "Wrong number of arguments, expected 1")
-                                                  .ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
     return;
   }
   if (!info[0].IsObject()) {
-    Napi::TypeError::New(env, "First argument must be an object")
-                                                  .ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
     return;
   }
   ddwaf_object rules;
