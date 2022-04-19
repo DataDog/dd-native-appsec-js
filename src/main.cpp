@@ -44,14 +44,51 @@ Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
 
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
-  if (info.Length() < 1) {
-    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
+  size_t arg_len = info.Length();
+  if (arg_len < 1) {
+    Napi::Error::New(env, "Wrong number of arguments, expected at least 1").ThrowAsJavaScriptException();
     return;
   }
   if (!info[0].IsObject()) {
     Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
     return;
   }
+
+  ddwaf_config waf_config;
+  waf_config.obfuscator.key_regex = nullptr;
+  waf_config.obfuscator.value_regex = nullptr;
+
+  if (arg_len >= 2) {
+    if (!info[1].IsObject()) {
+      Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
+      return;
+    }
+
+    Napi::Object config = info[1].ToObject();
+
+    if (config.Has("obfuscatorKeyRegex")) {
+      Napi::Value key_regex = config.Get("obfuscatorKeyRegex");
+
+      if (!key_regex.IsString()) {
+        Napi::TypeError::New(env, "obfuscatorKeyRegex must be a string").ThrowAsJavaScriptException();
+        return;
+      }
+
+      waf_config.obfuscator.key_regex = key_regex.ToString().Utf8Value().c_str();
+    }
+
+    if (config.Has("obfuscatorValueRegex")) {
+      Napi::Value value_regex = config.Get("obfuscatorValueRegex");
+
+      if (!value_regex.IsString()) {
+        Napi::TypeError::New(env, "obfuscatorValueRegex must be a string").ThrowAsJavaScriptException();
+        return;
+      }
+
+      waf_config.obfuscator.value_regex = value_regex.ToString().Utf8Value().c_str();
+    }
+  }
+
   ddwaf_object rules;
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
@@ -59,7 +96,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_ruleset_info rules_info;
 
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, nullptr, &rules_info);
+  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &rules_info);
   ddwaf_object_free(&rules);
 
   Napi::Object result = Napi::Object::New(env);

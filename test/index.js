@@ -152,6 +152,44 @@ describe('DDWAF lifecycle', () => {
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'kattack')
     }
   })
+
+  it('should obfuscate keys', () => {
+    const waf = new DDWAF(rules, {
+      obfuscatorKeyRegex: 'password'
+    })
+    const context = waf.createContext()
+
+    const result = context.run({
+      atk: {
+        password: {
+          a: 'sensitive'
+        }
+      }
+    }, TIMEOUT)
+
+    assert(result)
+    assert(result.data)
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+  })
+
+  it('should obfuscate values', () => {
+    const waf = new DDWAF(rules, {
+      obfuscatorValueRegex: 'hello world'
+    })
+    const context = waf.createContext()
+
+    const result = context.run({
+      'server.request.headers.no_cookies': {
+        header: 'hello world'
+      }
+    }, TIMEOUT)
+
+    assert(result)
+    assert(result.data)
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+  })
 })
 
 describe('limit tests', () => {
