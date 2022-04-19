@@ -55,6 +55,9 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   }
 
   ddwaf_config waf_config;
+  waf_config.limits.max_container_size = DDWAF_MAX_CONTAINER_SIZE;
+  waf_config.limits.max_container_depth = DDWAF_MAX_CONTAINER_DEPTH;
+  waf_config.limits.max_string_length = DDWAF_MAX_STRING_LENGTH;
   waf_config.obfuscator.key_regex = nullptr;
   waf_config.obfuscator.value_regex = nullptr;
 
