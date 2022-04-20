@@ -57,6 +57,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
 
   if (arg_len >= 2) {
+    // TODO(@simon-id) make a macro here someday
     if (!info[1].IsObject()) {
       Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
       return;
