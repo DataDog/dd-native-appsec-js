@@ -23,7 +23,16 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
-  constructor(rules: rules);
+  readonly rulesInfo: {
+    version?: string,
+    loaded: number,
+    failed: number
+  };
+
+  constructor(rules: rules, config?: {
+    obfuscatorKeyRegex?: string,
+    obfuscatorValueRegex?: string
+  });
 
   createContext(): DDWAFContext;
   dispose(): void;

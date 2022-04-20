@@ -17,6 +17,14 @@ describe('DDWAF lifecycle', () => {
     assert.strictEqual([v.major, v.minor, v.patch].join('.'), pkg.libddwaf_version)
   })
 
+  it('should have rulesInfo', () => {
+    const waf = new DDWAF(rules)
+    assert(waf.rulesInfo)
+    assert.strictEqual(waf.rulesInfo.version, '1.3.1')
+    assert.strictEqual(waf.rulesInfo.loaded, 6)
+    assert.strictEqual(waf.rulesInfo.failed, 0)
+  })
+
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
@@ -143,6 +151,44 @@ describe('DDWAF lifecycle', () => {
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'kattack')
     }
+  })
+
+  it('should obfuscate keys', () => {
+    const waf = new DDWAF(rules, {
+      obfuscatorKeyRegex: 'password'
+    })
+    const context = waf.createContext()
+
+    const result = context.run({
+      atk: {
+        password: {
+          a: 'sensitive'
+        }
+      }
+    }, TIMEOUT)
+
+    assert(result)
+    assert(result.data)
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+  })
+
+  it('should obfuscate values', () => {
+    const waf = new DDWAF(rules, {
+      obfuscatorValueRegex: 'hello world'
+    })
+    const context = waf.createContext()
+
+    const result = context.run({
+      'server.request.headers.no_cookies': {
+        header: 'hello world'
+      }
+    }, TIMEOUT)
+
+    assert(result)
+    assert(result.data)
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 })
 
