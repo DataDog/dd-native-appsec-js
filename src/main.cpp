@@ -105,7 +105,9 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   result.Set("loaded", Napi::Number::New(env, rules_info.loaded));
   result.Set("failed", Napi::Number::New(env, rules_info.failed));
 
-  info.This().As<Napi::Object>().Set("rulesInfo", result);
+  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Value("rulesInfo", result, napi_enumerable);
+
+  info.This().As<Napi::Object>().DefineProperty(pd);
 
   ddwaf_ruleset_info_free(&rules_info);
 
