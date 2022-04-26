@@ -6,6 +6,7 @@
 #include <napi.h>
 #include <stdio.h>
 #include <ddwaf.h>
+#include <string>
 #include "src/main.h"
 #include "src/log.h"
 #include "src/convert.h"
@@ -56,6 +57,10 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
 
+  // do not touch these strings after the c_str() assigment
+  std::string key_regex_str;
+  std::string value_regex_str;
+
   if (arg_len >= 2) {
     // TODO(@simon-id) make a macro here someday
     if (!info[1].IsObject()) {
@@ -73,7 +78,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
         return;
       }
 
-      waf_config.obfuscator.key_regex = key_regex.ToString().Utf8Value().c_str();
+      key_regex_str = key_regex.ToString().Utf8Value();
+      waf_config.obfuscator.key_regex = key_regex_str.c_str();
     }
 
     if (config.Has("obfuscatorValueRegex")) {
@@ -84,7 +90,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
         return;
       }
 
-      waf_config.obfuscator.value_regex = value_regex.ToString().Utf8Value().c_str();
+      value_regex_str = value_regex.ToString().Utf8Value();
+      waf_config.obfuscator.value_regex = value_regex_str.c_str();
     }
   }
 
