@@ -19,6 +19,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
+    //InstanceValue("rulesInfo", Napi::Object::New(env), napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
   });
   exports.Set("DDWAF", func);
@@ -56,8 +57,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
 
-  char* key_regex_str = nullptr;
-  char* value_regex_str = nullptr;
+  std::string key_regex_str;
+  std::string value_regex_str;
 
   if (arg_len >= 2) {
     // TODO(@simon-id) make a macro here someday
@@ -76,8 +77,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
         return;
       }
 
-      key_regex_str = strdup(key_regex.ToString().Utf8Value().c_str());
-      waf_config.obfuscator.key_regex = key_regex_str;
+      key_regex_str = key_regex.ToString().Utf8Value();
+      waf_config.obfuscator.key_regex = key_regex_str.c_str();
     }
 
     if (config.Has("obfuscatorValueRegex")) {
@@ -88,8 +89,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
         return;
       }
 
-      value_regex_str = strdup(value_regex.ToString().Utf8Value().c_str());
-      waf_config.obfuscator.value_regex = value_regex_str;
+      value_regex_str = value_regex.ToString().Utf8Value();
+      waf_config.obfuscator.value_regex = value_regex_str.c_str();
     }
   }
 
@@ -102,9 +103,6 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   mlog("Init WAF");
   ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &rules_info);
   ddwaf_object_free(&rules);
-
-  free(key_regex_str);
-  free(value_regex_str);
 
   Napi::Object result = Napi::Object::New(env);
 
