@@ -6,10 +6,10 @@
 #include <napi.h>
 #include <stdio.h>
 #include <ddwaf.h>
+#include <string>
 #include "src/main.h"
 #include "src/log.h"
 #include "src/convert.h"
-#include <string>
 
 Napi::FunctionReference* constructor = new Napi::FunctionReference();
 
