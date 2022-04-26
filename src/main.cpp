@@ -19,7 +19,6 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
-    //InstanceValue("rulesInfo", Napi::Object::New(env), napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
   });
   exports.Set("DDWAF", func);
