@@ -19,6 +19,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
+    //InstanceValue("rulesInfo", Napi::Object::New(env), napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
   });
   exports.Set("DDWAF", func);
@@ -56,6 +57,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
 
+  // do not touch these strings after the c_str() assigment
   std::string key_regex_str;
   std::string value_regex_str;
 
