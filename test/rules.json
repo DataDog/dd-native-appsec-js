@@ -135,6 +135,37 @@
       ]
     },
     {
+      "id": "invalid_1",
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "id": "invalid_2",
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "regex": "*"
+          }
+        }
+      ]
+    },
+    {
+      "id": "invalid_3",
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "regex": "*"
+          }
+        }
+      ]
+    },
+    {
       "id": "long-rule",
       "name": "long rule that shouldn't be truncated",
       "tags": {

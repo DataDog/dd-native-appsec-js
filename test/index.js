@@ -22,7 +22,16 @@ describe('DDWAF lifecycle', () => {
     assert(waf.rulesInfo)
     assert.strictEqual(waf.rulesInfo.version, '1.3.1')
     assert.strictEqual(waf.rulesInfo.loaded, 6)
-    assert.strictEqual(waf.rulesInfo.failed, 0)
+    assert.strictEqual(waf.rulesInfo.failed, 3)
+    assert.deepStrictEqual(waf.rulesInfo.errors, {
+      'missing key \'regex\'': [
+        'invalid_1'
+      ],
+      'invalid regular expression: *': [
+        'invalid_2',
+        'invalid_3'
+      ]
+    })
   })
 
   it('should collect an attack and cleanup everything', () => {
