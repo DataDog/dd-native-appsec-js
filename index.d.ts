@@ -26,7 +26,10 @@ export class DDWAF {
   readonly rulesInfo: {
     version?: string,
     loaded: number,
-    failed: number
+    failed: number,
+    errors: {
+      [errorString: string]: string[]
+    }
   };
 
   constructor(rules: rules, config?: {
