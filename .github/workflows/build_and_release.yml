@@ -23,11 +23,11 @@ jobs:
             artifact: darwin-x64-unknown
             arch: x64
           - name: windows 64 bits
-            os: windows-latest
+            os: windows-2019
             artifact: win32-x64-unknown
             arch: x64
           - name: windows 32 bits
-            os: windows-latest
+            os: windows-2019
             artifact: win32-ia32-unknown
             arch: x86
     runs-on: ${{ matrix.target.os }}
@@ -135,15 +135,15 @@ jobs:
             artifact: darwin-x64-unknown
             arch: x64
           - name: windows 64 bits
-            os: windows-latest
+            os: windows-2019
             artifact: win32-x64-unknown
             arch: x64
           - name: windows 32 bits
-            os: windows-2022
+            os: windows-2019
             artifact: win32-ia32-unknown
             arch: x86
           - name: windows 32 bits on 64 bits
-            os: windows-latest
+            os: windows-2019
             artifact: win32-ia32-unknown
             arch: x64
     runs-on: ${{ matrix.target.os }}
