@@ -17,7 +17,7 @@
     "licenses": "node scripts/check_licenses.js"
   },
   "repository": {
-    "type": "git", 
+    "type": "git",
     "url": "git+https://github.com/DataDog/dd-native-appsec-js.git"
   },
   "keywords": [
