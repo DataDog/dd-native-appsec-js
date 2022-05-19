@@ -155,7 +155,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
         ddwaf_object* e = &object->array[i];
-        Napi::String k = Napi::String::New(env, e.parameterName, e.parameterNameLength);
+        Napi::String k = Napi::String::New(env, e->parameterName, e->parameterNameLength);
         if (env.IsExceptionPending()) {
           mlog("Exception pending");
           continue;
