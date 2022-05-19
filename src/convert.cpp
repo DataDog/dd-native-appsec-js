@@ -112,3 +112,70 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value v
   // we use empty maps for now instead of null. See issue !43
   return ddwaf_object_map(object);
 }
+
+Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
+  if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
+    mlog("Max depth reached");
+    return env.Null();
+  }
+
+  DDWAF_OBJ_TYPE type = object->type;
+
+  Napi::Value result;
+
+  switch (type) {
+    case DDWAF_OBJ_SIGNED:
+      result = Napi::Number::New(env, object->intValue);
+      break;
+    case DDWAF_OBJ_UNSIGNED:
+      result = Napi::Number::New(env, object->uintValue);
+      break;
+    case DDWAF_OBJ_STRING:
+      result = Napi::String::New(env, object->stringValue, object->nbEntries);
+      break;
+    case DDWAF_OBJ_ARRAY: {
+      Napi::Array arr = Napi::Array::New(env, object->nbEntries);
+
+      if (env.IsExceptionPending()) {
+        mlog("Exception pending");
+        return env.Null();
+      }
+
+      for (uint32_t i = 0; i < object->nbEntries; ++i) {
+        ddwaf_object* e = &object->array[i];
+        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
+        arr[i] = v;
+      }
+
+      result = arr;
+      break;
+    }
+    case DDWAF_OBJ_MAP: {
+      Napi::Object obj = Napi::Object::New(env);
+
+      for (uint32_t i = 0; i < object->nbEntries; ++i) {
+        ddwaf_object* e = &object->array[i];
+        Napi::String k = Napi::String::New(env, e->parameterName, e->parameterNameLength);
+        if (env.IsExceptionPending()) {
+          mlog("Exception pending");
+          continue;
+        }
+        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
+        obj.Set(k, v);
+      }
+
+      result = obj;
+      break;
+    }
+    default:
+      result = env.Null();
+      break;
+  }
+
+  if (env.IsExceptionPending()) {
+    mlog("Exception pending");
+    return env.Null();
+  }
+
+  return result;
+}
