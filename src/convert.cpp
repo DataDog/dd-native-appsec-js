@@ -142,8 +142,8 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
       }
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object e = object->array[i];
-        Napi::Value v = from_ddwaf_object(&e, env, depth + 1);
+        ddwaf_object* e = &object->array[i];
+        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
         arr[i] = v;
       }
 
@@ -154,13 +154,13 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
       Napi::Object obj = Napi::Object::New(env);
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object e = object->array[i];
+        ddwaf_object* e = &object->array[i];
         Napi::String k = Napi::String::New(env, e.parameterName, e.parameterNameLength);
         if (env.IsExceptionPending()) {
           mlog("Exception pending");
           continue;
         }
-        Napi::Value v = from_ddwaf_object(&e, env, depth + 1);
+        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
         obj.Set(k, v);
       }
 
@@ -169,6 +169,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
     }
     default:
       result = env.Null();
+      break;
   }
 
   if (env.IsExceptionPending()) {
