@@ -14,7 +14,7 @@ const TIMEOUT = 9999e3
 describe('DDWAF lifecycle', () => {
   it('should return the version', () => {
     const v = DDWAF.version()
-    assert.strictEqual([v.major, v.minor, v.patch].join('.'), pkg.libddwaf_version)
+    assert.strictEqual(v, pkg.libddwaf_version)
   })
 
   it('should have rulesInfo', () => {
@@ -43,7 +43,7 @@ describe('DDWAF lifecycle', () => {
       y: new Array(4097).fill('y').join(''),
       z: new Array(4097).fill('z')
     }, TIMEOUT)
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.timeout, false)
     assert(result.data)
     assert(!context.disposed)
@@ -62,7 +62,7 @@ describe('DDWAF lifecycle', () => {
     const result = context.run({
       'server.response.status': '404'
     }, TIMEOUT)
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -78,6 +78,17 @@ describe('DDWAF lifecycle', () => {
     assert.throws(() => context.run('', TIMEOUT))
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, -1))
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
+  })
+
+  it('should test blocking', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext();
+    const res1 = context.run({ 'http.client_ip': '127.0.0.1' }, TIMEOUT)
+    const res2 = context.run({ 'http.client_ip': '166.2.4.2' }, TIMEOUT)
+    assert.strictEqual(res1.status, undefined)
+    assert.strictEqual(res1.actions, undefined)
+    assert.strictEqual(res2.status, 'match')
+    assert.deepStrictEqual(res2.actions, ['block'])
   })
 
   it('should parse keys correctly and match on value', () => {
@@ -115,7 +126,7 @@ describe('DDWAF lifecycle', () => {
         }, TIMEOUT)
       })
 
-      assert.strictEqual(result.action, 'monitor')
+      assert.strictEqual(result.status, 'match')
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].key_path[0], expected)
     }
@@ -156,7 +167,7 @@ describe('DDWAF lifecycle', () => {
         }, TIMEOUT)
       })
 
-      assert.strictEqual(result.action, 'monitor')
+      assert.strictEqual(result.status, 'match')
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'kattack')
     }
@@ -211,7 +222,7 @@ describe('limit tests', () => {
         a0: '404'
       }
     }, TIMEOUT)
-    assert.strictEqual(result0.action, 'monitor')
+    assert.strictEqual(result0.status, 'match')
 
     const item = {}
     for (let i = 0; i < 1000; ++i) {
@@ -231,7 +242,7 @@ describe('limit tests', () => {
     const result = context.run({
       'server.request.headers.no_cookies': createNestedObject(5, { header: 'hello world' })
     }, TIMEOUT)
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -252,14 +263,14 @@ describe('limit tests', () => {
     let result = context.run({
       'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
-    assert(result.action)
+    assert(result.status)
     assert(result.data)
 
     context = waf.createContext()
     result = context.run({
       'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
-    assert(result.action)
+    assert(result.status)
     assert(result.data)
   })
 })

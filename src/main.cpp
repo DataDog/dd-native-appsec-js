@@ -29,14 +29,8 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
 Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
   mlog("Get libddwaf version");
   Napi::Env       env       = info.Env();
-  Napi::Object    result    = Napi::Object::New(env);
-  ddwaf_version version;
-  ddwaf_get_version(&version);
 
-  result.Set("major", Napi::Number::New(env, version.major));
-  result.Set("minor", Napi::Number::New(env, version.minor));
-  result.Set("patch", Napi::Number::New(env, version.patch));
-  return result;
+  return Napi::String::New(env, ddwaf_get_version());
 }
 
 Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
@@ -55,7 +49,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
     return;
   }
 
-  ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
+  ddwaf_config waf_config{{0, 0, 0}, {NULL, NULL}, ddwaf_object_free};
 
   // do not touch these strings after the c_str() assigment
   std::string key_regex_str;
@@ -166,7 +160,7 @@ DDWAFContext::DDWAFContext(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DD
 }
 
 bool DDWAFContext::init(ddwaf_handle handle) {
-  ddwaf_context context = ddwaf_context_init(handle, ddwaf_object_free);
+  ddwaf_context context = ddwaf_context_init(handle);
   if (context == nullptr) {
     return false;
   }
@@ -241,14 +235,17 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
   }
-  if (code != DDWAF_GOOD) {
+  if (code != DDWAF_OK) {
     res.Set("data", Napi::String::New(env, result.data));
   }
-  if (code == DDWAF_MONITOR) {
-    res.Set("action", Napi::String::New(env, "monitor"));
-  }
-  if (code == DDWAF_BLOCK) {
-    res.Set("action", Napi::String::New(env, "block"));
+  if (code == DDWAF_MATCH) {
+    res.Set("status", Napi::String::New(env, "match"));
+    Napi::Array actions = Napi::Array::New(env);
+    for (uint32_t i = 0; i < result.actions.size; ++i) {
+      Napi::String str = Napi::String::New(env, result.actions.array[i]);
+      actions[i] = str;
+    }
+    res.Set("actions", actions);
   }
   ddwaf_result_free(&result);
   return res;

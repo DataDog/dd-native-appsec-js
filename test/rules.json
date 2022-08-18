@@ -5,6 +5,30 @@
   },
   "rules": [
     {
+      "id": "block_ips",
+      "name": "Block IP addresses",
+      "tags": {
+        "type": "ip_addresses",
+        "category": "blocking"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              { "address": "http.client_ip" }
+            ],
+            "list": ["166.2.4.2"
+            ]
+          },
+          "operator": "ip_match"
+        }
+      ],
+      "transformers": [],
+      "on_match": [
+        "block"
+      ]
+    },
+    {
       "id": "id",
       "name": "some name",
       "tags": {
