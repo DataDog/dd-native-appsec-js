@@ -240,7 +240,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   if (code == DDWAF_MATCH) {
     res.Set("status", Napi::String::New(env, "match"));
-    Napi::Array actions = Napi::Array::New(env);
+    Napi::Array actions = Napi::Array::New(env, result.actions.size);
     for (uint32_t i = 0; i < result.actions.size; ++i) {
       Napi::String str = Napi::String::New(env, result.actions.array[i]);
       actions[i] = str;
