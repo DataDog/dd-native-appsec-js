@@ -82,7 +82,7 @@ describe('DDWAF lifecycle', () => {
 
   it('should test blocking', () => {
     const waf = new DDWAF(rules)
-    const context = waf.createContext();
+    const context = waf.createContext()
     const res1 = context.run({ 'http.client_ip': '127.0.0.1' }, TIMEOUT)
     const res2 = context.run({ 'http.client_ip': '166.2.4.2' }, TIMEOUT)
     assert.strictEqual(res1.status, undefined)
