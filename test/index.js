@@ -21,7 +21,7 @@ describe('DDWAF lifecycle', () => {
     const waf = new DDWAF(rules)
     assert(waf.rulesInfo)
     assert.strictEqual(waf.rulesInfo.version, '1.3.1')
-    assert.strictEqual(waf.rulesInfo.loaded, 6)
+    assert.strictEqual(waf.rulesInfo.loaded, 7)
     assert.strictEqual(waf.rulesInfo.failed, 3)
     assert.deepStrictEqual(waf.rulesInfo.errors, {
       'missing key \'regex\'': [
