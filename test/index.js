@@ -85,10 +85,13 @@ describe('DDWAF lifecycle', () => {
     const context = waf.createContext()
     const res1 = context.run({ 'http.client_ip': '127.0.0.1' }, TIMEOUT)
     const res2 = context.run({ 'http.client_ip': '166.2.4.2' }, TIMEOUT)
+    const res3 = context.run({ 'http.client_ip': '166.2.4.3' }, TIMEOUT)
     assert.strictEqual(res1.status, undefined)
     assert.strictEqual(res1.actions, undefined)
     assert.strictEqual(res2.status, 'match')
     assert.deepStrictEqual(res2.actions, ['block'])
+    assert.strictEqual(res3.status, 'match')
+    assert.deepStrictEqual(res3.actions, ['block'])
   })
 
   it('should parse keys correctly and match on value', () => {

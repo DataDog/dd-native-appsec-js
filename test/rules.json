@@ -3,7 +3,39 @@
   "metadata": {
     "rules_version": "1.3.1"
   },
+  "rules_data": [
+    {
+      "id": "blocked_ips",
+      "type": "ip_with_expiration",
+      "data": [
+        { "value": "166.2.4.3" }
+      ]
+    }
+  ],
   "rules": [
+    {
+      "id": "block_ips_with_data",
+      "name": "Block IP addresses",
+      "tags": {
+        "type": "ip_addresses",
+        "category": "blocking"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              { "address": "http.client_ip" }
+            ],
+            "data": "blocked_ips"
+          },
+          "operator": "ip_match"
+        }
+      ],
+      "transformers": [],
+      "on_match": [
+        "block"
+      ]
+    },
     {
       "id": "block_ips",
       "name": "Block IP addresses",
