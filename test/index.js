@@ -22,16 +22,7 @@ describe('DDWAF lifecycle', () => {
     assert(waf.rulesInfo)
     assert.strictEqual(waf.rulesInfo.version, '1.3.1')
     assert.strictEqual(waf.rulesInfo.loaded, 6)
-    assert.strictEqual(waf.rulesInfo.failed, 3)
-    assert.deepStrictEqual(waf.rulesInfo.errors, {
-      'missing key \'regex\'': [
-        'invalid_1'
-      ],
-      'invalid regular expression: *': [
-        'invalid_2',
-        'invalid_3'
-      ]
-    })
+    assert.strictEqual(waf.rulesInfo.failed, 0)
   })
 
   it('should collect an attack and cleanup everything', () => {
@@ -221,6 +212,7 @@ describe('limit tests', () => {
     const result = context.run({
       'server.response.status': item
     }, TIMEOUT)
+    assert(!result.timeout)
     assert.strictEqual(result.action, undefined)
     assert(!result.data)
   })
@@ -241,6 +233,7 @@ describe('limit tests', () => {
     const result = context.run({
       'server.request.headers.no_cookies': createNestedObject(100, { header: 'hello world' })
     }, TIMEOUT)
+    assert(!result.timeout)
     assert(!result.action)
     assert(!result.data)
   })

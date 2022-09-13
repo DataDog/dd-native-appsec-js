@@ -61,7 +61,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   std::string key_regex_str;
   std::string value_regex_str;
 
-  if (arg_len >= 2) {
+  if (arg_len >= 2) { // wtf
     // TODO(@simon-id) make a macro here someday
     if (!info[1].IsObject()) {
       Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
@@ -120,6 +120,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   info.This().As<Napi::Object>().DefineProperty(pd);
 
   ddwaf_ruleset_info_free(&rules_info);
+
+  // TODO: implement ddwaf_required_addresses(handle, size) ?
 
   if (handle == nullptr) {
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
