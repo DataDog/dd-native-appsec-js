@@ -107,6 +107,7 @@ build
 prebuilds
 yarn.lock
 
+libddwaf
 libddwaf-*
 vendor/*
 install.json

@@ -6,34 +6,24 @@
 // const assert = require('assert')
 const childProcess = require('child_process')
 const fs = require('fs')
-
+const path = require('path')
 const tar = require('tar')
 
 const pkg = require('../package.json')
-const lib = require('./lib')
-const path = require('path')
 
 // only relevant if libddwaf repo is private
 // assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
 
-async function download () {
-  const dir = lib.getDirName()
-  childProcess.spawnSync('gh', ['release', 'download', '--repo', 'DataDog/libddwaf',
-    '-p', `${dir}.tar.gz`, pkg.libddwaf_version])
-  await tar.x({
-    file: `${lib.getDirName()}.tar.gz`
-  })
-  const file = fs.readdirSync(process.cwd()).find((x) => x.startsWith(dir))
-  fs.renameSync(file, dir)
-  const libName = fs.readdirSync(path.join(process.cwd(), dir))
-  if (libName.includes('lib64')) {
-    fs.renameSync(path.join(process.cwd(), dir, 'lib64'), path.join(process.cwd(), dir, 'lib'))
-  }
-}
+fs.mkdirSync('libddwaf', { recursive: true })
 
-download()
-  .catch((e) => {
-    // eslint-disable-next-line
-    console.error(e)
-    process.exit(1)
-  })
+childProcess.spawnSync('gh', ['release', 'download', '--repo', 'DataDog/libddwaf',
+  '-D', 'libddwaf', '-p', 'libddwaf-*', pkg.libddwaf_version])
+
+const archives = fs.readdirSync('libddwaf')
+  .filter(name => name.endsWith('.tar.gz'))
+  .map(name => path.join('libddwaf', name))
+
+for (const file of archives) {
+  tar.x({ file, cwd: 'libddwaf', sync: true })
+  fs.rmSync(file)
+}
