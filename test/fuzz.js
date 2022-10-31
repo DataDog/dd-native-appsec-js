@@ -5,7 +5,7 @@ const assert = require('assert')
 const { DDWAF } = require('..')
 const rules = require('./rules.json')
 
-const blns = require('./blns/blns.json')
+const blns = require('./blns.json')
 
 const waf = new DDWAF(rules)
 
