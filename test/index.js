@@ -169,7 +169,7 @@ describe('DDWAF lifecycle', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      atk: {
+      attack: {
         password: {
           a: 'sensitive'
         }
