@@ -112,10 +112,10 @@
       ]
     },
     {
-      "id": "*lord",
-      "name": "match_all",
+      "id": "*lord_values",
+      "name": "match any value",
       "tags": {
-        "type": "security_scanner"
+        "type": "value_attack"
       },
       "conditions": [
         {
@@ -123,15 +123,35 @@
           "parameters": {
             "inputs": [
               {
-                "address": "attack"
+                "address": "value_attack"
               }
             ],
-            "regex": ".*",
-            "options": {
-              "case_sensitive": false
-            }
+            "regex": ".*"
           }
         }
+      ]
+    },
+    {
+      "id": "*lord_keys",
+      "name": "match any key",
+      "tags": {
+        "type": "key_attack"
+      },
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {
+                "address": "key_attack"
+              }
+            ],
+            "regex": ".*"
+          }
+        }
+      ],
+      "transformers": [
+        "keys_only"
       ]
     },
     {
@@ -166,7 +186,7 @@
       ]
     },
     {
-      "id": "long-rule",
+      "id": "long_rule",
       "name": "long rule that shouldn't be truncated",
       "tags": {
         "type": "lfi"
