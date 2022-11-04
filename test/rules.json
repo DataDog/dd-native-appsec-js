@@ -5,12 +5,10 @@
   },
   "rules": [
     {
-      "id": "id",
-      "name": "some name",
+      "id": "value_attack",
+      "name": "match on a value",
       "tags": {
-        "type": "security_scanner",
-        "crs_id": "0",
-        "category": "attack_attempt"
+        "type": "value_attack"
       },
       "conditions": [
         {
@@ -21,7 +19,7 @@
               }
             ],
             "list": [
-              "hello world"
+              "value_attack"
             ]
           },
           "operator": "phrase_match"
@@ -33,11 +31,9 @@
     },
     {
       "id": "key_attack",
-      "name": "match on a key",
+      "name": "match on key",
       "tags": {
-        "type": "security_scanner",
-        "crs_id": "0",
-        "category": "attack_attempt"
+        "type": "key_attack"
       },
       "conditions": [
         {
@@ -48,7 +44,7 @@
               }
             ],
             "list": [
-              "kattack"
+              "key_attack"
             ]
           },
           "operator": "phrase_match"
@@ -85,37 +81,10 @@
       ]
     },
     {
-      "id": "id2",
-      "name": "some name",
-      "tags": {
-        "type": "security_scanner",
-        "crs_id": "0",
-        "category": "attack_attempt"
-      },
-      "conditions": [
-        {
-          "parameters": {
-            "inputs": [
-              {
-                "address": "server.request.headers.query"
-              }
-            ],
-            "list": [
-              "this is an attack"
-            ]
-          },
-          "operator": "phrase_match"
-        }
-      ],
-      "transformers": [
-        "lowercase"
-      ]
-    },
-    {
-      "id": "*lord_values",
+      "id": "value_matchall",
       "name": "match any value",
       "tags": {
-        "type": "value_attack"
+        "type": "value_matchall"
       },
       "conditions": [
         {
@@ -132,10 +101,10 @@
       ]
     },
     {
-      "id": "*lord_keys",
+      "id": "key_matchall",
       "name": "match any key",
       "tags": {
-        "type": "key_attack"
+        "type": "key_matchall"
       },
       "conditions": [
         {
