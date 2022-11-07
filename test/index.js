@@ -68,25 +68,28 @@ describe('DDWAF', () => {
   it('should support case_sensitive', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
+
     const result = context.run({
       'server.response.status': '404'
     }, TIMEOUT)
+
     assert.strictEqual(result.action, 'monitor')
     assert(result.data)
   })
 
   it('should refuse invalid rule', () => {
     assert.throws(() => new DDWAF({}))
+    assert.throws(() => new DDWAF(''))
   })
 
   it('should refuse to run with bad signatures', () => {
-    assert.throws(() => new DDWAF(''))
     const waf = new DDWAF(rules)
     const context = waf.createContext()
+
     assert.throws(() => context.run())
     assert.throws(() => context.run('', TIMEOUT))
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, -1))
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'HELLO world' }, 0))
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, -1))
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, 0))
   })
 
   it('should parse keys correctly and match on value', () => {
@@ -178,7 +181,7 @@ describe('DDWAF', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      attack: {
+      value_attack: {
         password: {
           a: 'sensitive'
         }
@@ -193,13 +196,13 @@ describe('DDWAF', () => {
 
   it('should obfuscate values', () => {
     const waf = new DDWAF(rules, {
-      obfuscatorValueRegex: 'hello world'
+      obfuscatorValueRegex: 'value_attack'
     })
     const context = waf.createContext()
 
     const result = context.run({
       'server.request.headers.no_cookies': {
-        header: 'hello world'
+        header: 'value_attack'
       }
     }, TIMEOUT)
 
@@ -213,9 +216,9 @@ describe('DDWAF', () => {
 describe('limit tests', () => {
   it('should ignore elements too far in the objects', () => {
     const waf = new DDWAF(rules)
-    const context = waf.createContext()
 
-    const result1 = context.run({
+    const context1 = waf.createContext()
+    const result1 = context1.run({
       'server.response.status': {
         a0: '404'
       }
@@ -225,10 +228,11 @@ describe('limit tests', () => {
 
     const item = {}
     for (let i = 0; i < 1000; ++i) {
-      item[`a${i}`] = `${i}`
+      item[`a${i}`] = `${1}`
     }
 
-    const result2 = context.run({
+    const context2 = waf.createContext()
+    const result2 = context2.run({
       'server.response.status': item
     }, TIMEOUT)
     assert(!result2.action)
@@ -262,19 +266,21 @@ describe('limit tests', () => {
   it('should not limit the rules object', () => {
     const waf = new DDWAF(rules)
 
-    let context = waf.createContext()
-    let result = context.run({
+    // test first item in big rule
+    const context1 = waf.createContext()
+    const result1 = context1.run({
       'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
-    assert(result.action)
-    assert(result.data)
+    assert(result1.action)
+    assert(result1.data)
 
-    context = waf.createContext()
-    result = context.run({
+    // test last item in big rule
+    const context2 = waf.createContext()
+    const result2 = context2.run({
       'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
-    assert(result.action)
-    assert(result.data)
+    assert(result2.action)
+    assert(result2.data)
   })
 })
 
