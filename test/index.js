@@ -56,13 +56,17 @@ describe('DDWAF', () => {
     context.dispose()
     assert(context.disposed)
 
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_ATTack' }, TIMEOUT))
+    assert.throws(() => {
+      context.run({ 'server.request.headers.no_cookies': 'value_ATTack' }, TIMEOUT)
+    }, new Error('Calling run on a disposed context'))
     assert(!waf.disposed)
 
     waf.dispose()
     assert(waf.disposed)
 
-    assert.throws(() => waf.createContext())
+    assert.throws(() => {
+      waf.createContext()
+    }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
 
   it('should support case_sensitive', () => {
@@ -78,18 +82,19 @@ describe('DDWAF', () => {
   })
 
   it('should refuse invalid rule', () => {
-    assert.throws(() => new DDWAF({}))
-    assert.throws(() => new DDWAF(''))
+    assert.throws(() => new DDWAF({}), new Error('Invalid rules'))
+    assert.throws(() => new DDWAF(''), new TypeError('First argument must be an object'))
   })
 
   it('should refuse to run with bad signatures', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
 
-    assert.throws(() => context.run())
-    assert.throws(() => context.run('', TIMEOUT))
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, -1))
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, 0))
+    assert.throws(() => context.run(), new Error('Wrong number of arguments, expected 2'))
+    assert.throws(() => context.run('', TIMEOUT), new TypeError('First argument must be an object'))
+    const err = new TypeError('Second argument must be greater than 0')
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, -1), err)
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, 0), err)
   })
 
   it('should parse keys correctly', () => {
