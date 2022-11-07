@@ -92,7 +92,7 @@ describe('DDWAF', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, 0))
   })
 
-  it('should parse keys correctly and match on value', () => {
+  it('should parse keys correctly', () => {
     const possibleKeys = new Map([
       [undefined, 'undefined'],
       [null, 'null'],
@@ -105,7 +105,6 @@ describe('DDWAF', () => {
       [NaN, 'NaN'],
       [BigInt(42), '42'],
       ['str', 'str'],
-      // [Symbol(), ''], // we don't have a way to serialize symbols for now
       [{ a: 1, b: 2 }, '[object Object]'],
       [['a', 2, 'c'], 'a,2,c'],
       [/regex/, '/regex/'],
@@ -114,22 +113,18 @@ describe('DDWAF', () => {
 
     const waf = new DDWAF(rules)
 
-    for (const [value, expected] of possibleKeys) {
+    for (const [key, expected] of possibleKeys) {
       const context = waf.createContext()
 
-      let result
-
-      assert.doesNotThrow(() => {
-        result = context.run({
-          'server.request.headers.no_cookies': {
-            [value]: 'hello world'
-          }
-        }, TIMEOUT)
-      })
+      const result = context.run({
+        key_attack: {
+          [key]: 'value'
+        }
+      }, TIMEOUT)
 
       assert.strictEqual(result.action, 'monitor')
       assert(result.data)
-      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].key_path[0], expected)
+      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
   })
 
