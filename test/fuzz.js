@@ -21,11 +21,12 @@ const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffe
   'base64',
   'base64url',
   'hex'
-].filter(() => {
+].filter((encoding) => {
   try {
     Buffer.from('hello', encoding)
     return true
   } catch (_) {
+    return false
   }
 })
 
