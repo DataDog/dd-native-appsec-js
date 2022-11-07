@@ -133,44 +133,41 @@ describe('DDWAF', () => {
     }
   })
 
-  it('should parse values correctly and match on key', () => {
-    const possibleValues = new Set([
-      undefined,
-      null,
-      false,
-      true,
-      42,
-      -42,
-      42.42,
-      Infinity,
-      NaN,
-      BigInt(42),
-      'str',
-      Symbol(''),
-      { a: 1, b: 2 },
-      ['a', 2, 'c'],
-      /regex/,
-      function fn () {}
+  it('should parse values correctly', () => {
+    const possibleValues = new Map([
+      [undefined, undefined],
+      [null, undefined],
+      [false, '0'],
+      [true, '1'],
+      [42, '42'],
+      [-42, '-42'],
+      [42.42, '42.42'],
+      [Infinity, '0'],
+      [NaN, '0'],
+      [BigInt(42), undefined],
+      ['str', 'str'],
+      [{ a: 1, b: 2 }, '1'],
+      [['a', 2, 'c'], 'a'],
+      [/regex/, undefined],
+      [function fn () {}, undefined]
     ])
 
     const waf = new DDWAF(rules)
 
-    for (const value of possibleValues) {
+    for (const [value, expected] of possibleValues) {
       const context = waf.createContext()
 
-      let result
+      const result = context.run({
+        value_attack: {
+          key: value
+        }
+      }, TIMEOUT)
 
-      assert.doesNotThrow(() => {
-        result = context.run({
-          'server.request.headers.no_cookies': {
-            key_attack: value
-          }
-        }, TIMEOUT)
-      })
-
-      assert.strictEqual(result.action, 'monitor')
-      assert(result.data)
-      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, 'key_attack')
+      if (expected !== undefined) {
+        assert.strictEqual(result.action, 'monitor')
+        assert(result.data)
+        assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      }
     }
   })
 
