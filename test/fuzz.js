@@ -43,7 +43,7 @@ describe('fuzzing', () => {
       const buff = Buffer.from(blns[i], 'utf8')
       test(buff)
     }
-  })
+  }).timeout(5000)
 
   it('should handle random strings', () => {
     for (let i = 0; i < 5000; ++i) {
@@ -54,5 +54,5 @@ describe('fuzzing', () => {
         test(buff, encoding)
       }
     }
-  })
+  }).timeout(5000)
 })
