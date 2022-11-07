@@ -14,6 +14,8 @@ $ npm install --ignore-scripts
 $ node scripts/setup.js
 ```
 
+The setup script will try to download libddwaf binaries with the GitHub CLI. If the GitHub CLI is not available you can always download the binaries manually from the libddwaf releases page, move it into a `libddwaf` folder and run the setup script again.
+
 If libddwaf is in a private repository, you will need to set up an environment variable named GH_TOKEN with a Github
 token that has read access to libddwaf.
 
@@ -28,7 +30,7 @@ The `scripts/setup.js` accepts the following environment variables:
 
 Build the project with
 ```
-$ npm run dev
+$ npm run rebuild
 ```
 
 and then it will be possible to run the tests with
