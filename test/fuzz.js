@@ -21,7 +21,13 @@ const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffe
   'base64',
   'base64url',
   'hex'
-]
+].filter(() => {
+  try {
+    Buffer.from('hello', encoding)
+    return true
+  } catch (_) {
+  }
+})
 
 function test (buff, encoding = 'utf8') {
   const str = buff.toString(encoding)
