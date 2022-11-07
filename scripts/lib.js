@@ -10,7 +10,7 @@ const pkg = require('../package.json')
 const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 
-const getLibName = module.exports.getLibName = function () {
+function getLibName () {
   switch (platform) {
     case 'darwin':
       return 'libddwaf.a'
@@ -21,8 +21,7 @@ const getLibName = module.exports.getLibName = function () {
   }
 }
 
-const getDirName = module.exports.getDirName = function () {
-  // TODO: override arch to download binaries out of docker and copy them then
+function getDirName () {
   switch (platform) {
     case 'darwin':
       if (arch === 'arm64') {
@@ -49,6 +48,7 @@ const getDirName = module.exports.getDirName = function () {
       }
       break
   }
+
   throw new Error(`Platform: ${platform} - ${arch} is unsupported`)
 }
 
@@ -56,5 +56,8 @@ const dirname = getDirName()
 const libName = getLibName()
 const basename = path.join(__dirname, '..', 'libddwaf', dirname)
 
-module.exports.include = path.join(basename, 'include').split('\\').join('\\\\')
-module.exports.lib = path.join(basename, 'lib', libName).split('\\').join('\\\\')
+module.exports = {
+  include: path.join(basename, 'include').split('\\').join('\\\\'),
+  lib: path.join(basename, 'lib', libName).split('\\').join('\\\\'),
+  getLibName
+}

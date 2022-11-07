@@ -47,12 +47,9 @@
     "index.js",
     "index.d.ts",
     "package.json",
+    "package-lock.json",
     "README.md",
-    "vendor/*",
-    "lib/*",
-    "bin/*",
     "LICENSE",
-    "LICENSE-3rdparty.csv",
-    "scripts/lib.js"
+    "LICENSE-3rdparty.csv"
   ]
 }
