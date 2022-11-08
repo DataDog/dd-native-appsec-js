@@ -3,6 +3,5 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 'use strict'
-const { DDWAF } = require('./lib/loader').load()
 
-module.exports.DDWAF = DDWAF
+module.exports = require('node-gyp-build')(__dirname)

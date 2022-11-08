@@ -8,79 +8,32 @@ on:
   pull_request:
     branches: [ main ]
 
-
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
-  LIBDDWAF_VERSION: 1.4.0
 
 jobs:
-  build-native:
-    strategy:
-      matrix:
-        target:
-          - name: macos
-            os: macos-latest
-            artifact: darwin-x64-unknown
-            arch: x64
-          - name: windows 64 bits
-            os: windows-2019
-            artifact: win32-x64-unknown
-            arch: x64
-          - name: windows 32 bits
-            os: windows-2019
-            artifact: win32-ia32-unknown
-            arch: x86
-    runs-on: ${{ matrix.target.os }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          architecture: ${{ matrix.target.arch }}
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '>3.6.0'
-          architecture: ${{ matrix.target.arch }}
-      - run: npm ci --ignore-scripts
-      - run: node scripts/setup.js
-      - run: npm run build-test-bundle
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.target.artifact }}
-          path: ${{ matrix.target.artifact }}.tgz
-
-  build-docker:
+  download-libddwaf:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - dockerfile: Dockerfile
-            libc: glibc
-            artifact: linux-x64-glibc
-          - dockerfile: alpine.Dockerfile
-            libc: musl
-            artifact: linux-x64-musl
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install --ignore-scripts
+      - run: node scripts/setup
+      - uses: actions/upload-artifact@v3
         with:
-          submodules: true
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-      - run: npm ci --ignore-scripts
-      - run: node scripts/setup.js
-        env:
-          PLATFORM: 'linux'
-          LIBC: ${{ matrix.target.libc }}
-      - run: docker build -t build -f ./docker/${{ matrix.target.dockerfile }} .
-      - run: docker run --name builder build
-      - run: docker cp builder:/build/${{ matrix.target.artifact }}.tgz .
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.target.artifact }}
-          path: ${{ matrix.target.artifact }}.tgz
+          name: libddwaf
+          path: libddwaf/**/*
+
+  build:
+    needs: download-libddwaf
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
+    with:
+      cache: true
+      napi: true
+      package-manager: 'npm'
+      postbuild: 'node scripts/postbuild'
+      skip: 'linux-arm linux-ia32'
+      target-name: 'appsec'
 
   static-checks:
     strategy:
@@ -102,113 +55,3 @@ jobs:
       - uses: actions/setup-python@v1
       - run: pip install cpplint
       - run: cpplint --linelength=120 --recursive ./src
-
-  bundle:
-    needs: ['build-native', 'build-docker']
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions/download-artifact@v2
-        with:
-          path: artifacts
-      - run: mkdir -p vendor
-      - run: mv artifacts/*/*.tgz vendor/
-      - run: npm pack .
-      - uses: actions/upload-artifact@v2
-        with:
-          name: release
-          path: datadog-native-appsec-*.tgz
-      - uses: actions/upload-artifact@v2
-        with:
-          name: vendor
-          path: vendor
-
-  tests-release-native:
-    needs: ['bundle']
-    strategy:
-      matrix:
-        target:
-          - name: macos
-            os: macos-latest
-            artifact: darwin-x64-unknown
-            arch: x64
-          - name: windows 64 bits
-            os: windows-2019
-            artifact: win32-x64-unknown
-            arch: x64
-          - name: windows 32 bits
-            os: windows-2019
-            artifact: win32-ia32-unknown
-            arch: x86
-          - name: windows 32 bits on 64 bits
-            os: windows-2019
-            artifact: win32-ia32-unknown
-            arch: x64
-    runs-on: ${{ matrix.target.os }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          architecture: ${{ matrix.target.arch }}
-      - uses: actions/download-artifact@v2
-        with:
-          name: release
-      - run: node scripts/rename.js
-      - run: npm i -S datadog-native-appsec-0.0.0.tgz
-      - run: npm t
-
-  tests-release-docker:
-    needs: ['bundle']
-    strategy:
-      matrix:
-        target:
-          - node:14@sha256:4164d987bfceb62b17db4938d535dd31fc50d6ee0b4e00ac7a774f82af408d48
-          - node:14-alpine@sha256:8c94a0291133e16b92be5c667e0bc35930940dfa7be544fb142e25f8e4510a45
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions/download-artifact@v2
-        with:
-          name: release
-      - run: docker build -t test -f ./docker/test.Dockerfile --build-arg BASE_IMAGE=${{ matrix.target }} .
-      - run: docker run test
-
-  tests-release-build-host-to-alpine:
-    needs: ['bundle']
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          architecture: ${{ matrix.target.arch }}
-      - uses: actions/download-artifact@v2
-        with:
-          name: release
-      - run: node scripts/rename.js
-      - run: npm i -S datadog-native-appsec-0.0.0.tgz
-      - run: npm i
-      - run: rm .dockerignore
-      - run: ./node_modules/.bin/appsec-reinstall -p linux --libc musl
-      - run: docker build -f docker/alpine-install-test.Dockerfile -t test .
-      - run: docker run test
-
-  all-good:
-    needs:
-      - tests-release-native
-      - tests-release-docker
-      - tests-release-build-host-to-alpine
-      - static-checks
-      - cpp-lint
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo '🚀🚀🚀🚀🚀'
