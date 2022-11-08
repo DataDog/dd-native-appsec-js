@@ -1,17 +1,18 @@
-const crypto = require('crypto')
 const { it, describe } = require('mocha')
+
 const assert = require('assert')
+const crypto = require('crypto')
 
 const { DDWAF } = require('..')
 const rules = require('./rules.json')
 
 const blns = require('./blns.json')
 
-const waf = new DDWAF(rules)
-
 const TIMEOUT = 9999e3
 
-const ENCODINGS_0 = [ // from https://github.com/nodejs/node/blob/master/lib/buffer.js
+const waf = new DDWAF(rules)
+
+const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffer.js
   'utf8',
   'ucs2',
   'utf16le',
@@ -20,52 +21,45 @@ const ENCODINGS_0 = [ // from https://github.com/nodejs/node/blob/master/lib/buf
   'base64',
   'base64url',
   'hex'
-]
-const ENCODINGS = []
-for (const encoding of ENCODINGS_0) {
+].filter((encoding) => {
   try {
     Buffer.from('hello', encoding)
-    ENCODINGS.push(encoding)
+    return true
   } catch (_) {
-  }
-}
-
-const test = function (entry, encoding = 'utf8') {
-  const context = waf.createContext()
-  const r1 = context.run({
-    atk: entry
-  }, TIMEOUT)
-  assert(r1)
-  assert(r1.data || r1.timeout)
-  // FIXME: there is a reporting issue with alternative encodings
-  // const actual = Buffer.from(JSON.parse(r1.data)[0].rule_matches[0].parameters[0].value, encoding);
-  // const expected = Buffer.from(entry, encoding);
-  // assert.strictEqual(Buffer.compare(actual, expected), 0)
-  const r2 = context.run({
-    [entry]: 'value'
-  }, TIMEOUT)
-  assert(r2)
-  context.dispose()
-}
-
-describe('BLNS', () => {
-  for (let i = 0; i < blns.length; ++i) {
-    const str = blns[i]
-    it(`should run blns entry #${i}`, () => {
-      test(str)
-    })
+    return false
   }
 })
 
-describe('random strings', () => {
-  for (let i = 0; i < 5000; ++i) {
-    const buff = Buffer.alloc(10)
-    crypto.randomFillSync(buff)
-    for (const encoding of ENCODINGS) {
-      const str = buff.toString(encoding)
-      it(`should handle the string 0x${buff.toString('hex')} in ${encoding}`, () => {
-        test(str)
-      })
+function test (buff, encoding = 'utf8') {
+  const str = buff.toString(encoding)
+
+  const context = waf.createContext()
+
+  const r1 = context.run({ value_attack: str }, TIMEOUT)
+  assert(r1 && r1.data, `Expected to handle string value 0x${buff.toString('hex')} in ${encoding}`)
+
+  const r2 = context.run({ key_attack: { [str]: '' } }, TIMEOUT)
+  assert(r2 && r2.data, `Expected to handle string key 0x${buff.toString('hex')} in ${encoding}`)
+
+  context.dispose()
+}
+
+describe('fuzzing', () => {
+  it('should hanlde BLNS', () => {
+    for (let i = 0; i < blns.length; ++i) {
+      const buff = Buffer.from(blns[i], 'utf8')
+      test(buff)
     }
-  }
+  }).timeout(5000)
+
+  it('should handle random strings', () => {
+    for (let i = 0; i < 5000; ++i) {
+      const buff = Buffer.alloc(10)
+      crypto.randomFillSync(buff)
+
+      for (const encoding of ENCODINGS) {
+        test(buff, encoding)
+      }
+    }
+  }).timeout(5000)
 })
