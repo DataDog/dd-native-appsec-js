@@ -225,7 +225,7 @@ describe('limit tests', () => {
 
     const item = {}
     for (let i = 0; i < 1000; ++i) {
-      item[`a${i}`] = `${1}`
+      item[`a${i}`] = `${i}`
     }
 
     const context2 = waf.createContext()
