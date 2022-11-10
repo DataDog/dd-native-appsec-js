@@ -5,9 +5,6 @@
 'use strict'
 const fs = require('fs')
 const path = require('path')
-const Lib = require('./lib')
+const { libPath, libName } = require('./lib')
 
-const releaseDir = path.join(__dirname, '..', 'build', 'Release')
-const filename = Lib.getLibName().split('\\').join('\\\\')
-
-fs.copyFileSync(Lib.lib, path.join(releaseDir, filename))
+fs.copyFileSync(libPath, path.join(__dirname, '..', 'build', 'Release', libName))

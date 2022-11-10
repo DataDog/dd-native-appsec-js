@@ -11,19 +11,23 @@ const tar = require('tar')
 
 const pkg = require('../package.json')
 
+const libddwafVersion = process.argv[2] || pkg.libddwaf_version
+
 // only relevant if libddwaf repo is private
 // assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
 
-fs.mkdirSync('libddwaf', { recursive: true })
+const libddwafFolder = path.join(__dirname, '..', 'libddwaf')
+
+fs.mkdirSync(libddwafFolder, { recursive: true })
 
 childProcess.spawnSync('gh', ['release', 'download', '--repo', 'DataDog/libddwaf',
-  '-D', 'libddwaf', '-p', 'libddwaf-*', pkg.libddwaf_version])
+  '--dir', libddwafFolder, '--pattern', 'libddwaf-*', libddwafVersion])
 
-const archives = fs.readdirSync('libddwaf')
-  .filter(name => name.endsWith('.tar.gz'))
-  .map(name => path.join('libddwaf', name))
+for (const name of fs.readdirSync(libddwafFolder)) {
+  if (!name.endsWith('.tar.gz')) continue
 
-for (const file of archives) {
-  tar.x({ file, cwd: 'libddwaf', sync: true })
+  const file = path.join(libddwafFolder, name)
+
+  tar.x({ file, cwd: libddwafFolder, sync: true })
   fs.rmSync(file)
 }

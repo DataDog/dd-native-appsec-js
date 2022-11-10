@@ -10,54 +10,41 @@ const pkg = require('../package.json')
 const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 
-function getLibName () {
-  switch (platform) {
-    case 'darwin':
-      return 'libddwaf.a'
-    case 'win32':
-      return 'ddwaf_static.lib'
-    case 'linux':
-      return 'libddwaf.so'
+const libNames = {
+  darwin: 'libddwaf.a',
+  win32: 'ddwaf_static.lib',
+  linux: 'libddwaf.so'
+}
+
+const dirNames = {
+  darwin: {
+    arm64: 'darwin-arm64',
+    x64: 'darwin-x86_64'
+  },
+  win32: {
+    x64: 'windows-x64',
+    ia32: 'windows-win32'
+  },
+  linux: {
+    arm64: 'linux-aarch64',
+    x64: 'linux-x86_64'
   }
 }
 
 function getDirName () {
-  switch (platform) {
-    case 'darwin':
-      if (arch === 'arm64') {
-        return `libddwaf-${pkg.libddwaf_version}-darwin-arm64`
-      }
-      if (arch === 'x64') {
-        return `libddwaf-${pkg.libddwaf_version}-darwin-x86_64`
-      }
-      break
-    case 'win32':
-      if (arch === 'x64') {
-        return `libddwaf-${pkg.libddwaf_version}-windows-x64`
-      }
-      if (arch === 'ia32') {
-        return `libddwaf-${pkg.libddwaf_version}-windows-win32`
-      }
-      break
-    case 'linux':
-      if (arch === 'arm64') {
-        return `libddwaf-${pkg.libddwaf_version}-linux-aarch64`
-      }
-      if (arch === 'x64') {
-        return `libddwaf-${pkg.libddwaf_version}-linux-x86_64`
-      }
-      break
-  }
+  const name = dirNames[platform] && dirNames[platform][arch]
 
-  throw new Error(`Platform: ${platform} - ${arch} is unsupported`)
+  if (!name) throw new Error(`Platform: ${platform} - ${arch} is unsupported`)
+
+  return `libddwaf-${pkg.libddwaf_version}-${name}`
 }
 
 const dirname = getDirName()
-const libName = getLibName()
+const libName = libNames[platform]
 const basename = path.join(__dirname, '..', 'libddwaf', dirname)
 
 module.exports = {
-  include: path.join(basename, 'include').split('\\').join('\\\\'),
-  lib: path.join(basename, 'lib', libName).split('\\').join('\\\\'),
-  getLibName
+  includePath: path.join(basename, 'include').split('\\').join('\\\\'),
+  libPath: path.join(basename, 'lib', libName).split('\\').join('\\\\'),
+  libName
 }

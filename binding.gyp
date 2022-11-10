@@ -4,11 +4,11 @@
     "target_name": "appsec",
     "include_dirs": [
       ".",
-      "<!@(node -p \"require('./scripts/lib.js').include\")",
+      "<!@(node -p \"require('./scripts/lib.js').includePath\")",
       "<!@(node -p \"require('node-addon-api').include\")"
     ],
     "libraries": [
-      "<!@(node -p \"require('./scripts/lib.js').lib\")"
+      "<!@(node -p \"require('./scripts/lib.js').libPath\")"
     ],
     "sources": [
       "src/convert.cpp",
