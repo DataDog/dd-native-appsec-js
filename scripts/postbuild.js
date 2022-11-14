@@ -6,15 +6,14 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const Lib = require('./lib')
+const { libPath, libName } = require('./lib')
 
 const platform = os.platform()
 const arch = process.env.ARCH || os.arch()
 const libc = process.env.LIBC || ''
 
 const prebuildDir = path.join(__dirname, '..', 'prebuilds', `${platform}${libc}-${arch}`)
-const filename = Lib.getLibName().split('\\').join('\\\\')
 
 if (platform === 'linux' && fs.existsSync(prebuildDir)) {
-  fs.copyFileSync(Lib.lib, path.join(prebuildDir, filename))
+  fs.copyFileSync(libPath, path.join(prebuildDir, libName))
 }

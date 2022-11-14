@@ -53,7 +53,7 @@ describe('fuzzing', () => {
   }).timeout(5000)
 
   it('should handle random strings', () => {
-    for (let i = 0; i < 5000; ++i) {
+    for (let i = 0; i < 1000; ++i) {
       const buff = Buffer.alloc(10)
       crypto.randomFillSync(buff)
 

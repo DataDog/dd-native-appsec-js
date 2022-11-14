@@ -92,7 +92,6 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value v
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    // FIXME: libddwaf does not support floats I believe
     return ddwaf_object_signed(object, val.ToNumber().Int64Value());
   }
   if (val.IsBoolean()) {
