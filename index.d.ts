@@ -8,7 +8,7 @@ type result = {
   timeout: boolean;
   totalRuntime?: number;
   data?: string;
-  status?: 'match';
+  status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
 };
 
