@@ -15,7 +15,7 @@ describe('DDWAF', () => {
   it('should return the version', () => {
     const v = DDWAF.version()
 
-    assert.strictEqual(`${v.major}.${v.minor}.${v.patch}`, pkg.libddwaf_version)
+    assert.strictEqual(v, pkg.libddwaf_version)
   })
 
   it('should have rulesInfo', () => {
@@ -49,7 +49,7 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
     assert(!context.disposed)
 
@@ -77,7 +77,7 @@ describe('DDWAF', () => {
       'server.response.status': '404'
     }, TIMEOUT)
 
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -127,7 +127,7 @@ describe('DDWAF', () => {
         }
       }, TIMEOUT)
 
-      assert.strictEqual(result.action, 'monitor')
+      assert.strictEqual(result.status, 'match')
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
@@ -164,7 +164,7 @@ describe('DDWAF', () => {
       }, TIMEOUT)
 
       if (expected !== undefined) {
-        assert.strictEqual(result.action, 'monitor')
+        assert.strictEqual(result.status, 'match')
         assert(result.data)
         assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
       }
@@ -220,7 +220,7 @@ describe('limit tests', () => {
         a0: '404'
       }
     }, TIMEOUT)
-    assert.strictEqual(result1.action, 'monitor')
+    assert.strictEqual(result1.status, 'match')
     assert(result1.data)
 
     const item = {}
@@ -244,7 +244,7 @@ describe('limit tests', () => {
       'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
     }, TIMEOUT)
 
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -256,7 +256,7 @@ describe('limit tests', () => {
       'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
     }, TIMEOUT)
 
-    assert(!result.action)
+    assert(!result.status)
     assert(!result.data)
   })
 
@@ -268,7 +268,7 @@ describe('limit tests', () => {
     const result1 = context1.run({
       'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
-    assert(result1.action)
+    assert(result1.status)
     assert(result1.data)
 
     // test last item in big rule
@@ -276,7 +276,7 @@ describe('limit tests', () => {
     const result2 = context2.run({
       'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
-    assert(result2.action)
+    assert(result2.status)
     assert(result2.data)
   })
 })
