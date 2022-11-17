@@ -233,11 +233,9 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
   }
-  if (code != DDWAF_OK) {
-    res.Set("data", Napi::String::New(env, result.data));
-  }
   if (code == DDWAF_MATCH) {
     res.Set("status", Napi::String::New(env, "match"));
+    res.Set("data", Napi::String::New(env, result.data));
     Napi::Array actions = Napi::Array::New(env, result.actions.size);
     for (uint32_t i = 0; i < result.actions.size; ++i) {
       actions[i] = Napi::String::New(env, result.actions.array[i]);
