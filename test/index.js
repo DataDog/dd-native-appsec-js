@@ -232,7 +232,7 @@ describe('limit tests', () => {
     const result2 = context2.run({
       'server.response.status': item
     }, TIMEOUT)
-    assert(!result2.action)
+    assert(!result2.status)
     assert(!result2.data)
   })
 
