@@ -240,6 +240,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     for (uint32_t i = 0; i < result.actions.size; ++i) {
       actions[i] = Napi::String::New(env, result.actions.array[i]);
     }
+    res.Set("actions", actions);
   }
   ddwaf_result_free(&result);
   return res;

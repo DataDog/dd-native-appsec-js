@@ -51,6 +51,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert(result.data)
+    assert(result.actions)
     assert(!context.disposed)
 
     context.dispose()
