@@ -159,13 +159,13 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
   switch (code) {
     case DDWAF_ERR_INVALID_ARGUMENT:
       Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
-      return;
+      break;
     case DDWAF_ERR_INVALID_OBJECT:
       Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
-      return;
+      break;
     case DDWAF_ERR_INTERNAL:
       Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
-      return;
+      break;
     default:
       break;
   }
