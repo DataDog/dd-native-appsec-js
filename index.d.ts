@@ -37,7 +37,7 @@ export class DDWAF {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string
   });
-
+  updateRuleData(ruleData: any[]): void;
   createContext(): DDWAFContext;
   dispose(): void;
 }

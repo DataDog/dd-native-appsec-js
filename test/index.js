@@ -23,7 +23,7 @@ describe('DDWAF', () => {
 
     assert.deepStrictEqual(waf.rulesInfo, {
       version: '1.3.1',
-      loaded: 6,
+      loaded: 7,
       failed: 3,
       errors: {
         'missing key \'regex\'': [
@@ -68,6 +68,43 @@ describe('DDWAF', () => {
     assert.throws(() => {
       waf.createContext()
     }, new Error('Calling createContext on a disposed DDWAF instance'))
+  })
+
+  it('should collect an attack with updated rule data', () => {
+    const IP_TO_BLOCK = '123.123.123.123'
+
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    const ruleData = [
+      {
+        id: 'blocked_ips',
+        type: 'ip_with_expiration',
+        data: [{ value: IP_TO_BLOCK }]
+      }
+    ]
+
+    waf.updateRuleData(ruleData)
+    const result = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert(result.data)
+    assert(result.actions)
+    assert.strictEqual(result.actions[0], 'block')
+    assert(!context.disposed)
+  })
+
+  it('should refuse to update rule data with bad signature', () => {
+    const waf = new DDWAF(rules)
+    assert.throws(() => waf.updateRuleData(), new Error('Wrong number of arguments, expected 1'))
+    assert.throws(() => waf.updateRuleData({}), new TypeError('First argument must be an array'))
+  })
+
+  it('should refuse to update rule data when WAF has been disposed', () => {
+    const waf = new DDWAF(rules)
+    waf.dispose()
+    assert.throws(() => waf.updateRuleData([]), new Error('Could not update rule data on a disposed WAF'))
   })
 
   it('should support case_sensitive', () => {

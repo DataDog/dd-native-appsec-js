@@ -18,6 +18,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
     InstanceMethod<&DDWAF::createContext>("createContext"),
+    InstanceMethod<&DDWAF::updateRuleData>("updateRuleData"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
@@ -134,6 +135,41 @@ void DDWAF::Finalize(Napi::Env env) {
 void DDWAF::dispose(const Napi::CallbackInfo& info) {
   mlog("calling dispose on DDWAF instance");
   return this->Finalize(info.Env());
+}
+
+void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
+  mlog("Updating rule data on DDWAF");
+  Napi::Env env = info.Env();
+  if (this->_disposed) {
+    Napi::Error::New(env, "Could not update rule data on a disposed WAF").ThrowAsJavaScriptException();
+    return;
+  }
+  if (info.Length() < 1) {
+    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
+    return;
+  }
+  if (!info[0].IsArray()) {
+    Napi::TypeError::New(env, "First argument must be an array").ThrowAsJavaScriptException();
+    return;
+  }
+
+  ddwaf_object data;
+  to_ddwaf_object(&data, env, info[0], 0, true);
+  DDWAF_RET_CODE code = ddwaf_update_rule_data(this->_handle, &data);
+  switch (code) {
+    case DDWAF_ERR_INVALID_ARGUMENT:
+      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
+      return;
+    case DDWAF_ERR_INVALID_OBJECT:
+      Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      return;
+    case DDWAF_ERR_INTERNAL:
+      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
+      return;
+    default:
+      break;
+  }
+  ddwaf_object_free(&data);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
