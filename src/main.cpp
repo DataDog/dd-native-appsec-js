@@ -17,8 +17,8 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
-    InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::updateRuleData>("updateRuleData"),
+    InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
@@ -155,16 +155,18 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
 
   ddwaf_object data;
   to_ddwaf_object(&data, env, info[0], 0, false);
+
   DDWAF_RET_CODE code = ddwaf_update_rule_data(this->_handle, &data);
+
   switch (code) {
-    case DDWAF_ERR_INVALID_ARGUMENT:
-      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
+    case DDWAF_ERR_INTERNAL:
+      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
       break;
     case DDWAF_ERR_INVALID_OBJECT:
       Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
       break;
-    case DDWAF_ERR_INTERNAL:
-      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
+    case DDWAF_ERR_INVALID_ARGUMENT:
+      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
       break;
     default:
       break;
