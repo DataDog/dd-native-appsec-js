@@ -5,6 +5,29 @@
   },
   "rules": [
     {
+      "id": "block_ip",
+      "name": "block ip",
+      "tags": {
+        "type": "ip_addresses",
+        "category": "blocking"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              { "address": "http.client_ip" }
+            ],
+            "data": "blocked_ips"
+          },
+          "operator": "ip_match"
+        }
+      ],
+      "transformers": [],
+      "on_match": [
+        "block"
+      ]
+    },
+    {
       "id": "value_attack",
       "name": "match on a value",
       "tags": {

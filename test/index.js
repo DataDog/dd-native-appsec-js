@@ -15,7 +15,7 @@ describe('DDWAF', () => {
   it('should return the version', () => {
     const v = DDWAF.version()
 
-    assert.strictEqual(`${v.major}.${v.minor}.${v.patch}`, pkg.libddwaf_version)
+    assert.strictEqual(v, pkg.libddwaf_version)
   })
 
   it('should have rulesInfo', () => {
@@ -23,7 +23,7 @@ describe('DDWAF', () => {
 
     assert.deepStrictEqual(waf.rulesInfo, {
       version: '1.3.1',
-      loaded: 6,
+      loaded: 7,
       failed: 3,
       errors: {
         'missing key \'regex\'': [
@@ -49,8 +49,9 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
+    assert.deepStrictEqual(result.actions, [])
     assert(!context.disposed)
 
     context.dispose()
@@ -69,6 +70,44 @@ describe('DDWAF', () => {
     }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
 
+  it('should collect an attack with updated rule data', () => {
+    const IP_TO_BLOCK = '123.123.123.123'
+
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+    const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+    assert(!resultBeforeUpdatingRuleData.status)
+
+    const ruleData = [
+      {
+        id: 'blocked_ips',
+        type: 'ip_with_expiration',
+        data: [{ value: IP_TO_BLOCK }]
+      }
+    ]
+
+    waf.updateRuleData(ruleData)
+    const resultAfterUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+
+    assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
+    assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
+    assert(resultAfterUpdatingRuleData.data)
+    assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
+    assert(!context.disposed)
+  })
+
+  it('should refuse to update rule data with bad signature', () => {
+    const waf = new DDWAF(rules)
+    assert.throws(() => waf.updateRuleData(), new Error('Wrong number of arguments, expected 1'))
+    assert.throws(() => waf.updateRuleData({}), new TypeError('First argument must be an array'))
+  })
+
+  it('should refuse to update rule data when WAF has been disposed', () => {
+    const waf = new DDWAF(rules)
+    waf.dispose()
+    assert.throws(() => waf.updateRuleData([]), new Error('Could not update rule data on a disposed WAF'))
+  })
+
   it('should support case_sensitive', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
@@ -77,7 +116,7 @@ describe('DDWAF', () => {
       'server.response.status': '404'
     }, TIMEOUT)
 
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -127,7 +166,7 @@ describe('DDWAF', () => {
         }
       }, TIMEOUT)
 
-      assert.strictEqual(result.action, 'monitor')
+      assert.strictEqual(result.status, 'match')
       assert(result.data)
       assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
     }
@@ -164,7 +203,7 @@ describe('DDWAF', () => {
       }, TIMEOUT)
 
       if (expected !== undefined) {
-        assert.strictEqual(result.action, 'monitor')
+        assert.strictEqual(result.status, 'match')
         assert(result.data)
         assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
       }
@@ -220,7 +259,7 @@ describe('limit tests', () => {
         a0: '404'
       }
     }, TIMEOUT)
-    assert.strictEqual(result1.action, 'monitor')
+    assert.strictEqual(result1.status, 'match')
     assert(result1.data)
 
     const item = {}
@@ -232,7 +271,7 @@ describe('limit tests', () => {
     const result2 = context2.run({
       'server.response.status': item
     }, TIMEOUT)
-    assert(!result2.action)
+    assert(!result2.status)
     assert(!result2.data)
   })
 
@@ -244,7 +283,7 @@ describe('limit tests', () => {
       'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
     }, TIMEOUT)
 
-    assert.strictEqual(result.action, 'monitor')
+    assert.strictEqual(result.status, 'match')
     assert(result.data)
   })
 
@@ -256,7 +295,7 @@ describe('limit tests', () => {
       'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
     }, TIMEOUT)
 
-    assert(!result.action)
+    assert(!result.status)
     assert(!result.data)
   })
 
@@ -268,7 +307,7 @@ describe('limit tests', () => {
     const result1 = context1.run({
       'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
-    assert(result1.action)
+    assert(result1.status)
     assert(result1.data)
 
     // test last item in big rule
@@ -276,7 +315,7 @@ describe('limit tests', () => {
     const result2 = context2.run({
       'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
-    assert(result2.action)
+    assert(result2.status)
     assert(result2.data)
   })
 })

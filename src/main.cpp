@@ -17,6 +17,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
+    InstanceMethod<&DDWAF::updateRuleData>("updateRuleData"),
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
@@ -28,15 +29,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
 
 Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
   mlog("Get libddwaf version");
-  Napi::Env       env       = info.Env();
-  Napi::Object    result    = Napi::Object::New(env);
-  ddwaf_version version;
-  ddwaf_get_version(&version);
-
-  result.Set("major", Napi::Number::New(env, version.major));
-  result.Set("minor", Napi::Number::New(env, version.minor));
-  result.Set("patch", Napi::Number::New(env, version.patch));
-  return result;
+  return Napi::String::New(info.Env(), ddwaf_get_version());
 }
 
 Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
@@ -55,7 +48,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
     return;
   }
 
-  ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}};
+  ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}, ddwaf_object_free};
 
   // do not touch these strings after the c_str() assigment
   std::string key_regex_str;
@@ -144,6 +137,43 @@ void DDWAF::dispose(const Napi::CallbackInfo& info) {
   return this->Finalize(info.Env());
 }
 
+void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
+  mlog("Updating rule data on DDWAF");
+  Napi::Env env = info.Env();
+  if (this->_disposed) {
+    Napi::Error::New(env, "Could not update rule data on a disposed WAF").ThrowAsJavaScriptException();
+    return;
+  }
+  if (info.Length() < 1) {
+    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
+    return;
+  }
+  if (!info[0].IsArray()) {
+    Napi::TypeError::New(env, "First argument must be an array").ThrowAsJavaScriptException();
+    return;
+  }
+
+  ddwaf_object data;
+  to_ddwaf_object(&data, env, info[0], 0, false);
+
+  DDWAF_RET_CODE code = ddwaf_update_rule_data(this->_handle, &data);
+
+  switch (code) {
+    case DDWAF_ERR_INTERNAL:
+      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
+      break;
+    case DDWAF_ERR_INVALID_OBJECT:
+      Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      break;
+    case DDWAF_ERR_INVALID_ARGUMENT:
+      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
+      break;
+    default:
+      break;
+  }
+  ddwaf_object_free(&data);
+}
+
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (this->_disposed) {
@@ -166,7 +196,7 @@ DDWAFContext::DDWAFContext(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DD
 }
 
 bool DDWAFContext::init(ddwaf_handle handle) {
-  ddwaf_context context = ddwaf_context_init(handle, ddwaf_object_free);
+  ddwaf_context context = ddwaf_context_init(handle);
   if (context == nullptr) {
     return false;
   }
@@ -241,14 +271,14 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
   }
-  if (code != DDWAF_GOOD) {
+  if (code == DDWAF_MATCH) {
+    res.Set("status", Napi::String::New(env, "match"));
     res.Set("data", Napi::String::New(env, result.data));
-  }
-  if (code == DDWAF_MONITOR) {
-    res.Set("action", Napi::String::New(env, "monitor"));
-  }
-  if (code == DDWAF_BLOCK) {
-    res.Set("action", Napi::String::New(env, "block"));
+    Napi::Array actions = Napi::Array::New(env, result.actions.size);
+    for (uint32_t i = 0; i < result.actions.size; ++i) {
+      actions[i] = Napi::String::New(env, result.actions.array[i]);
+    }
+    res.Set("actions", actions);
   }
   ddwaf_result_free(&result);
   return res;

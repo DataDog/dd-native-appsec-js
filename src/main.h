@@ -21,6 +21,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
 
     // JS instance methods
     Napi::Value createContext(const Napi::CallbackInfo& info);
+    void updateRuleData(const Napi::CallbackInfo& info);
     void Finalize(Napi::Env env);
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);
     void dispose(const Napi::CallbackInfo& info);

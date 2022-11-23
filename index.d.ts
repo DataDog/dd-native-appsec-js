@@ -8,7 +8,8 @@ type result = {
   timeout: boolean;
   totalRuntime?: number;
   data?: string;
-  action?: 'monitor' | 'block';
+  status?: 'match'; // TODO: remove this if new statuses are never added
+  actions?: string[];
 };
 
 declare class DDWAFContext {
@@ -19,7 +20,7 @@ declare class DDWAFContext {
 }
 
 export class DDWAF {
-  static version(): { major: number, minor: number, patch: number };
+  static version(): string;
 
   readonly disposed: boolean;
 
@@ -36,6 +37,8 @@ export class DDWAF {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string
   });
+
+  updateRuleData(ruleData: object[]): void;
 
   createContext(): DDWAFContext;
   dispose(): void;

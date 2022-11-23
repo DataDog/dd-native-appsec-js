@@ -23,6 +23,7 @@
         'ldflags': ['-Wl,--rpath=\$$ORIGIN']
       }],
       ["OS == 'win'", {
+        "libraries": ["Ws2_32.lib"],
         "cflags": [
           "/WX"
         ]
