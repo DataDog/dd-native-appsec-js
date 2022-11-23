@@ -154,7 +154,7 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
   }
 
   ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true);
+  to_ddwaf_object(&data, env, info[0], 0, false);
   DDWAF_RET_CODE code = ddwaf_update_rule_data(this->_handle, &data);
   switch (code) {
     case DDWAF_ERR_INVALID_ARGUMENT:
