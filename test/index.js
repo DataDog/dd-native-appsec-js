@@ -51,7 +51,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert(result.data)
-    assert(result.actions)
+    assert.deepStrictEqual(result.actions, [])
     assert(!context.disposed)
 
     context.dispose()
@@ -75,6 +75,8 @@ describe('DDWAF', () => {
 
     const waf = new DDWAF(rules)
     const context = waf.createContext()
+    const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+    assert(!resultBeforeUpdatingRuleData.status)
 
     const ruleData = [
       {
@@ -85,13 +87,12 @@ describe('DDWAF', () => {
     ]
 
     waf.updateRuleData(ruleData)
-    const result = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+    const resultAfterUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
 
-    assert.strictEqual(result.timeout, false)
-    assert.strictEqual(result.status, 'match')
-    assert(result.data)
-    assert(result.actions)
-    assert.strictEqual(result.actions[0], 'block')
+    assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
+    assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
+    assert(resultAfterUpdatingRuleData.data)
+    assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
     assert(!context.disposed)
   })
 
