@@ -54,7 +54,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   std::string key_regex_str;
   std::string value_regex_str;
 
-  if (arg_len >= 2) {
+  if (arg_len >= 2) { // TODO: there is a bug here ?
     // TODO(@simon-id) make a macro here someday
     if (!info[1].IsObject()) {
       Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
@@ -283,6 +283,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   ddwaf_result_free(&result);
   return res;
 }
+
 Napi::Value DDWAFContext::GetDisposed(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(info.Env(), this->_disposed);
 }
