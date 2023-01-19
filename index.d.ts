@@ -40,6 +40,8 @@ export class DDWAF {
 
   updateRuleData(ruleData: object[]): void;
 
+  toggleRules(toggleRulesMap: object): void;
+
   createContext(): DDWAFContext;
   dispose(): void;
 }

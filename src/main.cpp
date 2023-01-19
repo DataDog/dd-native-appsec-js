@@ -18,6 +18,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
     InstanceMethod<&DDWAF::updateRuleData>("updateRuleData"),
+    InstanceMethod<&DDWAF::toggleRules>("toggleRules"),
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
@@ -172,6 +173,38 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
       break;
   }
   ddwaf_object_free(&data);
+}
+
+void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
+  mlog("Toggling rules on DDWAF");
+  Napi::Env env = info.Env();
+  if (this->_disposed) {
+    Napi::Error::New(env, "Could not toggle rule on a disposed WAF").ThrowAsJavaScriptException();
+    return;
+  }
+  if (info.Length() < 1) {
+    Napi::Error::New(env, "Wrong number of arguments, expected 1").ThrowAsJavaScriptException();
+    return;
+  }
+  if (!info[0].IsObject()) {
+    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
+    return;
+  }
+
+  ddwaf_object rulesToggleMap;
+  to_ddwaf_object(&rulesToggleMap, env, info[0], 0, false, false);
+  DDWAF_RET_CODE code = ddwaf_toggle_rules(this->_handle, &rulesToggleMap);
+  switch (code) {
+    case DDWAF_ERR_INTERNAL:
+      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
+      break;
+    case DDWAF_ERR_INVALID_OBJECT:
+      Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      break;
+    default:
+      break;
+  }
+  ddwaf_object_free(&rulesToggleMap);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
