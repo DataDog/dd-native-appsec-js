@@ -38,7 +38,14 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env, Napi::A
   return object;
 }
 
-ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env, Napi::Object obj, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Object obj,
+  int depth,
+  bool lim,
+  bool coerceBoolToInt
+) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
@@ -67,7 +74,7 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env, Napi::
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth, lim);
+    to_ddwaf_object(&val, env, valV, depth, lim, coerceBoolToInt);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
@@ -76,7 +83,14 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object *object, Napi::Env env, Napi::
   return object;
 }
 
-ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value val, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  int depth,
+  bool lim,
+  bool coerceBoolToInt
+) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
     mlog("Max depth reached");
@@ -96,8 +110,14 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value v
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
-    int64_t nb = val.ToBoolean().Value() ? 1 : 0;
-    return ddwaf_object_signed(object, nb);
+    if (coerceBoolToInt) {
+      mlog("turning boolean to int");
+      int64_t nb = val.ToBoolean().Value() ? 1 : 0;
+      return ddwaf_object_signed(object, nb);
+    } else {
+      mlog("keeping boolean type");
+      return ddwaf_object_bool(object, val.ToBoolean().Value());
+    }
   }
   if (val.IsArray()) {
     mlog("creating Array");
@@ -105,7 +125,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value v
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceBoolToInt);
   }
   mlog("creating empty map");
   // we use empty maps for now instead of null. See issue !43

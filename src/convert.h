@@ -8,7 +8,14 @@
 #include <napi.h>
 #include <ddwaf.h>
 
-ddwaf_object* to_ddwaf_object(ddwaf_object *object, Napi::Env env, Napi::Value val, int depth, bool lim);
+ddwaf_object* to_ddwaf_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  int depth,
+  bool lim,
+  bool coerceBoolToInt = true
+);
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth = 0);
 
