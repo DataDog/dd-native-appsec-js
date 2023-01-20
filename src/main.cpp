@@ -193,13 +193,18 @@ void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
 
   ddwaf_object rulesToggleMap;
   to_ddwaf_object(&rulesToggleMap, env, info[0], 0, false, false);
+
   DDWAF_RET_CODE code = ddwaf_toggle_rules(this->_handle, &rulesToggleMap);
+
   switch (code) {
     case DDWAF_ERR_INTERNAL:
       Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
       break;
     case DDWAF_ERR_INVALID_OBJECT:
       Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      break;
+    case DDWAF_ERR_INVALID_ARGUMENT:
+      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
       break;
     default:
       break;
