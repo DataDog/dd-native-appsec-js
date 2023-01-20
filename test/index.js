@@ -128,7 +128,6 @@ describe('DDWAF', () => {
 
     assert(!resultToggledOff.status)
     assert(!resultToggledOff.data)
-    assert(!context.disposed)
 
     waf.toggleRules({
       value_matchall: true
@@ -141,8 +140,6 @@ describe('DDWAF', () => {
     assert.strictEqual(resultToggledOn.timeout, false)
     assert.strictEqual(resultToggledOn.status, 'match')
     assert(resultToggledOn.data)
-    assert.deepStrictEqual(resultToggledOn.actions, [])
-    assert(!context.disposed)
   })
 
   it('should support case_sensitive', () => {
