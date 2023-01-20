@@ -116,13 +116,13 @@ describe('DDWAF', () => {
 
   it('should not collect an attack on a toggled off rule', () => {
     const waf = new DDWAF(rules)
-    const contextToggledOf = waf.createContext()
+    const contextToggledOff = waf.createContext()
 
     waf.toggleRules({
       value_matchall: false
     })
 
-    const resultToggledOff = contextToggledOf.run({
+    const resultToggledOff = contextToggledOff.run({
       value_attack: 'matchall'
     }, TIMEOUT)
 
