@@ -209,7 +209,7 @@ describe('DDWAF', () => {
     }
   })
 
-  it.skip('should parse values correctly', () => {
+  it('should parse values correctly', () => {
     const possibleValues = new Map([
       [undefined, undefined],
       [null, undefined],
