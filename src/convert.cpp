@@ -10,7 +10,14 @@
 #include "src/log.h"
 
 
-ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env, Napi::Array arr, int depth, bool lim) {
+ddwaf_object* to_ddwaf_object_array(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Array arr,
+  int depth,
+  bool lim,
+  bool coerceBoolToInt = true
+) {
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
@@ -29,7 +36,7 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object *object, Napi::Env env, Napi::A
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth, lim);
+    to_ddwaf_object(&val, env, item, depth, lim, coerceBoolToInt);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
@@ -121,7 +128,7 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceBoolToInt);
   }
   if (val.IsObject()) {
     mlog("creating Object");
