@@ -16,7 +16,7 @@ ddwaf_object* to_ddwaf_object_array(
   Napi::Array arr,
   int depth,
   bool lim,
-  bool coerceBoolToInt = true
+  bool coerceToString = false
 ) {
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
@@ -36,7 +36,7 @@ ddwaf_object* to_ddwaf_object_array(
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth, lim, coerceBoolToInt);
+    to_ddwaf_object(&val, env, item, depth, lim, coerceToString);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
@@ -51,7 +51,7 @@ ddwaf_object* to_ddwaf_object_object(
   Napi::Object obj,
   int depth,
   bool lim,
-  bool coerceBoolToInt
+  bool coerceToString = false
 ) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
@@ -81,7 +81,7 @@ ddwaf_object* to_ddwaf_object_object(
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth, lim, coerceBoolToInt);
+    to_ddwaf_object(&val, env, valV, depth, lim, coerceToString);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
@@ -96,7 +96,7 @@ ddwaf_object* to_ddwaf_object(
   Napi::Value val,
   int depth,
   bool lim,
-  bool coerceBoolToInt
+  bool coerceToString
 ) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
@@ -113,26 +113,27 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    if (coerceToString) {
+      return ddwaf_object_string(object, std::to_string(val.ToNumber().Int64Value()).c_str());
+    } else {
+      return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    }
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
-    if (coerceBoolToInt) {
-      mlog("turning boolean to int");
-      int64_t nb = val.ToBoolean().Value() ? 1 : 0;
-      return ddwaf_object_signed(object, nb);
+    if (coerceToString) {
+      return ddwaf_object_string(object, val.ToBoolean().Value() ? "1" : "0");
     } else {
-      mlog("keeping boolean type");
       return ddwaf_object_bool(object, val.ToBoolean().Value());
     }
   }
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceBoolToInt);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceToString);
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceBoolToInt);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceToString);
   }
   mlog("creating empty map");
   // we use empty maps for now instead of null. See issue !43

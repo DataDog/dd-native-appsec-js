@@ -192,7 +192,7 @@ void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
   }
 
   ddwaf_object rulesToggleMap;
-  to_ddwaf_object(&rulesToggleMap, env, info[0], 0, false, false);
+  to_ddwaf_object(&rulesToggleMap, env, info[0], 0, false);
 
   DDWAF_RET_CODE code = ddwaf_toggle_rules(this->_handle, &rulesToggleMap);
 
@@ -283,7 +283,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   ddwaf_result result;
   ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true);
+  to_ddwaf_object(&data, env, info[0], 0, true, true);
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
 
