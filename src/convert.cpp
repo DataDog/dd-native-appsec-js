@@ -113,12 +113,16 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsString()) {
     mlog("creating String");
-    return to_ddwaf_string(object, val, lim);
+    std::string str = val.ToString().Utf8Value();
+    if (lim && str.length() > DDWAF_MAX_STRING_LENGTH) {
+      str = str.substr(DDWAF_MAX_STRING_LENGTH - 1);
+    }
+    return ddwaf_object_string(object, str.c_str());
   }
   if (val.IsNumber()) {
     mlog("creating Number");
     if (coerceToString) {
-      return to_ddwaf_string(object, val, lim);
+      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
     } else {
       return ddwaf_object_signed(object, val.ToNumber().Int64Value());
     }
@@ -126,7 +130,7 @@ ddwaf_object* to_ddwaf_object(
   if (val.IsBoolean()) {
     mlog("creating Boolean");
     if (coerceToString) {
-      return to_ddwaf_string(object, val, lim);
+      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
     } else {
       return ddwaf_object_bool(object, val.ToBoolean().Value());
     }
