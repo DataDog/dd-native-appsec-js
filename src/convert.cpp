@@ -126,7 +126,7 @@ ddwaf_object* to_ddwaf_object(
   if (val.IsBoolean()) {
     mlog("creating Boolean");
     if (coerceToString) {
-      return ddwaf_object_string(object, val.ToBoolean().Value() ? "1" : "0");
+      return to_ddwaf_string(object, val, lim);
     } else {
       return ddwaf_object_bool(object, val.ToBoolean().Value());
     }

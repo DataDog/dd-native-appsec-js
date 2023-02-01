@@ -211,8 +211,8 @@ describe('DDWAF', () => {
     const possibleValues = new Map([
       [undefined, undefined],
       [null, undefined],
-      [false, '0'],
-      [true, '1'],
+      [false, 'false'],
+      [true, 'true'],
       [42, '42'],
       [-42, '-42'],
       [42.42, '42.42'],
