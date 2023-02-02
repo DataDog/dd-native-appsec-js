@@ -16,7 +16,7 @@ ddwaf_object* to_ddwaf_object_array(
   Napi::Array arr,
   int depth,
   bool lim,
-  bool coerceBoolToInt = true
+  bool coerceToString = false
 ) {
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
@@ -36,7 +36,7 @@ ddwaf_object* to_ddwaf_object_array(
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth, lim, coerceBoolToInt);
+    to_ddwaf_object(&val, env, item, depth, lim, coerceToString);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
@@ -51,7 +51,7 @@ ddwaf_object* to_ddwaf_object_object(
   Napi::Object obj,
   int depth,
   bool lim,
-  bool coerceBoolToInt
+  bool coerceToString = false
 ) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
@@ -81,7 +81,7 @@ ddwaf_object* to_ddwaf_object_object(
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth, lim, coerceBoolToInt);
+    to_ddwaf_object(&val, env, valV, depth, lim, coerceToString);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
@@ -90,13 +90,22 @@ ddwaf_object* to_ddwaf_object_object(
   return object;
 }
 
+ddwaf_object* to_ddwaf_string(ddwaf_object *object, Napi::Value val, bool lim) {
+  std::string str = val.ToString().Utf8Value();
+  int len = str.length();
+  if (lim && len > DDWAF_MAX_STRING_LENGTH) {
+    len = DDWAF_MAX_STRING_LENGTH;
+  }
+  return ddwaf_object_stringl(object, str.c_str(), len);
+}
+
 ddwaf_object* to_ddwaf_object(
   ddwaf_object *object,
   Napi::Env env,
   Napi::Value val,
   int depth,
   bool lim,
-  bool coerceBoolToInt
+  bool coerceToString
 ) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
@@ -105,34 +114,45 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsString()) {
     mlog("creating String");
-    std::string str = val.ToString().Utf8Value();
-    if (lim && str.length() > DDWAF_MAX_STRING_LENGTH) {
-      str = str.substr(DDWAF_MAX_STRING_LENGTH - 1);
-    }
-    return ddwaf_object_string(object, str.c_str());
+    return to_ddwaf_string(object, val, lim);
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    if (coerceToString) {
+      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
+    } else {
+      return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    }
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
-    if (coerceBoolToInt) {
-      mlog("turning boolean to int");
-      int64_t nb = val.ToBoolean().Value() ? 1 : 0;
-      return ddwaf_object_signed(object, nb);
+    bool boolValue = val.ToBoolean().Value();
+    if (coerceToString) {
+      return ddwaf_object_string(object, boolValue ? "true" : "false");
     } else {
-      mlog("keeping boolean type");
-      return ddwaf_object_bool(object, val.ToBoolean().Value());
+      return ddwaf_object_bool(object, boolValue);
     }
   }
+  // TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
+  /*
+  if (val.IsBigInt()) {
+    mlog("creating BigInt");
+    bool lossless;
+    int64_t intValue = val.As<Napi::BigInt>().Int64Value(&lossless);
+    if (coerceToString || !lossless) {
+      return to_ddwaf_string(object, val, lim);
+    } else {
+      return ddwaf_object_signed(object, intValue);
+    }
+  }
+  */
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceBoolToInt);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceToString);
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceBoolToInt);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceToString);
   }
   mlog("creating empty map");
   // we use empty maps for now instead of null. See issue !43
