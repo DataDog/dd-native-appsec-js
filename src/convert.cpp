@@ -133,7 +133,7 @@ ddwaf_object* to_ddwaf_object(
       return ddwaf_object_bool(object, boolValue);
     }
   }
-  //TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
+  // TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
   /*
   if (val.IsBigInt()) {
     mlog("creating BigInt");
