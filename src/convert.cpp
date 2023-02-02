@@ -126,10 +126,11 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
+    bool boolValue = val.ToBoolean().Value();
     if (coerceToString) {
-      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
+      return ddwaf_object_string(object, boolValue ? "true" : "false");
     } else {
-      return ddwaf_object_bool(object, val.ToBoolean().Value());
+      return ddwaf_object_bool(object, boolValue);
     }
   }
   //TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
