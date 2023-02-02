@@ -135,6 +135,16 @@ ddwaf_object* to_ddwaf_object(
       return ddwaf_object_bool(object, val.ToBoolean().Value());
     }
   }
+  if (val.IsBigInt()) {
+    mlog("creating BigInt");
+    bool lossless;
+    int64_t intValue = val.As<Napi::BigInt>().Int64Value(&lossless);
+    if (coerceToString || !lossless) {
+      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
+    } else {
+      return ddwaf_object_signed(object, intValue);
+    }
+  }
   if (val.IsArray()) {
     mlog("creating Array");
     return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceToString);
