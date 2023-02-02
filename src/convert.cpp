@@ -92,10 +92,11 @@ ddwaf_object* to_ddwaf_object_object(
 
 ddwaf_object* to_ddwaf_string(ddwaf_object *object, Napi::Value val, bool lim) {
   std::string str = val.ToString().Utf8Value();
-  if (lim && str.length() > DDWAF_MAX_STRING_LENGTH) {
-    str = str.substr(DDWAF_MAX_STRING_LENGTH - 1);
+  int len = str.length();
+  if (lim && len > DDWAF_MAX_STRING_LENGTH) {
+    len = DDWAF_MAX_STRING_LENGTH;
   }
-  return ddwaf_object_string(object, str.c_str());
+  return ddwaf_object_stringl(object, str.c_str(), len);
 }
 
 ddwaf_object* to_ddwaf_object(
@@ -113,11 +114,7 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsString()) {
     mlog("creating String");
-    std::string str = val.ToString().Utf8Value();
-    if (lim && str.length() > DDWAF_MAX_STRING_LENGTH) {
-      str = str.substr(DDWAF_MAX_STRING_LENGTH - 1);
-    }
-    return ddwaf_object_string(object, str.c_str());
+    return to_ddwaf_string(object, val, lim);
   }
   if (val.IsNumber()) {
     mlog("creating Number");
