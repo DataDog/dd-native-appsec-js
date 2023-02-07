@@ -158,6 +158,7 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
   to_ddwaf_object(&data, env, info[0], 0, false);
 
   DDWAF_RET_CODE code = ddwaf_update_rule_data(this->_handle, &data);
+  ddwaf_object_free(&data);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -172,7 +173,6 @@ void DDWAF::updateRuleData(const Napi::CallbackInfo& info) {
     default:
       break;
   }
-  ddwaf_object_free(&data);
 }
 
 void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
@@ -195,6 +195,7 @@ void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
   to_ddwaf_object(&rulesToggleMap, env, info[0], 0, false);
 
   DDWAF_RET_CODE code = ddwaf_toggle_rules(this->_handle, &rulesToggleMap);
+  ddwaf_object_free(&rulesToggleMap);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -209,7 +210,6 @@ void DDWAF::toggleRules(const Napi::CallbackInfo& info) {
     default:
       break;
   }
-  ddwaf_object_free(&rulesToggleMap);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
@@ -221,7 +221,6 @@ Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
   mlog("Create context");
   Napi::Value context = constructor->New({});
   DDWAFContext* raw = Napi::ObjectWrap<DDWAFContext>::Unwrap(context.As<Napi::Object>());
-  // TODO(@vdeturckheim): dispose check
   if (!raw->init(this->_handle)) {
     Napi::Error::New(env, "Could not create context").ThrowAsJavaScriptException();
     return env.Null();
@@ -290,13 +289,15 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   switch (code) {
     case DDWAF_ERR_INTERNAL:
       Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
+      ddwaf_result_free(&result);
       return env.Null();
     case DDWAF_ERR_INVALID_OBJECT:
       Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
+      ddwaf_result_free(&result);
       return env.Null();
     case DDWAF_ERR_INVALID_ARGUMENT:
       Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
-      // TODO(simon-id): we should free the data here
+      ddwaf_result_free(&result);
       return env.Null();
     default:
       break;
