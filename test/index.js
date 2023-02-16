@@ -152,7 +152,7 @@ describe('DDWAF', () => {
     const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
     assert(!resultBeforeUpdatingRuleData.status)
 
-    const ruleData = [
+    const rulesData = [
       {
         id: 'blocked_ips',
         type: 'ip_with_expiration',
@@ -160,8 +160,9 @@ describe('DDWAF', () => {
       }
     ]
 
-    const rulesWithRuleData = Object.assign({}, rules)
-    rulesWithRuleData.rules_data = ruleData
+    const rulesWithRuleData = Object.assign({
+      rules_data: rulesData
+    }, rules)
 
     waf.update(rulesWithRuleData)
     const contextWithRuleData = waf.createContext()
@@ -186,14 +187,17 @@ describe('DDWAF', () => {
     assert.strictEqual(resultToggledOn.status, 'match')
     assert(resultToggledOn.data)
 
-    const ruleSetWithRulesOverride = Object.assign({}, rules)
-    ruleSetWithRulesOverride.rules_override = [
+    const rulesOverride = [
       {
         id: 'value_matchall',
         enabled: false
       }
     ]
-    waf.update(ruleSetWithRulesOverride)
+    const rulesWithRulesOverride = Object.assign({
+      rules_override: rulesOverride
+    }, rules)
+
+    waf.update(rulesWithRulesOverride)
     const contextToggledOff = waf.createContext()
 
     const resultToggledOff = contextToggledOff.run({
@@ -217,15 +221,18 @@ describe('DDWAF', () => {
     assert.deepStrictEqual(resultMonitor.actions, [])
     assert(resultMonitor.data)
 
-    const ruleSetWithRulesOverride = Object.assign({}, rules)
-    ruleSetWithRulesOverride.rules_override = [
+    const rulesOverride = [
       {
         id: 'value_matchall',
         enabled: true,
         on_match: ['block']
       }
     ]
-    waf.update(ruleSetWithRulesOverride)
+    const rulesWithRulesOverride = Object.assign({
+      rules_override: rulesOverride
+    }, rules)
+
+    waf.update(rulesWithRulesOverride)
     const blockContext = waf.createContext()
 
     const resultBlock = blockContext.run({
