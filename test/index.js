@@ -70,6 +70,80 @@ describe('DDWAF', () => {
     }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
 
+  it('should throw an error when updating a WAF instance with no arguments', () => {
+    const waf = new DDWAF(rules)
+    assert.throws(() => waf.update(), new Error('Wrong number of arguments, expected at least 1'))
+  })
+
+  it('should throw a type error when updating a WAF instance with invalid arguments', () => {
+    const waf = new DDWAF(rules)
+    assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
+  })
+
+  it('should throw an error when updating a disposed WAF instance', () => {
+    const waf = new DDWAF(rules)
+    waf.dispose()
+    assert.throws(() => waf.update(rules), new Error('Could not update a WAF disposed instance'))
+  })
+
+  it('should update rulesInfo when updating a WAF instance with new ruleSet', () => {
+    const waf = new DDWAF({
+      version: '2.2',
+      metadata: {
+        rules_version: '1.3.1'
+      },
+      rules: [{
+        id: 'block_ip',
+        name: 'block ip',
+        tags: {
+          type: 'ip_addresses',
+          category: 'blocking'
+        },
+        conditions: [
+          {
+            parameters: {
+              inputs: [
+                { address: 'http.client_ip' }
+              ],
+              data: 'blocked_ips'
+            },
+            operator: 'ip_match'
+          }
+        ],
+        transformers: [],
+        on_match: [
+          'block'
+        ]
+      }]
+    })
+
+    assert.deepStrictEqual(waf.rulesInfo, {
+      version: '1.3.1',
+      loaded: 1,
+      failed: 0,
+      errors: {}
+    })
+
+    waf.update(rules)
+    assert.deepStrictEqual(waf.rulesInfo, {
+      version: '1.3.1',
+      loaded: 7,
+      failed: 3,
+      errors: {
+        'missing key \'regex\'': [
+          'invalid_1'
+        ],
+        'invalid regular expression: *': [
+          'invalid_2',
+          'invalid_3'
+        ]
+      }
+    })
+
+    waf.dispose()
+    assert.strictEqual(waf.rulesInfo, null)
+  })
+
   it('should collect an attack with updated rule data', () => {
     const IP_TO_BLOCK = '123.123.123.123'
 
@@ -86,8 +160,12 @@ describe('DDWAF', () => {
       }
     ]
 
-    waf.updateRuleData(ruleData)
-    const resultAfterUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+    const rulesWithRuleData = Object.assign({}, rules)
+    rulesWithRuleData.rules_data = ruleData
+
+    waf.update(rulesWithRuleData)
+    const contextWithRuleData = waf.createContext()
+    const resultAfterUpdatingRuleData = contextWithRuleData.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
 
     assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
     assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
@@ -96,43 +174,9 @@ describe('DDWAF', () => {
     assert(!context.disposed)
   })
 
-  it('should refuse to update rule data with bad signature', () => {
-    const waf = new DDWAF(rules)
-    assert.throws(() => waf.updateRuleData(), new Error('Wrong number of arguments, expected 1'))
-    assert.throws(() => waf.updateRuleData({}), new TypeError('First argument must be an array'))
-  })
-
-  it('should refuse to update rule data when WAF has been disposed', () => {
-    const waf = new DDWAF(rules)
-    waf.dispose()
-    assert.throws(() => waf.updateRuleData([]), new Error('Could not update rule data on a disposed WAF'))
-  })
-
-  it('should refuse to toggle rules with bad signature', () => {
-    const waf = new DDWAF(rules)
-    assert.throws(() => waf.toggleRules(), new Error('Wrong number of arguments, expected 1'))
-    assert.throws(() => waf.toggleRules(73), new TypeError('First argument must be an object'))
-  })
-
   it('should not collect an attack on a toggled off rule', () => {
     const waf = new DDWAF(rules)
-    const contextToggledOff = waf.createContext()
-
-    waf.toggleRules({
-      value_matchall: false
-    })
-
-    const resultToggledOff = contextToggledOff.run({
-      value_attack: 'matchall'
-    }, TIMEOUT)
-
-    assert(!resultToggledOff.status)
-    assert(!resultToggledOff.data)
-
     const contextToggledOn = waf.createContext()
-    waf.toggleRules({
-      value_matchall: true
-    })
 
     const resultToggledOn = contextToggledOn.run({
       value_attack: 'matchall'
@@ -141,6 +185,56 @@ describe('DDWAF', () => {
     assert.strictEqual(resultToggledOn.timeout, false)
     assert.strictEqual(resultToggledOn.status, 'match')
     assert(resultToggledOn.data)
+
+    const ruleSetWithRulesOverride = Object.assign({}, rules)
+    ruleSetWithRulesOverride.rules_override = [
+      {
+        id: 'value_matchall',
+        enabled: false
+      }
+    ]
+    waf.update(ruleSetWithRulesOverride)
+    const contextToggledOff = waf.createContext()
+
+    const resultToggledOff = contextToggledOff.run({
+      value_attack: 'matchall'
+    }, TIMEOUT)
+
+    assert(!resultToggledOff.status)
+    assert(!resultToggledOff.data)
+  })
+
+  it('should return block action when on_match is overridden', () => {
+    const waf = new DDWAF(rules)
+    const monitorContext = waf.createContext()
+
+    const resultMonitor = monitorContext.run({
+      value_attack: 'matchall'
+    }, TIMEOUT)
+
+    assert.strictEqual(resultMonitor.timeout, false)
+    assert.strictEqual(resultMonitor.status, 'match')
+    assert.deepStrictEqual(resultMonitor.actions, [])
+    assert(resultMonitor.data)
+
+    const ruleSetWithRulesOverride = Object.assign({}, rules)
+    ruleSetWithRulesOverride.rules_override = [
+      {
+        id: 'value_matchall',
+        enabled: true,
+        on_match: ['block']
+      }
+    ]
+    waf.update(ruleSetWithRulesOverride)
+    const blockContext = waf.createContext()
+
+    const resultBlock = blockContext.run({
+      value_attack: 'matchall'
+    }, TIMEOUT)
+
+    assert.strictEqual(resultBlock.timeout, false)
+    assert.strictEqual(resultBlock.status, 'match')
+    assert.deepStrictEqual(resultBlock.actions, ['block'])
   })
 
   it('should support case_sensitive', () => {
@@ -156,7 +250,6 @@ describe('DDWAF', () => {
   })
 
   it('should refuse invalid rule', () => {
-    assert.throws(() => new DDWAF({}), new Error('Invalid rules'))
     assert.throws(() => new DDWAF(''), new TypeError('First argument must be an object'))
   })
 

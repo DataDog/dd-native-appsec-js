@@ -31,16 +31,14 @@ export class DDWAF {
     errors: {
       [errorString: string]: string[]
     }
-  };
+  } | null;
 
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string
   });
 
-  updateRuleData(ruleData: object[]): void;
-
-  toggleRules(toggleRulesMap: object): void;
+  update(rules: rules): void;
 
   createContext(): DDWAFContext;
   dispose(): void;
