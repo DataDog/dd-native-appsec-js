@@ -28,6 +28,9 @@
           "/WX"
         ]
       }]
-    ]
+    ],
+    "variables" : {
+        "openssl_fips": "",
+    }
   }]
 }
