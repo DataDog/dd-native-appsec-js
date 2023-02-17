@@ -26,7 +26,7 @@ jobs:
 
   build:
     needs: download-libddwaf
-    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@e01af53
     with:
       cache: true
       napi: true
