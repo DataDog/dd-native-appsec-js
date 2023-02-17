@@ -152,19 +152,17 @@ describe('DDWAF', () => {
     const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
     assert(!resultBeforeUpdatingRuleData.status)
 
-    const rulesData = [
-      {
-        id: 'blocked_ips',
-        type: 'ip_with_expiration',
-        data: [{ value: IP_TO_BLOCK }]
-      }
-    ]
+    const updateWithRulesData = {
+      rules_data: [
+        {
+          id: 'blocked_ips',
+          type: 'ip_with_expiration',
+          data: [{ value: IP_TO_BLOCK }]
+        }
+      ]
+    }
 
-    const rulesWithRuleData = Object.assign({
-      rules_data: rulesData
-    }, rules)
-
-    waf.update(rulesWithRuleData)
+    waf.update(updateWithRulesData)
     const contextWithRuleData = waf.createContext()
     const resultAfterUpdatingRuleData = contextWithRuleData.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
 
@@ -187,17 +185,16 @@ describe('DDWAF', () => {
     assert.strictEqual(resultToggledOn.status, 'match')
     assert(resultToggledOn.data)
 
-    const rulesOverride = [
-      {
-        id: 'value_matchall',
-        enabled: false
-      }
-    ]
-    const rulesWithRulesOverride = Object.assign({
-      rules_override: rulesOverride
-    }, rules)
+    const updateWithRulesOverride = {
+      rules_override: [
+        {
+          id: 'value_matchall',
+          enabled: false
+        }
+      ]
+    }
 
-    waf.update(rulesWithRulesOverride)
+    waf.update(updateWithRulesOverride)
     const contextToggledOff = waf.createContext()
 
     const resultToggledOff = contextToggledOff.run({
@@ -221,18 +218,17 @@ describe('DDWAF', () => {
     assert.deepStrictEqual(resultMonitor.actions, [])
     assert(resultMonitor.data)
 
-    const rulesOverride = [
-      {
-        id: 'value_matchall',
-        enabled: true,
-        on_match: ['block']
-      }
-    ]
-    const rulesWithRulesOverride = Object.assign({
-      rules_override: rulesOverride
-    }, rules)
+    const updateWithRulesOverride = {
+      rules_override: [
+        {
+          id: 'value_matchall',
+          enabled: true,
+          on_match: ['block']
+        }
+      ]
+    }
 
-    waf.update(rulesWithRulesOverride)
+    waf.update(updateWithRulesOverride)
     const blockContext = waf.createContext()
 
     const resultBlock = blockContext.run({
