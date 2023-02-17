@@ -257,6 +257,7 @@ describe('DDWAF', () => {
   })
 
   it('should refuse invalid rule', () => {
+    assert.throws(() => new DDWAF({}), new Error('Invalid rules'))
     assert.throws(() => new DDWAF(''), new TypeError('First argument must be an object'))
   })
 
