@@ -21,7 +21,6 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
-    InstanceAccessor("rulesInfo", &DDWAF::GetRulesInfo, nullptr, napi_enumerable),
     // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
   });
   exports.Set("DDWAF", func);
@@ -35,23 +34,6 @@ Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
 
 Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(info.Env(), this->_disposed);
-}
-
-Napi::Value DDWAF::GetRulesInfo(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-
-  if (this->_disposed) return env.Null();
-
-  Napi::Object result = Napi::Object::New(env);
-
-  if (this->_ruleset_info.version != nullptr) {
-    result.Set("version", Napi::String::New(env, this->_ruleset_info.version));
-  }
-  result.Set("loaded", Napi::Number::New(env, this->_ruleset_info.loaded));
-  result.Set("failed", Napi::Number::New(env, this->_ruleset_info.failed));
-  Napi::Value errors = from_ddwaf_object(&this->_ruleset_info.errors, env);
-  result.Set("errors", errors);
-  return result;
 }
 
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
@@ -110,9 +92,16 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
 
+  ddwaf_ruleset_info rules_info;
+
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &this->_ruleset_info);
+  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &rules_info);
   ddwaf_object_free(&rules);
+
+  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(rules_info, env);
+  info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
+
+  ddwaf_ruleset_info_free(&rules_info);
 
   if (handle == nullptr) {
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
@@ -129,7 +118,6 @@ void DDWAF::Finalize(Napi::Env env) {
     return;
   }
   ddwaf_destroy(this->_handle);
-  ddwaf_ruleset_info_free(&this->_ruleset_info);
   this->_disposed = true;
 }
 
@@ -160,10 +148,16 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   mlog("building rules update");
   to_ddwaf_object(&update, env, info[0], 0, false);
 
+  ddwaf_ruleset_info rules_info;
+
   mlog("Update DDWAF instance");
-  ddwaf_ruleset_info_free(&this->_ruleset_info);
-  ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &this->_ruleset_info);
+  ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &rules_info);
   ddwaf_object_free(&update);
+
+  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(rules_info, env);
+  info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
+
+  ddwaf_ruleset_info_free(&rules_info);
 
   if (updated_handle != NULL) {
     mlog("New DDWAF updated instance")

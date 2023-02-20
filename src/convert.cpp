@@ -225,3 +225,17 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
 
   return result;
 }
+
+Napi::Object from_ddwaf_ruleset_info(ddwaf_ruleset_info ruleset_info, Napi::Env env) {
+  Napi::Object result = Napi::Object::New(env);
+
+  if (ruleset_info.version != nullptr) {
+    result.Set("version", Napi::String::New(env, ruleset_info.version));
+  }
+  result.Set("loaded", Napi::Number::New(env, ruleset_info.loaded));
+  result.Set("failed", Napi::Number::New(env, ruleset_info.failed));
+  Napi::Value errors = from_ddwaf_object(&ruleset_info.errors, env);
+  result.Set("errors", errors);
+
+  return result;
+}

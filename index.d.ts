@@ -31,7 +31,7 @@ export class DDWAF {
     errors: {
       [errorString: string]: string[]
     }
-  } | null;
+  };
 
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,

@@ -141,7 +141,6 @@ describe('DDWAF', () => {
     })
 
     waf.dispose()
-    assert.strictEqual(waf.rulesInfo, null)
   })
 
   it('should collect an attack with updated rule data', () => {
