@@ -84,7 +84,7 @@ describe('DDWAF', () => {
     it('should throw an error when updating a disposed WAF instance', () => {
       const waf = new DDWAF(rules)
       waf.dispose()
-      assert.throws(() => waf.update(rules), new Error('Could not update a WAF disposed instance'))
+      assert.throws(() => waf.update(rules), new Error('Could not update a disposed WAF instance'))
     })
 
     it('should throw an exception when WAF update has not been updated - nothing to update', () => {

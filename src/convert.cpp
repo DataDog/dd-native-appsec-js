@@ -226,7 +226,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
   return result;
 }
 
-Napi::Object from_ddwaf_ruleset_info(ddwaf_ruleset_info* ruleset_info, Napi::Env env) {
+Napi::Object from_ddwaf_ruleset_info(ddwaf_ruleset_info *ruleset_info, Napi::Env env) {
   Napi::Object result = Napi::Object::New(env);
 
   if (ruleset_info->version != nullptr) {

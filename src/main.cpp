@@ -127,20 +127,21 @@ void DDWAF::dispose(const Napi::CallbackInfo& info) {
 }
 
 void DDWAF::update(const Napi::CallbackInfo& info) {
+  mlog("calling update on DDWAF");
+
   Napi::Env env = info.Env();
 
-  size_t arg_len = info.Length();
-  if (arg_len < 1) {
+  if (this->_disposed) {
+    Napi::Error::New(env, "Could not update a disposed WAF instance").ThrowAsJavaScriptException();
+    return;
+  }
+
+  if (info.Length() < 1) {
     Napi::Error::New(env, "Wrong number of arguments, expected at least 1").ThrowAsJavaScriptException();
     return;
   }
   if (!info[0].IsObject()) {
     Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
-    return;
-  }
-
-  if (this->_disposed) {
-    Napi::Error::New(env, "Could not update a WAF disposed instance").ThrowAsJavaScriptException();
     return;
   }
 
