@@ -96,7 +96,7 @@ describe('DDWAF', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
-          rules_version: '1.3.1'
+          rules_version: '1.3.0'
         },
         rules: [{
           id: 'block_ip',
@@ -124,7 +124,7 @@ describe('DDWAF', () => {
       })
 
       assert.deepStrictEqual(waf.rulesInfo, {
-        version: '1.3.1',
+        version: '1.3.0',
         loaded: 1,
         failed: 0,
         errors: {}
