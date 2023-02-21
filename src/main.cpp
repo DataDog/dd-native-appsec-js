@@ -159,11 +159,15 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
 
   ddwaf_ruleset_info_free(&rules_info);
 
-  if (updated_handle != NULL) {
-    mlog("New DDWAF updated instance")
-    ddwaf_destroy(this->_handle);
-    this->_handle = updated_handle;
+  if (updated_handle == nullptr) {
+    mlog("DDWAF updated handle is null");
+    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
+    return;
   }
+
+  mlog("New DDWAF updated instance")
+  ddwaf_destroy(this->_handle);
+  this->_handle = updated_handle;
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
