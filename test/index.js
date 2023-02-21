@@ -71,6 +71,12 @@ describe('DDWAF', () => {
   })
 
   describe('WAF update', () => {
+    it('should throw an error when updating a disposed WAF instance', () => {
+      const waf = new DDWAF(rules)
+      waf.dispose()
+      assert.throws(() => waf.update(rules), new Error('Could not update a disposed WAF instance'))
+    })
+
     it('should throw an error when updating a WAF instance with no arguments', () => {
       const waf = new DDWAF(rules)
       assert.throws(() => waf.update(), new Error('Wrong number of arguments, expected at least 1'))
@@ -79,12 +85,6 @@ describe('DDWAF', () => {
     it('should throw a type error when updating a WAF instance with invalid arguments', () => {
       const waf = new DDWAF(rules)
       assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
-    })
-
-    it('should throw an error when updating a disposed WAF instance', () => {
-      const waf = new DDWAF(rules)
-      waf.dispose()
-      assert.throws(() => waf.update(rules), new Error('Could not update a disposed WAF instance'))
     })
 
     it('should throw an exception when WAF update has not been updated - nothing to update', () => {
