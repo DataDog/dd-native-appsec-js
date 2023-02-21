@@ -98,7 +98,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &rules_info);
   ddwaf_object_free(&rules);
 
-  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(rules_info, env);
+  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(&rules_info, env);
   info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
 
   ddwaf_ruleset_info_free(&rules_info);
@@ -154,7 +154,7 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &rules_info);
   ddwaf_object_free(&update);
 
-  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(rules_info, env);
+  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(&rules_info, env);
   info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
 
   ddwaf_ruleset_info_free(&rules_info);
