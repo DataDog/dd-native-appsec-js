@@ -70,178 +70,227 @@ describe('DDWAF', () => {
     }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
 
-  it('should throw an error when updating a WAF instance with no arguments', () => {
-    const waf = new DDWAF(rules)
-    assert.throws(() => waf.update(), new Error('Wrong number of arguments, expected at least 1'))
-  })
+  describe('WAF update', () => {
+    it('should throw an error when updating a WAF instance with no arguments', () => {
+      const waf = new DDWAF(rules)
+      assert.throws(() => waf.update(), new Error('Wrong number of arguments, expected at least 1'))
+    })
 
-  it('should throw a type error when updating a WAF instance with invalid arguments', () => {
-    const waf = new DDWAF(rules)
-    assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
-  })
+    it('should throw a type error when updating a WAF instance with invalid arguments', () => {
+      const waf = new DDWAF(rules)
+      assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
+    })
 
-  it('should throw an error when updating a disposed WAF instance', () => {
-    const waf = new DDWAF(rules)
-    waf.dispose()
-    assert.throws(() => waf.update(rules), new Error('Could not update a WAF disposed instance'))
-  })
+    it('should throw an error when updating a disposed WAF instance', () => {
+      const waf = new DDWAF(rules)
+      waf.dispose()
+      assert.throws(() => waf.update(rules), new Error('Could not update a WAF disposed instance'))
+    })
 
-  it('should throw an exception when WAF update has not been updated - nothing to update', () => {
-    const waf = new DDWAF(rules)
-    assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
-  })
+    it('should throw an exception when WAF update has not been updated - nothing to update', () => {
+      const waf = new DDWAF(rules)
+      assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
+    })
 
-  it('should update rulesInfo when updating a WAF instance with new ruleSet', () => {
-    const waf = new DDWAF({
-      version: '2.2',
-      metadata: {
-        rules_version: '1.3.1'
-      },
-      rules: [{
-        id: 'block_ip',
-        name: 'block ip',
-        tags: {
-          type: 'ip_addresses',
-          category: 'blocking'
+    it('should update rulesInfo when updating a WAF instance with new ruleSet', () => {
+      const waf = new DDWAF({
+        version: '2.2',
+        metadata: {
+          rules_version: '1.3.1'
         },
-        conditions: [
+        rules: [{
+          id: 'block_ip',
+          name: 'block ip',
+          tags: {
+            type: 'ip_addresses',
+            category: 'blocking'
+          },
+          conditions: [
+            {
+              parameters: {
+                inputs: [
+                  { address: 'http.client_ip' }
+                ],
+                data: 'blocked_ips'
+              },
+              operator: 'ip_match'
+            }
+          ],
+          transformers: [],
+          on_match: [
+            'block'
+          ]
+        }]
+      })
+
+      assert.deepStrictEqual(waf.rulesInfo, {
+        version: '1.3.1',
+        loaded: 1,
+        failed: 0,
+        errors: {}
+      })
+
+      waf.update(rules)
+      assert.deepStrictEqual(waf.rulesInfo, {
+        version: '1.3.1',
+        loaded: 7,
+        failed: 3,
+        errors: {
+          'missing key \'regex\'': [
+            'invalid_1'
+          ],
+          'invalid regular expression: *': [
+            'invalid_2',
+            'invalid_3'
+          ]
+        }
+      })
+
+      waf.dispose()
+    })
+
+    it('should collect an attack with updated rule data', () => {
+      const IP_TO_BLOCK = '123.123.123.123'
+
+      const waf = new DDWAF(rules)
+      const context = waf.createContext()
+      const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+      assert(!resultBeforeUpdatingRuleData.status)
+
+      const updateWithRulesData = {
+        rules_data: [
           {
-            parameters: {
-              inputs: [
-                { address: 'http.client_ip' }
-              ],
-              data: 'blocked_ips'
-            },
-            operator: 'ip_match'
+            id: 'blocked_ips',
+            type: 'ip_with_expiration',
+            data: [{ value: IP_TO_BLOCK }]
           }
-        ],
-        transformers: [],
-        on_match: [
-          'block'
-        ]
-      }]
-    })
-
-    assert.deepStrictEqual(waf.rulesInfo, {
-      version: '1.3.1',
-      loaded: 1,
-      failed: 0,
-      errors: {}
-    })
-
-    waf.update(rules)
-    assert.deepStrictEqual(waf.rulesInfo, {
-      version: '1.3.1',
-      loaded: 7,
-      failed: 3,
-      errors: {
-        'missing key \'regex\'': [
-          'invalid_1'
-        ],
-        'invalid regular expression: *': [
-          'invalid_2',
-          'invalid_3'
         ]
       }
+
+      waf.update(updateWithRulesData)
+      const contextWithRuleData = waf.createContext()
+      const resultAfterUpdatingRuleData = contextWithRuleData.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
+
+      assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
+      assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
+      assert(resultAfterUpdatingRuleData.data)
+      assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
+      assert(!context.disposed)
     })
 
-    waf.dispose()
-  })
-
-  it('should collect an attack with updated rule data', () => {
-    const IP_TO_BLOCK = '123.123.123.123'
-
-    const waf = new DDWAF(rules)
-    const context = waf.createContext()
-    const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
-    assert(!resultBeforeUpdatingRuleData.status)
-
-    const updateWithRulesData = {
-      rules_data: [
+    describe('Toggle rules', () => {
+      [
         {
-          id: 'blocked_ips',
-          type: 'ip_with_expiration',
-          data: [{ value: IP_TO_BLOCK }]
-        }
-      ]
-    }
-
-    waf.update(updateWithRulesData)
-    const contextWithRuleData = waf.createContext()
-    const resultAfterUpdatingRuleData = contextWithRuleData.run({ 'http.client_ip': IP_TO_BLOCK }, TIMEOUT)
-
-    assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
-    assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
-    assert(resultAfterUpdatingRuleData.data)
-    assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
-    assert(!context.disposed)
-  })
-
-  it('should not collect an attack on a toggled off rule', () => {
-    const waf = new DDWAF(rules)
-    const contextToggledOn = waf.createContext()
-
-    const resultToggledOn = contextToggledOn.run({
-      value_attack: 'matchall'
-    }, TIMEOUT)
-
-    assert.strictEqual(resultToggledOn.timeout, false)
-    assert.strictEqual(resultToggledOn.status, 'match')
-    assert(resultToggledOn.data)
-
-    const updateWithRulesOverride = {
-      rules_override: [
+          testName: 'on a toggled off rule selected by id',
+          rulesOverride: [
+            {
+              id: 'value_matchall',
+              enabled: false
+            }
+          ]
+        },
         {
-          id: 'value_matchall',
-          enabled: false
+          testName: 'on a toggled off rule selected by rules_target.tags',
+          rulesOverride: [
+            {
+              rules_target: [
+                {
+                  tags: {
+                    confidence: 1
+                  }
+                }
+              ],
+              enabled: false
+            }
+          ]
         }
-      ]
-    }
+      ].forEach((testData) => {
+        it(`should not collect an attack ${testData.testName}`, () => {
+          const waf = new DDWAF(rules)
+          const contextToggledOn = waf.createContext()
 
-    waf.update(updateWithRulesOverride)
-    const contextToggledOff = waf.createContext()
+          const resultToggledOn = contextToggledOn.run({
+            value_attack: 'matchall'
+          }, TIMEOUT)
 
-    const resultToggledOff = contextToggledOff.run({
-      value_attack: 'matchall'
-    }, TIMEOUT)
+          assert.strictEqual(resultToggledOn.timeout, false)
+          assert.strictEqual(resultToggledOn.status, 'match')
+          assert(resultToggledOn.data)
 
-    assert(!resultToggledOff.status)
-    assert(!resultToggledOff.data)
-  })
+          const updateWithRulesOverride = {
+            rules_override: testData.rulesOverride
+          }
 
-  it('should return block action when on_match is overridden', () => {
-    const waf = new DDWAF(rules)
-    const monitorContext = waf.createContext()
+          waf.update(updateWithRulesOverride)
+          const contextToggledOff = waf.createContext()
 
-    const resultMonitor = monitorContext.run({
-      value_attack: 'matchall'
-    }, TIMEOUT)
+          const resultToggledOff = contextToggledOff.run({
+            value_attack: 'matchall'
+          }, TIMEOUT)
 
-    assert.strictEqual(resultMonitor.timeout, false)
-    assert.strictEqual(resultMonitor.status, 'match')
-    assert.deepStrictEqual(resultMonitor.actions, [])
-    assert(resultMonitor.data)
+          assert(!resultToggledOff.status)
+          assert(!resultToggledOff.data)
+        })
+      })
+    })
 
-    const updateWithRulesOverride = {
-      rules_override: [
+    describe('Override on_match action', () => {
+      [
         {
-          id: 'value_matchall',
-          enabled: true,
-          on_match: ['block']
+          testName: 'when on_match is overridden in a rule selected by id',
+          rulesOverride: [
+            {
+              id: 'value_matchall',
+              on_match: ['block']
+            }
+          ]
+        },
+        {
+          testName: 'when on_match is overridden in a rule selected by rules_target.tags',
+          rulesOverride: [
+            {
+              rules_target: [
+                {
+                  tags: {
+                    confidence: 1
+                  }
+                }
+              ],
+              on_match: ['block']
+            }
+          ]
         }
-      ]
-    }
+      ].forEach((testData) => {
+        it(`should return block action ${testData.testName}`, () => {
+          const waf = new DDWAF(rules)
+          const monitorContext = waf.createContext()
 
-    waf.update(updateWithRulesOverride)
-    const blockContext = waf.createContext()
+          const resultMonitor = monitorContext.run({
+            value_attack: 'matchall'
+          }, TIMEOUT)
 
-    const resultBlock = blockContext.run({
-      value_attack: 'matchall'
-    }, TIMEOUT)
+          assert.strictEqual(resultMonitor.timeout, false)
+          assert.strictEqual(resultMonitor.status, 'match')
+          assert.deepStrictEqual(resultMonitor.actions, [])
+          assert(resultMonitor.data)
 
-    assert.strictEqual(resultBlock.timeout, false)
-    assert.strictEqual(resultBlock.status, 'match')
-    assert.deepStrictEqual(resultBlock.actions, ['block'])
+          const updateWithRulesOverride = {
+            rules_override: testData.rulesOverride
+          }
+
+          waf.update(updateWithRulesOverride)
+          const blockContext = waf.createContext()
+
+          const resultBlock = blockContext.run({
+            value_attack: 'matchall'
+          }, TIMEOUT)
+
+          assert.strictEqual(resultBlock.timeout, false)
+          assert.strictEqual(resultBlock.status, 'match')
+          assert.deepStrictEqual(resultBlock.actions, ['block'])
+        })
+      })
+    })
   })
 
   it('should support case_sensitive', () => {

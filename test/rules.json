@@ -107,7 +107,8 @@
       "id": "value_matchall",
       "name": "match any value",
       "tags": {
-        "type": "value_matchall"
+        "type": "value_matchall",
+        "confidence": 1
       },
       "conditions": [
         {
