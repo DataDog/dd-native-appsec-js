@@ -37,6 +37,19 @@ describe('DDWAF', () => {
     })
   })
 
+  it('should have requiredAddresses', () => {
+    const waf = new DDWAF(rules)
+
+    assert.deepStrictEqual(waf.requiredAddresses, new Set([
+      'http.client_ip',
+      'server.request.headers.no_cookies',
+      'server.response.status',
+      'value_attack',
+      'key_attack',
+      'server.request.body'
+    ]))
+  })
+
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
@@ -92,7 +105,7 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update rulesInfo when updating a WAF instance with new ruleSet', () => {
+    it('should update rulesInfo and requiredAddresses when updating a WAF instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
@@ -129,6 +142,9 @@ describe('DDWAF', () => {
         failed: 0,
         errors: {}
       })
+      assert.deepStrictEqual(waf.requiredAddresses, new Set([
+        'http.client_ip'
+      ]))
 
       waf.update(rules)
       assert.deepStrictEqual(waf.rulesInfo, {
@@ -145,6 +161,14 @@ describe('DDWAF', () => {
           ]
         }
       })
+      assert.deepStrictEqual(waf.requiredAddresses, new Set([
+        'http.client_ip',
+        'server.request.headers.no_cookies',
+        'server.response.status',
+        'value_attack',
+        'key_attack',
+        'server.request.body'
+      ]))
 
       waf.dispose()
     })
