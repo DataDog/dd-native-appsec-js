@@ -33,6 +33,8 @@ export class DDWAF {
     }
   };
 
+  readonly requiredAddresses: Set<string>;
+
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string

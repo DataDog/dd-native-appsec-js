@@ -21,7 +21,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
-    // TODO(simon-id): should we have an InstanceValue for rulesInfo here ?
+    // TODO(simon-id): should we have an InstanceValue for rulesInfo and requiredAddresses here ?
   });
   exports.Set("DDWAF", func);
   return exports;
@@ -110,6 +110,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   this->_handle = handle;
   this->_disposed = false;
+
+  this->update_required_addresses(info);
 }
 
 void DDWAF::Finalize(Napi::Env env) {
@@ -169,6 +171,25 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   mlog("New DDWAF updated instance")
   ddwaf_destroy(this->_handle);
   this->_handle = updated_handle;
+
+  this->update_required_addresses(info);
+}
+
+void DDWAF::update_required_addresses(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  uint32_t size = 0;
+  const char* const* required_addresses = ddwaf_required_addresses(this->_handle, &size);
+
+  Napi::Value set = env.RunScript("new Set()");
+  Napi::Function set_add = set.As<Napi::Object>().Get("add").As<Napi::Function>();
+
+  for (uint32_t i = 0; i < size; ++i) {
+    Napi::String address = Napi::String::New(env, required_addresses[i]);
+    set_add.Call(set, {address});
+  }
+
+  info.This().As<Napi::Object>().Set("requiredAddresses", set);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
