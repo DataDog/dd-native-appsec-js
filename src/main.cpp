@@ -2,7 +2,8 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION  4
+// min support Node.js 14.0.0 - https://nodejs.org/api/n-api.html#node-api-version-matrix
+#define NAPI_VERSION  6
 #include <napi.h>
 #include <stdio.h>
 #include <ddwaf.h>
@@ -14,7 +15,6 @@
 #include "src/log.h"
 #include "src/convert.h"
 
-Napi::FunctionReference* constructor = new Napi::FunctionReference();
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
@@ -202,8 +202,8 @@ Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
     return env.Null();
   }
   mlog("Create context");
-  Napi::Value context = constructor->New({});
-  DDWAFContext* raw = Napi::ObjectWrap<DDWAFContext>::Unwrap(context.As<Napi::Object>());
+  Napi::Object context = env.GetInstanceData<Napi::FunctionReference>()->New({});
+  DDWAFContext* raw = Napi::ObjectWrap<DDWAFContext>::Unwrap(context);
   if (!raw->init(this->_handle)) {
     Napi::Error::New(env, "Could not create context").ThrowAsJavaScriptException();
     return env.Null();
@@ -349,7 +349,10 @@ Napi::Object DDWAFContext::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod<&DDWAFContext::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAFContext::GetDisposed, nullptr, napi_enumerable),
   });
+
+  Napi::FunctionReference* constructor = new Napi::FunctionReference();
   *constructor = Napi::Persistent(func);
+  env.SetInstanceData(constructor);
   return exports;
 }
 
