@@ -3,7 +3,7 @@
   "version": "3.1.0",
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
-  "libddwaf_version": "1.8.2",
+  "libddwaf_version": "1.10.0",
   "scripts": {
     "install": "exit 0",
     "rebuild": "node-gyp rebuild",
