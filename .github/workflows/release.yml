@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+env:
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+jobs:
+  download-libddwaf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install --ignore-scripts
+      - run: node scripts/setup
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libddwaf
+          path: libddwaf/**/*
+
+  build:
+    needs: download-libddwaf
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
+    with:
+      cache: true
+      napi: true
+      package-manager: 'npm'
+      postbuild: 'node scripts/postbuild'
+      skip: 'linux-arm linux-ia32'
+      target-name: 'appsec'
+
+  pack:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - run: npm pack
+      - uses: codex-team/action-nodejs-package-info@v1
+        id: package
+      - uses: actions/upload-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          path: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+
+  create_release:
+    needs: pack
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v3
+      - uses: codex-team/action-nodejs-package-info@v1.1
+        id: package
+      - uses: actions/download-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+      - uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.package.outputs.version }}
+          release_name: ${{ steps.package.outputs.version }}
+          body: |
+            Release
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          asset_name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          asset_content_type: application/tar+gzip
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-latest
+    environment: npm
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: codex-team/action-nodejs-package-info@v1.1
+        id: package
+      - uses: actions/download-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+      - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
