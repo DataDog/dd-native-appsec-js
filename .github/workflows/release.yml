@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - julio/automatic-release
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 env:
@@ -33,33 +31,31 @@ jobs:
       skip: 'linux-arm linux-ia32'
       target-name: 'appsec'
 
-  publish:
+  pack:
     needs: build
     runs-on: ubuntu-latest
-    environment: npm
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
-      - uses: actions/setup-node@v3
-        with:
-          registry-url: 'https://registry.npmjs.org'
-      - run: npm publish --dry-run
-      - uses: codex-team/action-nodejs-package-info@v1.1
+      - run: npm pack
+      - uses: codex-team/action-nodejs-package-info@v1
         id: package
-      # - run: |
-      #     git tag v${{ steps.package.outputs.version }}
-      #     git push origin v${{ steps.package.outputs.version }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          path: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
 
   create_release:
-    needs: publish
+    needs: pack
     runs-on: ubuntu-latest
+    environment: release
     steps:
-      - run: ls -l
       - uses: actions/checkout@v3
       - uses: codex-team/action-nodejs-package-info@v1.1
         id: package
+      - uses: actions/download-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}
       - uses: actions/create-release@v1
         id: create_release
         env:
@@ -68,14 +64,28 @@ jobs:
           tag_name: v${{ steps.package.outputs.version }}
           release_name: Release ${{ steps.package.outputs.version }}
           body: |
-            Test release
+            Release
           draft: false
           prerelease: false
-      # - uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./datadog-native-iast-taint-tracking-${{ steps.package.outputs.version }}.tgz
-      #     asset_name: datadog-native-iast-taint-tracking-${{ steps.package.outputs.version }}
-      #     asset_content_type: application/tar+gzip
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          asset_name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          asset_content_type: application/tar+gzip
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-latest
+    environment: npm
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm publish --dry-run
