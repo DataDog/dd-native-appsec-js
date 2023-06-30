@@ -73,7 +73,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
-          asset_name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          asset_name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
           asset_content_type: application/tar+gzip
 
   publish:
