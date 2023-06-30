@@ -83,6 +83,9 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/download-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          path: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
       - uses: actions/setup-node@v3
         with:
           registry-url: 'https://registry.npmjs.org'
