@@ -42,7 +42,7 @@ jobs:
         id: package
       - uses: actions/upload-artifact@v3
         with:
-          name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
           path: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
 
   create_release:
