@@ -55,7 +55,7 @@ jobs:
         id: package
       - uses: actions/download-artifact@v3
         with:
-          name: datadog-native-appsec-${{ steps.package.outputs.version }}
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
       - uses: actions/create-release@v1
         id: create_release
         env:
