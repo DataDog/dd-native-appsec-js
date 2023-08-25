@@ -22,17 +22,27 @@ describe('DDWAF', () => {
     const waf = new DDWAF(rules)
 
     assert.deepStrictEqual(waf.rulesInfo, {
-      version: '1.3.1',
-      loaded: 7,
-      failed: 3,
-      errors: {
-        'missing key \'regex\'': [
-          'invalid_1'
+      ruleset_version: '1.3.1',
+      rules: {
+        loaded: [
+          'block_ip',
+          'value_attack',
+          'key_attack',
+          'nfd-000-001',
+          'value_matchall',
+          'key_matchall',
+          'long_rule'
         ],
-        'invalid regular expression: *': [
-          'invalid_2',
-          'invalid_3'
-        ]
+        failed: ['invalid_1', 'invalid_2', 'invalid_3'],
+        errors: {
+          'missing key \'regex\'': [
+            'invalid_1'
+          ],
+          'invalid regular expression: *': [
+            'invalid_2',
+            'invalid_3'
+          ]
+        }
       }
     })
   })
@@ -137,10 +147,12 @@ describe('DDWAF', () => {
       })
 
       assert.deepStrictEqual(waf.rulesInfo, {
-        version: '1.3.0',
-        loaded: 1,
-        failed: 0,
-        errors: {}
+        ruleset_version: '1.3.0',
+        rules: {
+          loaded: ['block_ip'],
+          failed: [],
+          errors: {}
+        }
       })
       assert.deepStrictEqual(waf.requiredAddresses, new Set([
         'http.client_ip'
@@ -148,17 +160,27 @@ describe('DDWAF', () => {
 
       waf.update(rules)
       assert.deepStrictEqual(waf.rulesInfo, {
-        version: '1.3.1',
-        loaded: 7,
-        failed: 3,
-        errors: {
-          'missing key \'regex\'': [
-            'invalid_1'
+        ruleset_version: '1.3.1',
+        rules: {
+          loaded: [
+            'block_ip',
+            'value_attack',
+            'key_attack',
+            'nfd-000-001',
+            'value_matchall',
+            'key_matchall',
+            'long_rule'
           ],
-          'invalid regular expression: *': [
-            'invalid_2',
-            'invalid_3'
-          ]
+          failed: ['invalid_1', 'invalid_2', 'invalid_3'],
+          errors: {
+            'missing key \'regex\'': [
+              'invalid_1'
+            ],
+            'invalid regular expression: *': [
+              'invalid_2',
+              'invalid_3'
+            ]
+          }
         }
       })
       assert.deepStrictEqual(waf.requiredAddresses, new Set([
@@ -377,7 +399,7 @@ describe('DDWAF', () => {
 
       assert.strictEqual(result.status, 'match')
       assert(result.data)
-      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      assert.strictEqual(result.data[0].rule_matches[0].parameters[0].value, expected)
     }
   })
 
@@ -414,7 +436,7 @@ describe('DDWAF', () => {
       if (expected !== undefined) {
         assert.strictEqual(result.status, 'match')
         assert(result.data)
-        assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+        assert.strictEqual(result.data[0].rule_matches[0].parameters[0].value, expected)
       }
     }
   })
@@ -435,8 +457,8 @@ describe('DDWAF', () => {
 
     assert(result)
     assert(result.data)
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+    assert.strictEqual(result.data[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(result.data[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
   it('should obfuscate values', () => {
@@ -453,8 +475,8 @@ describe('DDWAF', () => {
 
     assert(result)
     assert(result.data)
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+    assert.strictEqual(result.data[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(result.data[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 })
 

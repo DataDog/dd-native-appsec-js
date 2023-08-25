@@ -19,6 +19,4 @@ ddwaf_object* to_ddwaf_object(
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth = 0);
 
-Napi::Object from_ddwaf_ruleset_info(ddwaf_ruleset_info *ruleset_info, Napi::Env env);
-
 #endif  // SRC_CONVERT_H_

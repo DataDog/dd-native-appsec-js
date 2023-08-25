@@ -121,7 +121,7 @@ ddwaf_object* to_ddwaf_object(
     if (coerceToString) {
       return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
     } else {
-      return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+      return ddwaf_object_string_from_signed(object, val.ToNumber().Int64Value());
     }
   }
   if (val.IsBoolean()) {
@@ -142,7 +142,7 @@ ddwaf_object* to_ddwaf_object(
     if (coerceToString || !lossless) {
       return to_ddwaf_string(object, val, lim);
     } else {
-      return ddwaf_object_signed(object, intValue);
+      return ddwaf_object_string_from_signed(object, intValue);
     }
   }
   */
@@ -222,20 +222,6 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
     mlog("Exception pending");
     return env.Null();
   }
-
-  return result;
-}
-
-Napi::Object from_ddwaf_ruleset_info(ddwaf_ruleset_info *ruleset_info, Napi::Env env) {
-  Napi::Object result = Napi::Object::New(env);
-
-  if (ruleset_info->version != nullptr) {
-    result.Set("version", Napi::String::New(env, ruleset_info->version));
-  }
-  result.Set("loaded", Napi::Number::New(env, ruleset_info->loaded));
-  result.Set("failed", Napi::Number::New(env, ruleset_info->failed));
-  Napi::Value errors = from_ddwaf_object(&ruleset_info->errors, env);
-  result.Set("errors", errors);
 
   return result;
 }

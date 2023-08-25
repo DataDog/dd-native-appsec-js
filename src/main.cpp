@@ -92,16 +92,16 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false);
 
-  ddwaf_ruleset_info rules_info;
+  ddwaf_object diagnostics;
 
   mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &rules_info);
+  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &diagnostics);
   ddwaf_object_free(&rules);
 
-  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(&rules_info, env);
-  info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
+  Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
+  info.This().As<Napi::Object>().Set("rulesInfo", diagnostics_js);
 
-  ddwaf_ruleset_info_free(&rules_info);
+  ddwaf_object_free(&diagnostics);
 
   if (handle == nullptr) {
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
@@ -151,16 +151,16 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   mlog("building rules update");
   to_ddwaf_object(&update, env, info[0], 0, false);
 
-  ddwaf_ruleset_info rules_info;
+  ddwaf_object diagnostics;
 
   mlog("Update DDWAF instance");
-  ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &rules_info);
+  ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &diagnostics);
   ddwaf_object_free(&update);
 
-  Napi::Object ruleset_info_js = from_ddwaf_ruleset_info(&rules_info, env);
-  info.This().As<Napi::Object>().Set("rulesInfo", ruleset_info_js);
+  Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
+  info.This().As<Napi::Object>().Set("rulesInfo", diagnostics_js);
 
-  ddwaf_ruleset_info_free(&rules_info);
+  ddwaf_object_free(&diagnostics);
 
   if (updated_handle == nullptr) {
     mlog("DDWAF updated handle is null");
@@ -292,12 +292,8 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   if (code == DDWAF_MATCH) {
     res.Set("status", Napi::String::New(env, "match"));
-    res.Set("data", Napi::String::New(env, result.data));
-    Napi::Array actions = Napi::Array::New(env, result.actions.size);
-    for (uint32_t i = 0; i < result.actions.size; ++i) {
-      actions[i] = Napi::String::New(env, result.actions.array[i]);
-    }
-    res.Set("actions", actions);
+    res.Set("data", from_ddwaf_object(&result.events, env));
+    res.Set("actions", from_ddwaf_object(&result.actions, env));
   }
   ddwaf_result_free(&result);
   return res;
