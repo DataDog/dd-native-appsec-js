@@ -18,10 +18,10 @@ describe('DDWAF', () => {
     assert.strictEqual(v, pkg.libddwaf_version)
   })
 
-  it('should have rulesInfo', () => {
+  it('should have diagnostics', () => {
     const waf = new DDWAF(rules)
 
-    assert.deepStrictEqual(waf.rulesInfo, {
+    assert.deepStrictEqual(waf.diagnostics, {
       ruleset_version: '1.3.1',
       rules: {
         loaded: [
@@ -115,7 +115,7 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update rulesInfo and requiredAddresses when updating a WAF instance with new ruleSet', () => {
+    it('should update diagnostics and requiredAddresses when updating a WAF instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
@@ -146,7 +146,7 @@ describe('DDWAF', () => {
         }]
       })
 
-      assert.deepStrictEqual(waf.rulesInfo, {
+      assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.0',
         rules: {
           loaded: ['block_ip'],
@@ -159,7 +159,7 @@ describe('DDWAF', () => {
       ]))
 
       waf.update(rules)
-      assert.deepStrictEqual(waf.rulesInfo, {
+      assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.1',
         rules: {
           loaded: [

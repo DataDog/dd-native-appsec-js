@@ -99,7 +99,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_object_free(&rules);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
-  info.This().As<Napi::Object>().Set("rulesInfo", diagnostics_js);
+  info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
 
   ddwaf_object_free(&diagnostics);
 
@@ -158,7 +158,7 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   ddwaf_object_free(&update);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
-  info.This().As<Napi::Object>().Set("rulesInfo", diagnostics_js);
+  info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
 
   ddwaf_object_free(&diagnostics);
 
