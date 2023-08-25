@@ -292,7 +292,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   if (code == DDWAF_MATCH) {
     res.Set("status", Napi::String::New(env, "match"));
-    res.Set("data", from_ddwaf_object(&result.events, env));
+    res.Set("events", from_ddwaf_object(&result.events, env));
     res.Set("actions", from_ddwaf_object(&result.actions, env));
   }
   ddwaf_result_free(&result);
