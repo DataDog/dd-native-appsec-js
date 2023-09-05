@@ -3,11 +3,16 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 type rules = object;
+type rule = object;
+type ruleMatch = object;
 
 type result = {
   timeout: boolean;
   totalRuntime?: number;
-  data?: string;
+  events?: [{     // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
+    rule: rule,
+    rule_matches: ruleMatch[]
+  }];
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
 };
@@ -24,12 +29,47 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
-  readonly rulesInfo: {
-    version?: string,
-    loaded: number,
-    failed: number,
-    errors: {
-      [errorString: string]: string[]
+  readonly diagnostics: {
+    ruleset_version?: string,
+    rules?: {
+      loaded: string[],
+      failed: string[],
+      error: string,
+      errors: {
+        [errorString: string]: string[]
+      }
+    },
+    custom_rules?: {
+      loaded: string[],
+      failed: string[],
+      error: string,
+      errors: {
+        [errorString: string]: string[]
+      }
+    },
+    exclusions?: {
+      loaded: string[],
+      failed: string[],
+      error: string,
+      errors: {
+        [errorString: string]: string[]
+      }
+    },
+    rules_override?: {
+      loaded: string[],
+      failed: string[],
+      error: string,
+      errors: {
+        [errorString: string]: string[]
+      }
+    },
+    rules_data?: {
+      loaded: string[],
+      failed: string[],
+      error: string,
+      errors: {
+        [errorString: string]: string[]
+      }
     }
   };
 
