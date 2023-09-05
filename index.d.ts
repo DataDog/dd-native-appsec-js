@@ -5,6 +5,14 @@
 type rules = object;
 type rule = object;
 type ruleMatch = object;
+type rulesInfo = {
+  loaded: string[],
+  failed: string[],
+  error: string,
+  errors: {
+    [errorString: string]: string[]
+  }
+}
 
 type result = {
   timeout: boolean;
@@ -31,46 +39,11 @@ export class DDWAF {
 
   readonly diagnostics: {
     ruleset_version?: string,
-    rules?: {
-      loaded: string[],
-      failed: string[],
-      error: string,
-      errors: {
-        [errorString: string]: string[]
-      }
-    },
-    custom_rules?: {
-      loaded: string[],
-      failed: string[],
-      error: string,
-      errors: {
-        [errorString: string]: string[]
-      }
-    },
-    exclusions?: {
-      loaded: string[],
-      failed: string[],
-      error: string,
-      errors: {
-        [errorString: string]: string[]
-      }
-    },
-    rules_override?: {
-      loaded: string[],
-      failed: string[],
-      error: string,
-      errors: {
-        [errorString: string]: string[]
-      }
-    },
-    rules_data?: {
-      loaded: string[],
-      failed: string[],
-      error: string,
-      errors: {
-        [errorString: string]: string[]
-      }
-    }
+    rules?: rulesInfo,
+    custom_rules?: rulesInfo,
+    exclusions?: rulesInfo,
+    rules_override?: rulesInfo,
+    rules_data?: rulesInfo
   };
 
   readonly requiredAddresses: Set<string>;
