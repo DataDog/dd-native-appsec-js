@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 type rules = object;
-type rulesInfo = {
+type diagnosticsInfo = {
   loaded: string[],
   failed: string[],
   error: string,
@@ -34,11 +34,11 @@ export class DDWAF {
 
   readonly diagnostics: {
     ruleset_version?: string,
-    rules?: rulesInfo,
-    custom_rules?: rulesInfo,
-    exclusions?: rulesInfo,
-    rules_override?: rulesInfo,
-    rules_data?: rulesInfo
+    rules?: diagnosticsInfo,
+    custom_rules?: diagnosticsInfo,
+    exclusions?: diagnosticsInfo,
+    rules_override?: diagnosticsInfo,
+    rules_data?: diagnosticsInfo
   };
 
   readonly requiredAddresses: Set<string>;
