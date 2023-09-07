@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 type rules = object;
-type rule = object;
-type ruleMatch = object;
 type rulesInfo = {
   loaded: string[],
   failed: string[],
@@ -17,10 +15,7 @@ type rulesInfo = {
 type result = {
   timeout: boolean;
   totalRuntime?: number;
-  events?: [{     // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
-    rule: rule,
-    rule_matches: ruleMatch[]
-  }];
+  events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
 };
