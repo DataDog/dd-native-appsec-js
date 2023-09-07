@@ -18,21 +18,31 @@ describe('DDWAF', () => {
     assert.strictEqual(v, pkg.libddwaf_version)
   })
 
-  it('should have rulesInfo', () => {
+  it('should have diagnostics', () => {
     const waf = new DDWAF(rules)
 
-    assert.deepStrictEqual(waf.rulesInfo, {
-      version: '1.3.1',
-      loaded: 7,
-      failed: 3,
-      errors: {
-        'missing key \'regex\'': [
-          'invalid_1'
+    assert.deepStrictEqual(waf.diagnostics, {
+      ruleset_version: '1.3.1',
+      rules: {
+        loaded: [
+          'block_ip',
+          'value_attack',
+          'key_attack',
+          'nfd-000-001',
+          'value_matchall',
+          'key_matchall',
+          'long_rule'
         ],
-        'invalid regular expression: *': [
-          'invalid_2',
-          'invalid_3'
-        ]
+        failed: ['invalid_1', 'invalid_2', 'invalid_3'],
+        errors: {
+          'missing key \'regex\'': [
+            'invalid_1'
+          ],
+          'invalid regular expression: *': [
+            'invalid_2',
+            'invalid_3'
+          ]
+        }
       }
     })
   })
@@ -63,7 +73,7 @@ describe('DDWAF', () => {
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
-    assert(result.data)
+    assert(result.events)
     assert.deepStrictEqual(result.actions, [])
     assert(!context.disposed)
 
@@ -105,7 +115,7 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update rulesInfo and requiredAddresses when updating a WAF instance with new ruleSet', () => {
+    it('should update diagnostics and requiredAddresses when updating a WAF instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
@@ -136,29 +146,41 @@ describe('DDWAF', () => {
         }]
       })
 
-      assert.deepStrictEqual(waf.rulesInfo, {
-        version: '1.3.0',
-        loaded: 1,
-        failed: 0,
-        errors: {}
+      assert.deepStrictEqual(waf.diagnostics, {
+        ruleset_version: '1.3.0',
+        rules: {
+          loaded: ['block_ip'],
+          failed: [],
+          errors: {}
+        }
       })
       assert.deepStrictEqual(waf.requiredAddresses, new Set([
         'http.client_ip'
       ]))
 
       waf.update(rules)
-      assert.deepStrictEqual(waf.rulesInfo, {
-        version: '1.3.1',
-        loaded: 7,
-        failed: 3,
-        errors: {
-          'missing key \'regex\'': [
-            'invalid_1'
+      assert.deepStrictEqual(waf.diagnostics, {
+        ruleset_version: '1.3.1',
+        rules: {
+          loaded: [
+            'block_ip',
+            'value_attack',
+            'key_attack',
+            'nfd-000-001',
+            'value_matchall',
+            'key_matchall',
+            'long_rule'
           ],
-          'invalid regular expression: *': [
-            'invalid_2',
-            'invalid_3'
-          ]
+          failed: ['invalid_1', 'invalid_2', 'invalid_3'],
+          errors: {
+            'missing key \'regex\'': [
+              'invalid_1'
+            ],
+            'invalid regular expression: *': [
+              'invalid_2',
+              'invalid_3'
+            ]
+          }
         }
       })
       assert.deepStrictEqual(waf.requiredAddresses, new Set([
@@ -197,7 +219,7 @@ describe('DDWAF', () => {
 
       assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
       assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
-      assert(resultAfterUpdatingRuleData.data)
+      assert(resultAfterUpdatingRuleData.events)
       assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
       assert(!context.disposed)
     })
@@ -239,7 +261,7 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultToggledOn.timeout, false)
           assert.strictEqual(resultToggledOn.status, 'match')
-          assert(resultToggledOn.data)
+          assert(resultToggledOn.events)
 
           const updateWithRulesOverride = {
             rules_override: testData.rulesOverride
@@ -253,7 +275,7 @@ describe('DDWAF', () => {
           }, TIMEOUT)
 
           assert(!resultToggledOff.status)
-          assert(!resultToggledOff.data)
+          assert(!resultToggledOff.events)
         })
       })
     })
@@ -296,7 +318,7 @@ describe('DDWAF', () => {
           assert.strictEqual(resultMonitor.timeout, false)
           assert.strictEqual(resultMonitor.status, 'match')
           assert.deepStrictEqual(resultMonitor.actions, [])
-          assert(resultMonitor.data)
+          assert(resultMonitor.events)
 
           const updateWithRulesOverride = {
             rules_override: testData.rulesOverride
@@ -326,7 +348,7 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
-    assert(result.data)
+    assert(result.events)
   })
 
   it('should refuse invalid rule', () => {
@@ -376,8 +398,8 @@ describe('DDWAF', () => {
       }, TIMEOUT)
 
       assert.strictEqual(result.status, 'match')
-      assert(result.data)
-      assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+      assert(result.events)
+      assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
     }
   })
 
@@ -413,8 +435,8 @@ describe('DDWAF', () => {
 
       if (expected !== undefined) {
         assert.strictEqual(result.status, 'match')
-        assert(result.data)
-        assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, expected)
+        assert(result.events)
+        assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
       }
     }
   })
@@ -434,9 +456,9 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert(result)
-    assert(result.data)
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+    assert(result.events)
+    assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
   it('should obfuscate values', () => {
@@ -452,9 +474,9 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert(result)
-    assert(result.data)
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].value, '<Redacted>')
-    assert.strictEqual(JSON.parse(result.data)[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+    assert(result.events)
+    assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, '<Redacted>')
+    assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 })
 
@@ -469,7 +491,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
     assert.strictEqual(result1.status, 'match')
-    assert(result1.data)
+    assert(result1.events)
 
     const item = {}
     for (let i = 0; i < 1000; ++i) {
@@ -481,7 +503,7 @@ describe('limit tests', () => {
       'server.response.status': item
     }, TIMEOUT)
     assert(!result2.status)
-    assert(!result2.data)
+    assert(!result2.events)
   })
 
   it('should match a moderately deeply nested object', () => {
@@ -493,7 +515,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
-    assert(result.data)
+    assert(result.events)
   })
 
   it('should not match an extremely deeply nested object', () => {
@@ -505,7 +527,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
 
     assert(!result.status)
-    assert(!result.data)
+    assert(!result.events)
   })
 
   it('should not limit the rules object', () => {
@@ -517,7 +539,7 @@ describe('limit tests', () => {
       'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
     assert(result1.status)
-    assert(result1.data)
+    assert(result1.events)
 
     // test last item in big rule
     const context2 = waf.createContext()
@@ -525,7 +547,7 @@ describe('limit tests', () => {
       'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
     assert(result2.status)
-    assert(result2.data)
+    assert(result2.events)
   })
 })
 
