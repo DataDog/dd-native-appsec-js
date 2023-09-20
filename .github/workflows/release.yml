@@ -37,7 +37,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
       - run: npm version --no-git-tag-version ${{ steps.package.outputs.version }}-$(git rev-parse --short HEAD)+${{ github.run_id }}.${{ github.run_attempt }}
-      - run: npm publish --tag dev
       - run: npm pack
       - uses: codex-team/action-nodejs-package-info@v1.1
         id: package
