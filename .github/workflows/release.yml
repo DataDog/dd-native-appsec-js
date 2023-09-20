@@ -1,8 +1,9 @@
 name: Release
 
 on:
-  - push
-
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -36,7 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
-      - run: npm version --no-git-tag-version ${{ steps.package.outputs.version }}-$(git rev-parse --short HEAD)+${{ github.run_id }}.${{ github.run_attempt }}
       - run: npm pack
       - uses: codex-team/action-nodejs-package-info@v1.1
         id: package
@@ -45,10 +45,39 @@ jobs:
           name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
           path: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
 
+  create_release:
+    needs: pack
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v3
+      - uses: codex-team/action-nodejs-package-info@v1.1
+        id: package
+      - uses: actions/download-artifact@v3
+        with:
+          name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+      - uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.package.outputs.version }}
+          release_name: ${{ steps.package.outputs.version }}
+          body: |
+            Release
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          asset_name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
+          asset_content_type: application/tar+gzip
+
   publish:
     needs: pack
     runs-on: ubuntu-latest
-    environment: npm    
+    environment: npm
     permissions:
       id-token: write
     env:
@@ -63,5 +92,4 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           registry-url: 'https://registry.npmjs.org'
-      - run: npm version
-      - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz --tag test --provenance
+      - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz --provenance
