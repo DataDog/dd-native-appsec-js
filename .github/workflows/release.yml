@@ -48,7 +48,9 @@ jobs:
   publish:
     needs: pack
     runs-on: ubuntu-latest
-    environment: npm
+    environment: npm    
+    permissions:
+      id-token: write
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
