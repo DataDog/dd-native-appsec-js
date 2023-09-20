@@ -60,4 +60,5 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           registry-url: 'https://registry.npmjs.org'
-      - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz --dry-run
+      - run: npm version
+      - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz --dry-run --provenance
