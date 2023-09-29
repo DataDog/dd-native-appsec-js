@@ -96,7 +96,6 @@ describe('DDWAF', () => {
     }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
 
-
   describe('WAF update', () => {
     it('should throw an error when updating a disposed WAF instance', () => {
       const waf = new DDWAF(rules)
