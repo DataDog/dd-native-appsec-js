@@ -26,7 +26,7 @@ jobs:
     needs: download-libddwaf
     uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
     with:
-      cache: false
+      cache: true
       napi: true
       package-manager: 'npm'
       postbuild: 'node scripts/postbuild'
