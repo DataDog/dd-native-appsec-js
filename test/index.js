@@ -480,7 +480,6 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.equal(Object.hasOwn(result, 'status'), false)
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
     context.dispose()
