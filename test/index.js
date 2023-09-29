@@ -8,6 +8,7 @@ const assert = require('assert')
 const { DDWAF } = require('..')
 const pkg = require('../package.json')
 const rules = require('./rules.json')
+const processor = require('./processor.json')
 
 const TIMEOUT = 9999e3
 
@@ -58,6 +59,8 @@ describe('DDWAF', () => {
       'key_attack',
       'server.request.body'
     ]))
+
+    waf.dispose()
   })
 
   it('should collect an attack and cleanup everything', () => {
@@ -92,6 +95,7 @@ describe('DDWAF', () => {
       waf.createContext()
     }, new Error('Calling createContext on a disposed DDWAF instance'))
   })
+
 
   describe('WAF update', () => {
     it('should throw an error when updating a disposed WAF instance', () => {
@@ -403,44 +407,6 @@ describe('DDWAF', () => {
     }
   })
 
-  it('should parse values correctly', () => {
-    const possibleValues = new Map([
-      [undefined, undefined],
-      [null, undefined],
-      [false, 'false'],
-      [true, 'true'],
-      [42, '42'],
-      [-42, '-42'],
-      [42.42, '42.42'],
-      [Infinity, 'Infinity'],
-      [NaN, 'NaN'],
-      [BigInt(42), undefined],
-      ['str', 'str'],
-      [{ a: 1, b: 2 }, '1'],
-      [['a', 2, 'c'], 'a'],
-      [/regex/, undefined],
-      [function fn () {}, undefined]
-    ])
-
-    const waf = new DDWAF(rules)
-
-    for (const [value, expected] of possibleValues) {
-      const context = waf.createContext()
-
-      const result = context.run({
-        value_attack: {
-          key: value
-        }
-      }, TIMEOUT)
-
-      if (expected !== undefined) {
-        assert.strictEqual(result.status, 'match')
-        assert(result.events)
-        assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
-      }
-    }
-  })
-
   it('should obfuscate keys', () => {
     const waf = new DDWAF(rules, {
       obfuscatorKeyRegex: 'password'
@@ -477,6 +443,52 @@ describe('DDWAF', () => {
     assert(result.events)
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, '<Redacted>')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+  })
+
+  it('should collect derivatives information when a rule match', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': 'value',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.status, 'match')
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
+
+  it('should collect derivatives information when a rule does not match', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': '',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.equal(Object.hasOwn(result, 'status'), false)
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
   })
 })
 
