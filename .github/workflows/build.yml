@@ -32,6 +32,7 @@ jobs:
       postbuild: 'node scripts/postbuild'
       skip: 'linux-arm linux-ia32'
       target-name: 'appsec'
+      min-node-version: 14
 
   static-checks:
     strategy:
