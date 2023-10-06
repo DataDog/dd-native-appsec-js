@@ -29,6 +29,7 @@ jobs:
       cache: true
       napi: true
       package-manager: 'npm'
+      prebuild: 'npm i -g node-gyp'
       postbuild: 'node scripts/postbuild'
       skip: 'linux-arm linux-ia32'
       target-name: 'appsec'
