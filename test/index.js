@@ -488,6 +488,34 @@ describe('DDWAF', () => {
     waf.dispose()
     assert(waf.disposed)
   })
+
+  it('should collect derivatives in two consecutive calls', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    let result = context.run({
+      'server.request.body': '',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    result = context.run({
+      'server.request.query': ''
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
 })
 
 describe('limit tests', () => {
