@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, julio/node-gyp-issue ]
   pull_request:
     branches: [ main ]
 
