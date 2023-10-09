@@ -29,7 +29,7 @@ jobs:
       cache: false
       napi: true
       package-manager: 'npm'
-      postbuild: 'alias node-gyp=/opt/node-v12.0.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp && node scripts/postbuild'
+      postbuild: 'node scripts/postbuild'
       skip: 'linux-arm linux-ia32'
       target-name: 'appsec'
 
