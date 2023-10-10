@@ -24,7 +24,7 @@ jobs:
 
   build:
     needs: download-libddwaf
-    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@julio/fix-unsafe-option
     with:
       cache: true
       napi: true
