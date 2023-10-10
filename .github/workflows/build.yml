@@ -24,7 +24,7 @@ jobs:
 
   build:
     needs: download-libddwaf
-    uses: Datadog/action-prebuildify/.github/workflows/build.yml@julio/fix-node-gyp-missing
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
     with:
       cache: true
       napi: true
