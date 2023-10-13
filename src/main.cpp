@@ -262,7 +262,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   ddwaf_result result;
   ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true, false);
+  to_ddwaf_object(&data, env, info[0], 0, true);
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
 
