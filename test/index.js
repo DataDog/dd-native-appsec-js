@@ -59,8 +59,6 @@ describe('DDWAF', () => {
       'key_attack',
       'server.request.body'
     ]))
-
-    waf.dispose()
   })
 
   it('should collect an attack and cleanup everything', () => {
