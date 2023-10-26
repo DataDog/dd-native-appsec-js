@@ -370,40 +370,6 @@ describe('DDWAF', () => {
     assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, 0), err)
   })
 
-  it('should parse values correctly', () => {
-    const possibleValues = new Map([
-      [undefined, undefined],
-      [null, undefined],
-      [BigInt(42), undefined],
-      ['str', 'str'],
-      [{ a: 1, b: 2 }, '1'],
-      [['a', 2, 'c'], 'a'],
-      [/regex/, undefined],
-      [function fn () {}, undefined]
-    ])
-
-    const waf = new DDWAF(rules)
-
-    for (const [value, expected] of possibleValues) {
-      const context = waf.createContext()
-
-      const result = context.run({
-        value_attack: {
-          key: value
-        }
-      }, TIMEOUT)
-
-      assert.equal(result.timeout, false)
-      assert(result.totalRuntime > 0)
-
-      if (expected !== undefined) {
-        assert.strictEqual(result.status, 'match')
-        assert(result.events)
-        assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
-      }
-    }
-  })
-
   it('should parse keys correctly', () => {
     const possibleKeys = new Map([
       [undefined, 'undefined'],
@@ -437,6 +403,40 @@ describe('DDWAF', () => {
       assert.strictEqual(result.status, 'match')
       assert(result.events)
       assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
+    }
+  })
+
+  it('should parse values correctly', () => {
+    const possibleValues = new Map([
+      [undefined, undefined],
+      [null, undefined],
+      [BigInt(42), undefined],
+      ['str', 'str'],
+      [{ a: 1, b: 2 }, '1'],
+      [['a', 2, 'c'], 'a'],
+      [/regex/, undefined],
+      [function fn () {}, undefined]
+    ])
+
+    const waf = new DDWAF(rules)
+
+    for (const [value, expected] of possibleValues) {
+      const context = waf.createContext()
+
+      const result = context.run({
+        value_attack: {
+          key: value
+        }
+      }, TIMEOUT)
+
+      assert.equal(result.timeout, false)
+      assert(result.totalRuntime > 0)
+
+      if (expected !== undefined) {
+        assert.strictEqual(result.status, 'match')
+        assert(result.events)
+        assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
+      }
     }
   })
 
