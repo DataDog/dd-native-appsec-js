@@ -122,15 +122,6 @@ ddwaf_object* to_ddwaf_object(
     bool boolValue = val.ToBoolean().Value();
     return ddwaf_object_bool(object, boolValue);
   }
-  // TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
-  /*
-  if (val.IsBigInt()) {
-    mlog("creating BigInt");
-    bool lossless;
-    int64_t intValue = val.As<Napi::BigInt>().Int64Value(&lossless);
-    return ddwaf_object_string_from_signed(object, intValue);
-  }
-  */
   if (val.IsArray()) {
     mlog("creating Array");
     return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
