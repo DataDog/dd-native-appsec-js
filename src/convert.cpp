@@ -109,13 +109,24 @@ ddwaf_object* to_ddwaf_object(
     mlog("Max depth reached");
     return ddwaf_object_map(object);
   }
+  if (val.IsNull()) {
+    mlog("creating Null");
+    return ddwaf_object_null(object);
+  }
   if (val.IsString()) {
     mlog("creating String");
     return to_ddwaf_string(object, val, lim);
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    return ddwaf_object_string_from_signed(object, val.ToNumber().Int64Value());
+    double integer = val.ToNumber().Int64Value();
+    double decimal = val.ToNumber().DoubleValue();
+
+    if (decimal - integer) {
+      return ddwaf_object_float(object, val.ToNumber().DoubleValue());
+    } else {
+      return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    }
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");

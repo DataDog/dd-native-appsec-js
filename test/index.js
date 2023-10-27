@@ -243,7 +243,7 @@ describe('DDWAF', () => {
               rules_target: [
                 {
                   tags: {
-                    confidence: 1
+                    confidence: '1'
                   }
                 }
               ],
@@ -299,7 +299,7 @@ describe('DDWAF', () => {
               rules_target: [
                 {
                   tags: {
-                    confidence: 1
+                    confidence: '1'
                   }
                 }
               ],
@@ -410,7 +410,7 @@ describe('DDWAF', () => {
       [null, undefined],
       [BigInt(42), undefined],
       ['str', 'str'],
-      [{ a: 1, b: 2 }, '1'],
+      [{ a: '1', b: 2 }, '1'],
       [['a', 2, 'c'], 'a'],
       [/regex/, undefined],
       [function fn () {}, undefined]
@@ -513,6 +513,50 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
+
+  it('should collect all derivatives types', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': {
+        null: null,
+        integer: 42,
+        float: 42.42,
+        signed: -42,
+        boolean: true,
+        string: 'string',
+        array: [1, 2, 3],
+        obj: { key: 'value' }
+      },
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          null: [1],
+          boolean: [2],
+          float: [16],
+          integer: [4],
+          signed: [4],
+          string: [8],
+          array: [[[4]], { len: 3 }],
+          obj: [{ key: [8] }]
+        }
+      ]
+    })
 
     context.dispose()
     assert(context.disposed)
