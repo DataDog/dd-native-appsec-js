@@ -532,6 +532,8 @@ describe('DDWAF', () => {
         null: null,
         integer: 42,
         float: 42.42,
+        infinity: Infinity,
+        nan: NaN,
         signed: -42,
         boolean: true,
         string: 'string',
@@ -549,10 +551,12 @@ describe('DDWAF', () => {
           null: [1],
           boolean: [2],
           float: [16],
-          integer: [4],
-          signed: [4],
+          infinity: [16],
+          nan: [16],
+          integer: [16],
+          signed: [16],
           string: [8],
-          array: [[[4]], { len: 3 }],
+          array: [[[16]], { len: 3 }],
           obj: [{ key: [8] }]
         }
       ]

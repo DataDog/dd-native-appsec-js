@@ -2,12 +2,17 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
+#include <math.h>
 #include <napi.h>
 #include <napi-inl.h>
 #include <ddwaf.h>
+
+#include <limits>
 #include <string>
+
 #include "src/convert.h"
 #include "src/log.h"
+
 
 
 ddwaf_object* to_ddwaf_object_array(
@@ -119,14 +124,22 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    double integer = val.ToNumber().Int64Value();
-    double decimal = val.ToNumber().DoubleValue();
+    double value = val.ToNumber().DoubleValue();
 
-    if (decimal - integer) {
-      return ddwaf_object_float(object, val.ToNumber().DoubleValue());
-    } else {
-      return ddwaf_object_signed(object, val.ToNumber().Int64Value());
+    // Using fpclassify because NaN value does not match C++ quiet_NaN probably due to a mismatch between C++
+    // and IEEE754 standards.
+    switch (fpclassify(value)) {
+    case FP_NAN:
+      value = std::numeric_limits<double>::quiet_NaN();
+      break;
+    case FP_INFINITE:
+      value = std::numeric_limits<double>::infinity();
+      break;
+    default:
+      break;
     }
+
+    return ddwaf_object_float(object, value);
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
