@@ -150,13 +150,16 @@ ddwaf_object* to_ddwaf_object(
     mlog("creating Array");
     return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
   }
+  if (val.IsFunction()) {
+    // Special case because a function will evaluate true for both IsFunction and IsObject.
+    return ddwaf_object_invalid(object);
+  }
   if (val.IsObject()) {
     mlog("creating Object");
     return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim);
   }
-  mlog("creating empty map");
-  // we use empty maps for now instead of null. See issue !43
-  return ddwaf_object_map(object);
+  mlog("creating invalid object");
+  return ddwaf_object_invalid(object);
 }
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {

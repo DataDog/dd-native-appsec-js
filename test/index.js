@@ -570,7 +570,7 @@ describe('DDWAF', () => {
           obj: [{ key: [8] }],
           undefined: [0],
           bigint: [0],
-          regex: [0],
+          regex: [{}],
           function: [0]
         }
       ]
