@@ -262,7 +262,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   ddwaf_result result;
   ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true, true);
+  to_ddwaf_object(&data, env, info[0], 0, true);
 
   DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
 
@@ -290,6 +290,11 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
   }
+
+  if (ddwaf_object_size(&result.derivatives)) {
+    res.Set("derivatives", from_ddwaf_object(&result.derivatives, env));
+  }
+
   if (code == DDWAF_MATCH) {
     res.Set("status", Napi::String::New(env, "match"));
     res.Set("events", from_ddwaf_object(&result.events, env));

@@ -2,12 +2,17 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
+#include <math.h>
 #include <napi.h>
 #include <napi-inl.h>
 #include <ddwaf.h>
+
+#include <limits>
 #include <string>
+
 #include "src/convert.h"
 #include "src/log.h"
+
 
 
 ddwaf_object* to_ddwaf_object_array(
@@ -15,8 +20,7 @@ ddwaf_object* to_ddwaf_object_array(
   Napi::Env env,
   Napi::Array arr,
   int depth,
-  bool lim,
-  bool coerceToString = false
+  bool lim
 ) {
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
@@ -36,7 +40,7 @@ ddwaf_object* to_ddwaf_object_array(
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth, lim, coerceToString);
+    to_ddwaf_object(&val, env, item, depth, lim);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
@@ -50,8 +54,7 @@ ddwaf_object* to_ddwaf_object_object(
   Napi::Env env,
   Napi::Object obj,
   int depth,
-  bool lim,
-  bool coerceToString = false
+  bool lim
 ) {
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
@@ -81,7 +84,7 @@ ddwaf_object* to_ddwaf_object_object(
     Napi::Value valV  = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth, lim, coerceToString);
+    to_ddwaf_object(&val, env, valV, depth, lim);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
@@ -104,13 +107,16 @@ ddwaf_object* to_ddwaf_object(
   Napi::Env env,
   Napi::Value val,
   int depth,
-  bool lim,
-  bool coerceToString
+  bool lim
 ) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
     mlog("Max depth reached");
     return ddwaf_object_map(object);
+  }
+  if (val.IsNull()) {
+    mlog("creating Null");
+    return ddwaf_object_null(object);
   }
   if (val.IsString()) {
     mlog("creating String");
@@ -118,45 +124,42 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsNumber()) {
     mlog("creating Number");
-    if (coerceToString) {
-      return ddwaf_object_string(object, val.ToString().Utf8Value().c_str());
-    } else {
-      return ddwaf_object_string_from_signed(object, val.ToNumber().Int64Value());
+    double value = val.ToNumber().DoubleValue();
+
+    // Using fpclassify because NaN value does not match C++ quiet_NaN probably due to a mismatch between C++
+    // and IEEE754 standards.
+    switch (fpclassify(value)) {
+    case FP_NAN:
+      value = std::numeric_limits<double>::quiet_NaN();
+      break;
+    case FP_INFINITE:
+      value = std::numeric_limits<double>::infinity();
+      break;
+    default:
+      break;
     }
+
+    return ddwaf_object_float(object, value);
   }
   if (val.IsBoolean()) {
     mlog("creating Boolean");
     bool boolValue = val.ToBoolean().Value();
-    if (coerceToString) {
-      return ddwaf_object_string(object, boolValue ? "true" : "false");
-    } else {
-      return ddwaf_object_bool(object, boolValue);
-    }
+    return ddwaf_object_bool(object, boolValue);
   }
-  // TODO(carles): BigInt is not available for NodeJs <14. Enable it when dropping support for NodeJs 12
-  /*
-  if (val.IsBigInt()) {
-    mlog("creating BigInt");
-    bool lossless;
-    int64_t intValue = val.As<Napi::BigInt>().Int64Value(&lossless);
-    if (coerceToString || !lossless) {
-      return to_ddwaf_string(object, val, lim);
-    } else {
-      return ddwaf_object_string_from_signed(object, intValue);
-    }
-  }
-  */
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, coerceToString);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
+  }
+  if (val.IsFunction()) {
+    // Special case because a function will evaluate true for both IsFunction and IsObject.
+    return ddwaf_object_invalid(object);
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, coerceToString);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim);
   }
-  mlog("creating empty map");
-  // we use empty maps for now instead of null. See issue !43
-  return ddwaf_object_map(object);
+  mlog("creating invalid object");
+  return ddwaf_object_invalid(object);
 }
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {

@@ -8,6 +8,7 @@ const assert = require('assert')
 const { DDWAF } = require('..')
 const pkg = require('../package.json')
 const rules = require('./rules.json')
+const processor = require('./processor.json')
 
 const TIMEOUT = 9999e3
 
@@ -242,7 +243,7 @@ describe('DDWAF', () => {
               rules_target: [
                 {
                   tags: {
-                    confidence: 1
+                    confidence: '1'
                   }
                 }
               ],
@@ -298,7 +299,7 @@ describe('DDWAF', () => {
               rules_target: [
                 {
                   tags: {
-                    confidence: 1
+                    confidence: '1'
                   }
                 }
               ],
@@ -407,16 +408,16 @@ describe('DDWAF', () => {
     const possibleValues = new Map([
       [undefined, undefined],
       [null, undefined],
-      [false, 'false'],
-      [true, 'true'],
-      [42, '42'],
-      [-42, '-42'],
-      [42.42, '42.42'],
-      [Infinity, 'Infinity'],
-      [NaN, 'NaN'],
+      [false, undefined],
+      [true, undefined],
+      [42, undefined],
+      [-42, undefined],
+      [42.42, undefined],
+      [Infinity, undefined],
+      [NaN, undefined],
       [BigInt(42), undefined],
       ['str', 'str'],
-      [{ a: 1, b: 2 }, '1'],
+      [{ a: '1', b: 2 }, '1'],
       [['a', 2, 'c'], 'a'],
       [/regex/, undefined],
       [function fn () {}, undefined]
@@ -432,6 +433,8 @@ describe('DDWAF', () => {
           key: value
         }
       }, TIMEOUT)
+
+      assert.strictEqual(result.timeout, false)
 
       if (expected !== undefined) {
         assert.strictEqual(result.status, 'match')
@@ -477,6 +480,141 @@ describe('DDWAF', () => {
     assert(result.events)
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, '<Redacted>')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
+  })
+
+  it('should collect derivatives information when a rule match', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': 'value',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.status, 'match')
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
+
+  it('should collect derivatives information when a rule does not match', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': '',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
+
+  it('should collect all derivatives types', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    const result = context.run({
+      'server.request.body': {
+        null: null,
+        integer: 42,
+        float: 42.42,
+        infinity: Infinity,
+        nan: NaN,
+        signed: -42,
+        boolean: true,
+        string: 'string',
+        array: [1, 2, 3],
+        obj: { key: 'value' },
+        undefined: undefined,
+        bigint: BigInt(42),
+        regex: /regex/,
+        function: function fn () {}
+      },
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          null: [1],
+          boolean: [2],
+          float: [16],
+          infinity: [16],
+          nan: [16],
+          integer: [16],
+          signed: [16],
+          string: [8],
+          array: [[[16]], { len: 3 }],
+          obj: [{ key: [8] }],
+          undefined: [0],
+          bigint: [0],
+          regex: [{}],
+          function: [0]
+        }
+      ]
+    })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+  })
+
+  it('should collect derivatives in two consecutive calls', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+
+    assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
+
+    let result = context.run({
+      'server.request.body': ''
+    }, TIMEOUT)
+
+    assert.strictEqual(result.derivatives, undefined)
+
+    result = context.run({
+      'server.request.body': '',
+      'waf.context.processor': {
+        'extract-schema': true
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+
+    result = context.run({
+      'server.request.query': ''
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
+
+    context.dispose()
+    assert(context.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
   })
 })
 

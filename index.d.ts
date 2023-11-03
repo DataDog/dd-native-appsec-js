@@ -18,6 +18,7 @@ type result = {
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
+  derivatives?: object;
 };
 
 declare class DDWAFContext {
