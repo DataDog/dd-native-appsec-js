@@ -408,6 +408,13 @@ describe('DDWAF', () => {
     const possibleValues = new Map([
       [undefined, undefined],
       [null, undefined],
+      [false, undefined],
+      [true, undefined],
+      [42, undefined],
+      [-42, undefined],
+      [42.42, undefined],
+      [Infinity, undefined],
+      [NaN, undefined],
       [BigInt(42), undefined],
       ['str', 'str'],
       [{ a: '1', b: 2 }, '1'],
@@ -427,8 +434,7 @@ describe('DDWAF', () => {
         }
       }, TIMEOUT)
 
-      assert.equal(result.timeout, false)
-      assert(result.totalRuntime > 0)
+      assert.strictEqual(result.timeout, false)
 
       if (expected !== undefined) {
         assert.strictEqual(result.status, 'match')
@@ -538,7 +544,11 @@ describe('DDWAF', () => {
         boolean: true,
         string: 'string',
         array: [1, 2, 3],
-        obj: { key: 'value' }
+        obj: { key: 'value' },
+        undefined: undefined,
+        bigint: BigInt(42),
+        regex: /regex/,
+        function: function fn () {}
       },
       'waf.context.processor': {
         'extract-schema': true
@@ -557,7 +567,11 @@ describe('DDWAF', () => {
           signed: [16],
           string: [8],
           array: [[[16]], { len: 3 }],
-          obj: [{ key: [8] }]
+          obj: [{ key: [8] }],
+          undefined: [0],
+          bigint: [0],
+          regex: [0],
+          function: [0]
         }
       ]
     })
@@ -576,6 +590,12 @@ describe('DDWAF', () => {
     assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
 
     let result = context.run({
+      'server.request.body': '',
+    }, TIMEOUT)
+
+    assert.strictEqual(result.derivatives, undefined)
+
+    result = context.run({
       'server.request.body': '',
       'waf.context.processor': {
         'extract-schema': true
