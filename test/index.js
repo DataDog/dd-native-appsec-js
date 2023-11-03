@@ -590,7 +590,7 @@ describe('DDWAF', () => {
     assert.deepStrictEqual(waf.diagnostics.processors, { loaded: ['processor-001'], failed: [], errors: {} })
 
     let result = context.run({
-      'server.request.body': '',
+      'server.request.body': ''
     }, TIMEOUT)
 
     assert.strictEqual(result.derivatives, undefined)
