@@ -31,7 +31,6 @@ childProcess.spawnSync('gh', [
 ])
 
 for (const name of fs.readdirSync(libddwafFolder)) {
-  console.log(name)
   const file = path.join(libddwafFolder, name)
 
   tar.x({ file, cwd: libddwafFolder, sync: true })
