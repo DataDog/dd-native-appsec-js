@@ -20,14 +20,20 @@ const libddwafFolder = path.join(__dirname, '..', 'libddwaf')
 
 fs.mkdirSync(libddwafFolder, { recursive: true })
 
-childProcess.spawnSync('gh', ['release', 'download', '--repo', 'DataDog/libddwaf',
-  '--dir', libddwafFolder, '--pattern', 'libddwaf-*', libddwafVersion])
+childProcess.spawnSync('gh', [
+  'release', 'download',
+  '--repo', 'DataDog/libddwaf',
+  '--dir', libddwafFolder,
+  '--pattern', `libddwaf-${libddwafVersion}-*-linux-musl.tar.gz`,
+  '--pattern', `libddwaf-${libddwafVersion}-darwin-*.tar.gz`,
+  '--pattern', `libddwaf-${libddwafVersion}-windows-*.tar.gz`,
+  libddwafVersion
+])
 
 for (const name of fs.readdirSync(libddwafFolder)) {
-  if (!name.endsWith('.tar.gz')) continue
-
   const file = path.join(libddwafFolder, name)
 
   tar.x({ file, cwd: libddwafFolder, sync: true })
+
   fs.rmSync(file)
 }
