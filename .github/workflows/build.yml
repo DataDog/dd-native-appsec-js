@@ -30,7 +30,6 @@ jobs:
       napi: true
       package-manager: 'npm'
       postbuild: 'node scripts/postbuild'
-      skip: 'linux-arm linux-ia32'
       target-name: 'appsec'
 
   static-checks:
