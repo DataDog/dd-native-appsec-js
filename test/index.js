@@ -77,6 +77,38 @@ describe('DDWAF', () => {
     const context = waf.createContext()
 
     const result = context.run({
+      'server.request.headers.no_cookies': 'value_ATTack'
+    },
+    null,
+    TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert(result.events)
+    assert.deepStrictEqual(result.actions, [])
+    assert(!context.disposed)
+
+    context.dispose()
+    assert(context.disposed)
+
+    assert.throws(() => {
+      context.run({ 'server.request.headers.no_cookies': 'value_ATTack' }, null, TIMEOUT)
+    }, new Error('Calling run on a disposed context'))
+    assert(!waf.disposed)
+
+    waf.dispose()
+    assert(waf.disposed)
+
+    assert.throws(() => {
+      waf.createContext()
+    }, new Error('Calling createContext on a disposed DDWAF instance'))
+  })
+
+  it('should collect an attack and cleanup everything', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    const result = context.run({
       'server.request.headers.no_cookies': 'value_ATTack',
       x: new Array(4096).fill('x').join(''),
       y: new Array(4097).fill('y').join(''),
@@ -422,7 +454,7 @@ describe('DDWAF', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
 
-    assert.throws(() => context.run(), new Error('Wrong number of arguments, at least 2 expected'))
+    assert.throws(() => context.run(), new Error('Wrong number of arguments, 3 expected'))
 
     let err = new TypeError('One of persistent data or ephemeral data must be an object')
     assert.throws(() => context.run('', null, TIMEOUT), err)

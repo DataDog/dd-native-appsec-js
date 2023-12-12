@@ -2,7 +2,6 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#include <alloca.h>
 #define NAPI_VERSION  4
 #include <napi.h>
 #include <stdio.h>
@@ -244,8 +243,8 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (info.Length() < 2) {  // inputs, timeout
-    Napi::Error::New(env, "Wrong number of arguments, at least 2 expected").ThrowAsJavaScriptException();
+  if (info.Length() < 3) {  // inputs, timeout
+    Napi::Error::New(env, "Wrong number of arguments, 3 expected").ThrowAsJavaScriptException();
     return env.Null();
   }
 
