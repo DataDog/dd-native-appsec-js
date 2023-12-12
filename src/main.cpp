@@ -268,14 +268,14 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   ddwaf_object *data = nullptr;
 
   if (info[0].IsObject()) {
-    data = (ddwaf_object *) alloca(sizeof(ddwaf_object));
+    data = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
     to_ddwaf_object(data, env, info[0], 0, true);
   }
 
   ddwaf_object *ephemeral = nullptr;
 
   if (info[1].IsObject()) {
-    ephemeral = (ddwaf_object *) alloca(sizeof(ddwaf_object));
+    ephemeral = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
     to_ddwaf_object(ephemeral, env, info[1], 0, true);
   }
 
