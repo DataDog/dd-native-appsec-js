@@ -250,7 +250,10 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
 
   if (!info[0].IsObject() && !info[1].IsObject()) {
-    Napi::TypeError::New(env, "One of persistent data or ephemeral data must be an object").ThrowAsJavaScriptException();
+    Napi::TypeError::New(
+            env,
+            "One of persistent data or ephemeral data must be an object")
+        .ThrowAsJavaScriptException();
     return env.Null();
   }
 
