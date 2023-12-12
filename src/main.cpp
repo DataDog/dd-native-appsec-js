@@ -2,6 +2,7 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
+#include <alloca.h>
 #define NAPI_VERSION  4
 #include <napi.h>
 #include <stdio.h>
@@ -179,7 +180,7 @@ void DDWAF::update_required_addresses(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   uint32_t size = 0;
-  const char* const* required_addresses = ddwaf_required_addresses(this->_handle, &size);
+  const char* const* required_addresses = ddwaf_known_addresses(this->_handle, &size);
 
   Napi::Value set = env.RunScript("new Set()");
   Napi::Function set_add = set.As<Napi::Object>().Get("add").As<Napi::Function>();
@@ -242,29 +243,45 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     Napi::Error::New(env, "Calling run on a disposed context").ThrowAsJavaScriptException();
     return env.Null();
   }
+
   if (info.Length() < 2) {  // inputs, timeout
-    Napi::Error::New(env, "Wrong number of arguments, expected 2").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Wrong number of arguments, at least 2 expected").ThrowAsJavaScriptException();
     return env.Null();
   }
-  if (!info[0].IsObject()) {
-    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
+
+  if (!info[0].IsObject() && !info[1].IsObject()) {
+    Napi::TypeError::New(env, "One of persistent data or ephemeral data must be an object").ThrowAsJavaScriptException();
     return env.Null();
   }
-  if (!info[1].IsNumber()) {
-    Napi::TypeError::New(env, "Second argument must be a number").ThrowAsJavaScriptException();
+
+  if (!info[2].IsNumber()) {
+    Napi::TypeError::New(env, "Timeout argument must be a number").ThrowAsJavaScriptException();
     return env.Null();
   }
-  int64_t timeout = info[1].ToNumber().Int64Value();
+
+  int64_t timeout = info[2].ToNumber().Int64Value();
   if (timeout <= 0) {
-    Napi::TypeError::New(env, "Second argument must be greater than 0").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "Timeout argument must be greater than 0").ThrowAsJavaScriptException();
     return env.Null();
+  }
+
+  ddwaf_object *data = nullptr;
+
+  if (info[0].IsObject()) {
+    data = (ddwaf_object *) alloca(sizeof(ddwaf_object));
+    to_ddwaf_object(data, env, info[0], 0, true);
+  }
+
+  ddwaf_object *ephemeral = nullptr;
+
+  if (info[1].IsObject()) {
+    ephemeral = (ddwaf_object *) alloca(sizeof(ddwaf_object));
+    to_ddwaf_object(ephemeral, env, info[1], 0, true);
   }
 
   ddwaf_result result;
-  ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true);
 
-  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
+  DDWAF_RET_CODE code = ddwaf_run(this->_context, data, ephemeral, &result, (uint64_t) timeout);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -286,6 +303,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   Napi::Object res = Napi::Object::New(env);
   mlog("Set timeout");
   res.Set("timeout", Napi::Boolean::New(env, result.timeout));
+
   if (result.total_runtime) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
@@ -300,7 +318,9 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     res.Set("events", from_ddwaf_object(&result.events, env));
     res.Set("actions", from_ddwaf_object(&result.actions, env));
   }
+
   ddwaf_result_free(&result);
+
   return res;
 }
 

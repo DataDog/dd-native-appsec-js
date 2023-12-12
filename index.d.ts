@@ -3,7 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 type rules = object;
+
 type diagnosticsInfo = {
+  addresses: {
+    optional: string[],
+    required: string[]
+  },
   loaded: string[],
   failed: string[],
   error: string,
