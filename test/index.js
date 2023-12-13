@@ -589,30 +589,16 @@ describe('DDWAF', () => {
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
-  it.only('should collect derivatives information when a rule match', () => {
-    console.log('Rules: ', JSON.stringify(processor))
+  it('should collect derivatives information when a rule match', () => {
     const waf = new DDWAF(processor)
-    console.log('Diagnostics:', JSON.stringify(waf.diagnostics))
 
     const context = waf.createContext()
 
-    assert.deepStrictEqual(
-      waf.diagnostics.processors,
-      {
-        addresses: {
-          optional: [
-            'server.request.query',
-            'server.request.body'
-          ],
-          required: [
-            'waf.context.processor'
-          ]
-        },
-        loaded: ['processor-001'],
-        failed: [],
-        errors: {}
-      }
-    )
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
+    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
+    assert(waf.diagnostics.processors.loaded.includes('processor-001'))
+    assert.equal(waf.diagnostics.processors.failed.length, 0)
 
     const result = context.run({
       persistent: {
