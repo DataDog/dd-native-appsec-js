@@ -9,7 +9,6 @@ const { DDWAF } = require('..')
 const pkg = require('../package.json')
 const rules = require('./rules.json')
 const processor = require('./processor.json')
-const {json} = require('express')
 
 const TIMEOUT = 9999e3
 
