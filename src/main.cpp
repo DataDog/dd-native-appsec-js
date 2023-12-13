@@ -244,47 +244,55 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (info.Length() < 3) {  // inputs, timeout
-    Napi::Error::New(env, "Wrong number of arguments, 3 expected").ThrowAsJavaScriptException();
+  if (info.Length() < 2) {  // payload, timeout
+    Napi::Error::New(env, "Wrong number of arguments, 2 expected").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  if (!info[0].IsObject() && !info[1].IsObject()) {
+  if (!info[0].IsObject()) {
     Napi::TypeError::New(
             env,
-            "One of persistent data or ephemeral data must be an object")
+            "Payload data must be an object")
         .ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  if (!info[2].IsNumber()) {
+  Napi::Value persistent = info[0].As<Napi::Object>().Get("persistent");
+  Napi::Value ephemeral = info[0].As<Napi::Object>().Get("ephemeral");
+
+  if (!persistent.IsObject() && !ephemeral.IsObject()) {
+    Napi::TypeError::New(env, "Persistent or ephemeral must be an object").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (!info[1].IsNumber()) {
     Napi::TypeError::New(env, "Timeout argument must be a number").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  int64_t timeout = info[2].ToNumber().Int64Value();
+  int64_t timeout = info[1].ToNumber().Int64Value();
   if (timeout <= 0) {
     Napi::TypeError::New(env, "Timeout argument must be greater than 0").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  ddwaf_object *data = nullptr;
+  ddwaf_object *ddwafPersistent = nullptr;
 
-  if (info[0].IsObject()) {
-    data = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
-    to_ddwaf_object(data, env, info[0], 0, true);
+  if (persistent.IsObject()) {
+    ddwafPersistent = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
+    to_ddwaf_object(ddwafPersistent, env, persistent, 0, true);
   }
 
-  ddwaf_object *ephemeral = nullptr;
+  ddwaf_object *ddwafEphemeral = nullptr;
 
-  if (info[1].IsObject()) {
-    ephemeral = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
-    to_ddwaf_object(ephemeral, env, info[1], 0, true);
+  if (ephemeral.IsObject()) {
+    ddwafEphemeral = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
+    to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true);
   }
 
   ddwaf_result result;
 
-  DDWAF_RET_CODE code = ddwaf_run(this->_context, data, ephemeral, &result, (uint64_t) timeout);
+  DDWAF_RET_CODE code = ddwaf_run(this->_context, ddwafPersistent, ddwafEphemeral, &result, (uint64_t) timeout);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:

@@ -75,47 +75,13 @@ describe('DDWAF', () => {
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
+    const payload = {
+      persistent: {
+        'server.request.headers.no_cookies': 'value_ATTack'
+      }
+    }
 
-    const result = context.run({
-      'server.request.headers.no_cookies': 'value_ATTack'
-    },
-    null,
-    TIMEOUT)
-
-    assert.strictEqual(result.timeout, false)
-    assert.strictEqual(result.status, 'match')
-    assert(result.events)
-    assert.deepStrictEqual(result.actions, [])
-    assert(!context.disposed)
-
-    context.dispose()
-    assert(context.disposed)
-
-    assert.throws(() => {
-      context.run({ 'server.request.headers.no_cookies': 'value_ATTack' }, null, TIMEOUT)
-    }, new Error('Calling run on a disposed context'))
-    assert(!waf.disposed)
-
-    waf.dispose()
-    assert(waf.disposed)
-
-    assert.throws(() => {
-      waf.createContext()
-    }, new Error('Calling createContext on a disposed DDWAF instance'))
-  })
-
-  it('should collect an attack and cleanup everything', () => {
-    const waf = new DDWAF(rules)
-    const context = waf.createContext()
-
-    const result = context.run({
-      'server.request.headers.no_cookies': 'value_ATTack',
-      x: new Array(4096).fill('x').join(''),
-      y: new Array(4097).fill('y').join(''),
-      z: new Array(4097).fill('z')
-    },
-    null,
-    TIMEOUT)
+    const result = context.run(payload, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -127,7 +93,7 @@ describe('DDWAF', () => {
     assert(context.disposed)
 
     assert.throws(() => {
-      context.run({ 'server.request.headers.no_cookies': 'value_ATTack' }, null, TIMEOUT)
+      context.run(payload, TIMEOUT)
     }, new Error('Calling run on a disposed context'))
     assert(!waf.disposed)
 
@@ -142,15 +108,26 @@ describe('DDWAF', () => {
   it('should collect different attacks on ephemeral addresses', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
-
-    let result = context.run(null, { 'server.request.headers.no_cookies': 'value_ATTack' }, TIMEOUT)
+    let result = context.run({
+      ephemeral: {
+        'server.request.headers.no_cookies': 'value_ATTack'
+      }
+    },
+    TIMEOUT
+    )
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
     assert.deepStrictEqual(result.actions, [])
 
-    result = context.run(null, { 'server.request.headers.no_cookies': 'other_attack' }, TIMEOUT)
+    result = context.run({
+      ephemeral: {
+        'server.request.headers.no_cookies': 'other_attack'
+      }
+    },
+    TIMEOUT
+    )
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -281,10 +258,15 @@ describe('DDWAF', () => {
 
     it('should collect an attack with updated rule data', () => {
       const IP_TO_BLOCK = '123.123.123.123'
+      const payload = {
+        persistent: {
+          'http.client_ip': IP_TO_BLOCK
+        }
+      }
 
       const waf = new DDWAF(rules)
       const context = waf.createContext()
-      const resultBeforeUpdatingRuleData = context.run({ 'http.client_ip': IP_TO_BLOCK }, null, TIMEOUT)
+      const resultBeforeUpdatingRuleData = context.run(payload, TIMEOUT)
       assert(!resultBeforeUpdatingRuleData.status)
 
       const updateWithRulesData = {
@@ -299,7 +281,7 @@ describe('DDWAF', () => {
 
       waf.update(updateWithRulesData)
       const contextWithRuleData = waf.createContext()
-      const resultAfterUpdatingRuleData = contextWithRuleData.run({ 'http.client_ip': IP_TO_BLOCK }, null, TIMEOUT)
+      const resultAfterUpdatingRuleData = contextWithRuleData.run(payload, TIMEOUT)
 
       assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
       assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
@@ -336,14 +318,15 @@ describe('DDWAF', () => {
         }
       ].forEach((testData) => {
         it(`should not collect an attack ${testData.testName}`, () => {
+          const payload = {
+            persistent: {
+              value_attack: 'matchall'
+            }
+          }
           const waf = new DDWAF(rules)
           const contextToggledOn = waf.createContext()
 
-          const resultToggledOn = contextToggledOn.run({
-            value_attack: 'matchall'
-          },
-          null,
-          TIMEOUT)
+          const resultToggledOn = contextToggledOn.run(payload, TIMEOUT)
 
           assert.strictEqual(resultToggledOn.timeout, false)
           assert.strictEqual(resultToggledOn.status, 'match')
@@ -356,11 +339,7 @@ describe('DDWAF', () => {
           waf.update(updateWithRulesOverride)
           const contextToggledOff = waf.createContext()
 
-          const resultToggledOff = contextToggledOff.run({
-            value_attack: 'matchall'
-          },
-          null,
-          TIMEOUT)
+          const resultToggledOff = contextToggledOff.run(payload, TIMEOUT)
 
           assert(!resultToggledOff.status)
           assert(!resultToggledOff.events)
@@ -396,14 +375,16 @@ describe('DDWAF', () => {
         }
       ].forEach((testData) => {
         it(`should return block action ${testData.testName}`, () => {
+          const payload = {
+            persistent: {
+              value_attack: 'matchall'
+            }
+          }
+
           const waf = new DDWAF(rules)
           const monitorContext = waf.createContext()
 
-          const resultMonitor = monitorContext.run({
-            value_attack: 'matchall'
-          },
-          null,
-          TIMEOUT)
+          const resultMonitor = monitorContext.run(payload, TIMEOUT)
 
           assert.strictEqual(resultMonitor.timeout, false)
           assert.strictEqual(resultMonitor.status, 'match')
@@ -417,11 +398,7 @@ describe('DDWAF', () => {
           waf.update(updateWithRulesOverride)
           const blockContext = waf.createContext()
 
-          const resultBlock = blockContext.run({
-            value_attack: 'matchall'
-          },
-          null,
-          TIMEOUT)
+          const resultBlock = blockContext.run(payload, TIMEOUT)
 
           assert.strictEqual(resultBlock.timeout, false)
           assert.strictEqual(resultBlock.status, 'match')
@@ -436,10 +413,12 @@ describe('DDWAF', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      'server.response.status': '404'
+      persistent: {
+        'server.response.status': '404'
+      }
     },
-    null,
-    TIMEOUT)
+    TIMEOUT
+    )
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
@@ -454,16 +433,34 @@ describe('DDWAF', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
 
-    const wronArgsError = new Error('Wrong number of arguments, 3 expected')
+    const wronArgsError = new Error('Wrong number of arguments, 2 expected')
     assert.throws(() => context.run(), wronArgsError)
 
-    const objectError = new TypeError('One of persistent data or ephemeral data must be an object')
-    assert.throws(() => context.run('', null, TIMEOUT), objectError)
-    assert.throws(() => context.run(null, '', TIMEOUT), objectError)
+    const payloadError = new TypeError('Payload data must be an object')
+    assert.throws(() => context.run(null, TIMEOUT), payloadError)
+
+    const objectError = new TypeError('Persistent or ephemeral must be an object')
+    assert.throws(() => context.run({}, TIMEOUT), objectError)
+    assert.throws(() => context.run({ persistent: '' }, TIMEOUT), objectError)
+    assert.throws(() => context.run({ persistent: '', ephemeral: null }, TIMEOUT), objectError)
+    assert.throws(() => context.run({ ephemeral: null }, TIMEOUT), objectError)
+
+    const numberError = new TypeError('Timeout argument must be a number')
+    assert.throws(() => context.run({ persistent: {}, ephemeral: {} }, ''), numberError)
 
     const greaterError = new TypeError('Timeout argument must be greater than 0')
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, -1), greaterError)
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, 0), greaterError)
+    assert.throws(() => context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'value_attack'
+      }
+    }, -1),
+    greaterError)
+    assert.throws(() => context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'value_attack'
+      }
+    }, 0),
+    greaterError)
   })
 
   it('should parse keys correctly', () => {
@@ -491,11 +488,12 @@ describe('DDWAF', () => {
       const context = waf.createContext()
 
       const result = context.run({
-        key_attack: {
-          [key]: 'value'
+        persistent: {
+          key_attack: {
+            [key]: 'value'
+          }
         }
       },
-      null,
       TIMEOUT)
 
       assert.strictEqual(result.status, 'match')
@@ -529,11 +527,12 @@ describe('DDWAF', () => {
       const context = waf.createContext()
 
       const result = context.run({
-        value_attack: {
-          key: value
+        persistent: {
+          value_attack: {
+            key: value
+          }
         }
       },
-      null,
       TIMEOUT)
 
       assert.strictEqual(result.timeout, false)
@@ -553,13 +552,14 @@ describe('DDWAF', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      value_attack: {
-        password: {
-          a: 'sensitive'
+      persistent: {
+        value_attack: {
+          password: {
+            a: 'sensitive'
+          }
         }
       }
     },
-    null,
     TIMEOUT)
 
     assert(result)
@@ -575,11 +575,12 @@ describe('DDWAF', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      'server.request.headers.no_cookies': {
-        header: 'value_attack'
+      persistent: {
+        'server.request.headers.no_cookies': {
+          header: 'value_attack'
+        }
       }
     },
-    null,
     TIMEOUT)
 
     assert(result)
@@ -611,12 +612,13 @@ describe('DDWAF', () => {
     )
 
     const result = context.run({
-      'server.request.body': 'value',
-      'waf.context.processor': {
-        'extract-schema': true
+      persistent: {
+        'server.request.body': 'value',
+        'waf.context.processor': {
+          'extract-schema': true
+        }
       }
     },
-    null,
     TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
@@ -652,12 +654,13 @@ describe('DDWAF', () => {
     )
 
     const result = context.run({
-      'server.request.body': '',
-      'waf.context.processor': {
-        'extract-schema': true
+      persistent: {
+        'server.request.body': '',
+        'waf.context.processor': {
+          'extract-schema': true
+        }
       }
     },
-    null,
     TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
@@ -692,27 +695,28 @@ describe('DDWAF', () => {
     )
 
     const result = context.run({
-      'server.request.body': {
-        null: null,
-        integer: 42,
-        float: 42.42,
-        infinity: Infinity,
-        nan: NaN,
-        signed: -42,
-        boolean: true,
-        string: 'string',
-        array: [1, 2, 3],
-        obj: { key: 'value' },
-        undefined: undefined,
-        bigint: BigInt(42),
-        regex: /regex/,
-        function: function fn () {}
-      },
-      'waf.context.processor': {
-        'extract-schema': true
+      persistent: {
+        'server.request.body': {
+          null: null,
+          integer: 42,
+          float: 42.42,
+          infinity: Infinity,
+          nan: NaN,
+          signed: -42,
+          boolean: true,
+          string: 'string',
+          array: [1, 2, 3],
+          obj: { key: 'value' },
+          undefined: undefined,
+          bigint: BigInt(42),
+          regex: /regex/,
+          function: function fn () {}
+        },
+        'waf.context.processor': {
+          'extract-schema': true
+        }
       }
     },
-    null,
     TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, {
@@ -766,28 +770,31 @@ describe('DDWAF', () => {
     )
 
     let result = context.run({
-      'server.request.body': ''
+      persistent: {
+        'server.request.body': ''
+      }
     },
-    null,
     TIMEOUT)
 
     assert.strictEqual(result.derivatives, undefined)
 
     result = context.run({
-      'server.request.body': '',
-      'waf.context.processor': {
-        'extract-schema': true
+      persistent: {
+        'server.request.body': '',
+        'waf.context.processor': {
+          'extract-schema': true
+        }
       }
     },
-    null,
     TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
     result = context.run({
-      'server.request.query': ''
+      persistent: {
+        'server.request.query': ''
+      }
     },
-    null,
     TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
@@ -806,11 +813,12 @@ describe('limit tests', () => {
 
     const context1 = waf.createContext()
     const result1 = context1.run({
-      'server.response.status': {
-        a0: '404'
+      persistent: {
+        'server.response.status': {
+          a0: '404'
+        }
       }
     },
-    null,
     TIMEOUT)
     assert.strictEqual(result1.status, 'match')
     assert(result1.events)
@@ -822,9 +830,10 @@ describe('limit tests', () => {
 
     const context2 = waf.createContext()
     const result2 = context2.run({
-      'server.response.status': item
+      persistent: {
+        'server.response.status': item
+      }
     },
-    null,
     TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
@@ -835,9 +844,10 @@ describe('limit tests', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
+      persistent: {
+        'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
+      }
     },
-    null,
     TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
@@ -849,9 +859,10 @@ describe('limit tests', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
+      persistent: {
+        'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
+      }
     },
-    null,
     TIMEOUT)
 
     assert(!result.status)
@@ -864,9 +875,10 @@ describe('limit tests', () => {
     // test first item in big rule
     const context1 = waf.createContext()
     const result1 = context1.run({
-      'server.request.body': { a: '.htaccess' }
+      persistent: {
+        'server.request.body': { a: '.htaccess' }
+      }
     },
-    null,
     TIMEOUT)
     assert(result1.status)
     assert(result1.events)
@@ -874,9 +886,10 @@ describe('limit tests', () => {
     // test last item in big rule
     const context2 = waf.createContext()
     const result2 = context2.run({
-      'server.request.body': { a: 'yarn.lock' }
+      persistent: {
+        'server.request.body': { a: 'yarn.lock' }
+      }
     },
-    null,
     TIMEOUT)
     assert(result2.status)
     assert(result2.events)
