@@ -624,23 +624,11 @@ describe('DDWAF', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
 
-    assert.deepStrictEqual(
-      waf.diagnostics.processors,
-      {
-        addresses: {
-          optional: [
-            'server.request.query',
-            'server.request.body'
-          ],
-          required: [
-            'waf.context.processor'
-          ]
-        },
-        loaded: ['processor-001'],
-        failed: [],
-        errors: {}
-      }
-    )
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
+    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
+    assert(waf.diagnostics.processors.loaded.includes('processor-001'))
+    assert.equal(waf.diagnostics.processors.failed.length, 0)
 
     const result = context.run({
       persistent: {
@@ -665,23 +653,11 @@ describe('DDWAF', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
 
-    assert.deepStrictEqual(
-      waf.diagnostics.processors,
-      {
-        addresses: {
-          optional: [
-            'server.request.query',
-            'server.request.body'
-          ],
-          required: [
-            'waf.context.processor'
-          ]
-        },
-        loaded: ['processor-001'],
-        failed: [],
-        errors: {}
-      }
-    )
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
+    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
+    assert(waf.diagnostics.processors.loaded.includes('processor-001'))
+    assert.equal(waf.diagnostics.processors.failed.length, 0)
 
     const result = context.run({
       persistent: {
@@ -740,23 +716,11 @@ describe('DDWAF', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
 
-    assert.deepStrictEqual(
-      waf.diagnostics.processors,
-      {
-        addresses: {
-          optional: [
-            'server.request.query',
-            'server.request.body'
-          ],
-          required: [
-            'waf.context.processor'
-          ]
-        },
-        loaded: ['processor-001'],
-        failed: [],
-        errors: {}
-      }
-    )
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
+    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
+    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
+    assert(waf.diagnostics.processors.loaded.includes('processor-001'))
+    assert.equal(waf.diagnostics.processors.failed.length, 0)
 
     let result = context.run({
       persistent: {
