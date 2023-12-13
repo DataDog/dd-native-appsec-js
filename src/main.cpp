@@ -3,11 +3,13 @@
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
 #define NAPI_VERSION  4
-#include <malloc.h>
 #include <napi.h>
 #include <stdio.h>
 #include <ddwaf.h>
+
 #include <string>
+
+#include "src/alloca.h"
 #include "src/main.h"
 #include "src/log.h"
 #include "src/convert.h"
