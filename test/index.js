@@ -59,10 +59,10 @@ describe('DDWAF', () => {
     })
   })
 
-  it('should have requiredAddresses', () => {
+  it('should have knownAddresses', () => {
     const waf = new DDWAF(rules)
 
-    assert.deepStrictEqual(waf.requiredAddresses, new Set([
+    assert.deepStrictEqual(waf.knownAddresses, new Set([
       'http.client_ip',
       'server.request.headers.no_cookies',
       'server.response.status',
@@ -184,7 +184,7 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update diagnostics and requiredAddresses when updating a WAF instance with new ruleSet', () => {
+    it('should update diagnostics and knownAddresses when updating a WAF instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
@@ -227,7 +227,7 @@ describe('DDWAF', () => {
           errors: {}
         }
       })
-      assert.deepStrictEqual(waf.requiredAddresses, new Set([
+      assert.deepStrictEqual(waf.knownAddresses, new Set([
         'http.client_ip'
       ]))
 
@@ -267,7 +267,7 @@ describe('DDWAF', () => {
           }
         }
       })
-      assert.deepStrictEqual(waf.requiredAddresses, new Set([
+      assert.deepStrictEqual(waf.knownAddresses, new Set([
         'http.client_ip',
         'server.request.headers.no_cookies',
         'server.response.status',
@@ -454,15 +454,16 @@ describe('DDWAF', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
 
-    assert.throws(() => context.run(), new Error('Wrong number of arguments, 3 expected'))
+    const wronArgsError = new Error('Wrong number of arguments, 3 expected')
+    assert.throws(() => context.run(), wronArgsError)
 
-    let err = new TypeError('One of persistent data or ephemeral data must be an object')
-    assert.throws(() => context.run('', null, TIMEOUT), err)
-    assert.throws(() => context.run(null, '', TIMEOUT), err)
+    const objectError = new TypeError('One of persistent data or ephemeral data must be an object')
+    assert.throws(() => context.run('', null, TIMEOUT), objectError)
+    assert.throws(() => context.run(null, '', TIMEOUT), objectError)
 
-    err = new TypeError('Timeout argument must be greater than 0')
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, -1), err)
-    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, 0), err)
+    const greaterError = new TypeError('Timeout argument must be greater than 0')
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, -1), greaterError)
+    assert.throws(() => context.run({ 'server.request.headers.no_cookies': 'value_attack' }, null, 0), greaterError)
   })
 
   it('should parse keys correctly', () => {
