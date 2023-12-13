@@ -9,6 +9,7 @@ const { DDWAF } = require('..')
 const pkg = require('../package.json')
 const rules = require('./rules.json')
 const processor = require('./processor.json')
+const {json} = require('express')
 
 const TIMEOUT = 9999e3
 
@@ -589,8 +590,11 @@ describe('DDWAF', () => {
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
-  it('should collect derivatives information when a rule match', () => {
+  it.only('should collect derivatives information when a rule match', () => {
+    console.log('Rules: ', JSON.stringify(processor))
     const waf = new DDWAF(processor)
+    console.log('Diagnostics:', JSON.stringify(waf.diagnostics))
+
     const context = waf.createContext()
 
     assert.deepStrictEqual(
