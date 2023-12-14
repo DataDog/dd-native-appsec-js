@@ -29,7 +29,7 @@ type result = {
 declare class DDWAFContext {
   readonly disposed: boolean;
 
-  run(inputs: object, ephemeral: object, timeout: number): result;
+  run(payload: object, timeout: number): result;
   dispose(): void;
 }
 
