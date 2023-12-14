@@ -259,8 +259,9 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  Napi::Value persistent = info[0].As<Napi::Object>().Get("persistent");
-  Napi::Value ephemeral = info[0].As<Napi::Object>().Get("ephemeral");
+  Napi::Object payload = info[0].As<Napi::Object>();
+  Napi::Value persistent = payload.Get("persistent");
+  Napi::Value ephemeral = payload.Get("ephemeral");
 
   if (!persistent.IsObject() && !ephemeral.IsObject()) {
     Napi::TypeError::New(env, "Persistent or ephemeral must be an object").ThrowAsJavaScriptException();

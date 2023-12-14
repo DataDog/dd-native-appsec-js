@@ -53,7 +53,7 @@ export class DDWAF {
     processors?: diagnosticsInfo
   };
 
-  readonly requiredAddresses: Set<string>;
+  readonly knownAddresses: Set<string>;
 
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,
