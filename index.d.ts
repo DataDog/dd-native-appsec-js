@@ -24,12 +24,17 @@ type result = {
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
   derivatives?: object;
-};
+}
+
+type payload = {
+  persistent?: object,
+  ephemeral?: object
+}
 
 declare class DDWAFContext {
   readonly disposed: boolean;
 
-  run(payload: object, timeout: number): result;
+  run(payload: payload, timeout: number): result;
   dispose(): void;
 }
 
