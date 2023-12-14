@@ -77,7 +77,10 @@ describe('DDWAF', () => {
     const context = waf.createContext()
     const payload = {
       persistent: {
-        'server.request.headers.no_cookies': 'value_ATTack'
+        'server.request.headers.no_cookies': 'value_ATTack',
+        x: new Array(4096).fill('x').join(''),
+        y: new Array(4097).fill('y').join(''),
+        z: new Array(4097).fill('z')
       }
     }
 
