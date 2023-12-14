@@ -116,8 +116,7 @@ describe('DDWAF', () => {
         'server.request.headers.no_cookies': 'value_ATTack'
       }
     },
-    TIMEOUT
-    )
+    TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -129,8 +128,7 @@ describe('DDWAF', () => {
         'server.request.headers.no_cookies': 'other_attack'
       }
     },
-    TIMEOUT
-    )
+    TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -420,8 +418,7 @@ describe('DDWAF', () => {
         'server.response.status': '404'
       }
     },
-    TIMEOUT
-    )
+    TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
