@@ -32,13 +32,12 @@ const ENCODINGS = [ // from https://github.com/nodejs/node/blob/master/lib/buffe
 
 function test (buff, encoding = 'utf8') {
   const str = buff.toString(encoding)
-
   const context = waf.createContext()
 
-  const r1 = context.run({ value_attack: str }, TIMEOUT)
+  const r1 = context.run({ persistent: { value_attack: str } }, TIMEOUT)
   assert(r1 && r1.events, `Expected to handle string value 0x${buff.toString('hex')} in ${encoding}`)
 
-  const r2 = context.run({ key_attack: { [str]: '' } }, TIMEOUT)
+  const r2 = context.run({ persistent: { key_attack: { [str]: '' } } }, TIMEOUT)
   assert(r2 && r2.events, `Expected to handle string key 0x${buff.toString('hex')} in ${encoding}`)
 
   context.dispose()

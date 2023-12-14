@@ -3,7 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
 type rules = object;
+
 type diagnosticsInfo = {
+  addresses: {
+    optional: string[],
+    required: string[]
+  },
   loaded: string[],
   failed: string[],
   error: string,
@@ -19,12 +24,17 @@ type result = {
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: string[];
   derivatives?: object;
-};
+}
+
+type payload = {
+  persistent?: object,
+  ephemeral?: object
+}
 
 declare class DDWAFContext {
   readonly disposed: boolean;
 
-  run(inputs: object, timeout: number): result;
+  run(payload: payload, timeout: number): result;
   dispose(): void;
 }
 
@@ -39,10 +49,11 @@ export class DDWAF {
     custom_rules?: diagnosticsInfo,
     exclusions?: diagnosticsInfo,
     rules_override?: diagnosticsInfo,
-    rules_data?: diagnosticsInfo
+    rules_data?: diagnosticsInfo,
+    processors?: diagnosticsInfo
   };
 
-  readonly requiredAddresses: Set<string>;
+  readonly knownAddresses: Set<string>;
 
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,

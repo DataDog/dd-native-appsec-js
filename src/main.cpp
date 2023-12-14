@@ -6,7 +6,10 @@
 #include <napi.h>
 #include <stdio.h>
 #include <ddwaf.h>
+
 #include <string>
+
+#include "src/alloca.h"
 #include "src/main.h"
 #include "src/log.h"
 #include "src/convert.h"
@@ -111,7 +114,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   this->_handle = handle;
   this->_disposed = false;
 
-  this->update_required_addresses(info);
+  this->update_known_addresses(info);
 }
 
 void DDWAF::Finalize(Napi::Env env) {
@@ -172,24 +175,24 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   ddwaf_destroy(this->_handle);
   this->_handle = updated_handle;
 
-  this->update_required_addresses(info);
+  this->update_known_addresses(info);
 }
 
-void DDWAF::update_required_addresses(const Napi::CallbackInfo& info) {
+void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   uint32_t size = 0;
-  const char* const* required_addresses = ddwaf_required_addresses(this->_handle, &size);
+  const char* const* known_addresses = ddwaf_known_addresses(this->_handle, &size);
 
   Napi::Value set = env.RunScript("new Set()");
   Napi::Function set_add = set.As<Napi::Object>().Get("add").As<Napi::Function>();
 
   for (uint32_t i = 0; i < size; ++i) {
-    Napi::String address = Napi::String::New(env, required_addresses[i]);
+    Napi::String address = Napi::String::New(env, known_addresses[i]);
     set_add.Call(set, {address});
   }
 
-  info.This().As<Napi::Object>().Set("requiredAddresses", set);
+  info.This().As<Napi::Object>().Set("knownAddresses", set);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
@@ -242,29 +245,57 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     Napi::Error::New(env, "Calling run on a disposed context").ThrowAsJavaScriptException();
     return env.Null();
   }
-  if (info.Length() < 2) {  // inputs, timeout
-    Napi::Error::New(env, "Wrong number of arguments, expected 2").ThrowAsJavaScriptException();
+
+  if (info.Length() < 2) {  // payload, timeout
+    Napi::Error::New(env, "Wrong number of arguments, 2 expected").ThrowAsJavaScriptException();
     return env.Null();
   }
+
   if (!info[0].IsObject()) {
-    Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
+    Napi::TypeError::New(
+            env,
+            "Payload data must be an object")
+        .ThrowAsJavaScriptException();
     return env.Null();
   }
+
+  Napi::Object payload = info[0].As<Napi::Object>();
+  Napi::Value persistent = payload.Get("persistent");
+  Napi::Value ephemeral = payload.Get("ephemeral");
+
+  if (!persistent.IsObject() && !ephemeral.IsObject()) {
+    Napi::TypeError::New(env, "Persistent or ephemeral must be an object").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
   if (!info[1].IsNumber()) {
-    Napi::TypeError::New(env, "Second argument must be a number").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "Timeout argument must be a number").ThrowAsJavaScriptException();
     return env.Null();
   }
+
   int64_t timeout = info[1].ToNumber().Int64Value();
   if (timeout <= 0) {
-    Napi::TypeError::New(env, "Second argument must be greater than 0").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "Timeout argument must be greater than 0").ThrowAsJavaScriptException();
     return env.Null();
+  }
+
+  ddwaf_object *ddwafPersistent = nullptr;
+
+  if (persistent.IsObject()) {
+    ddwafPersistent = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
+    to_ddwaf_object(ddwafPersistent, env, persistent, 0, true);
+  }
+
+  ddwaf_object *ddwafEphemeral = nullptr;
+
+  if (ephemeral.IsObject()) {
+    ddwafEphemeral = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
+    to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true);
   }
 
   ddwaf_result result;
-  ddwaf_object data;
-  to_ddwaf_object(&data, env, info[0], 0, true);
 
-  DDWAF_RET_CODE code = ddwaf_run(this->_context, &data, &result, (uint64_t) timeout);
+  DDWAF_RET_CODE code = ddwaf_run(this->_context, ddwafPersistent, ddwafEphemeral, &result, (uint64_t) timeout);
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
@@ -286,6 +317,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   Napi::Object res = Napi::Object::New(env);
   mlog("Set timeout");
   res.Set("timeout", Napi::Boolean::New(env, result.timeout));
+
   if (result.total_runtime) {
     mlog("Set total_runtime");
     res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
@@ -300,7 +332,9 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     res.Set("events", from_ddwaf_object(&result.events, env));
     res.Set("actions", from_ddwaf_object(&result.actions, env));
   }
+
   ddwaf_result_free(&result);
+
   return res;
 }
 

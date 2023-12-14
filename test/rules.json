@@ -42,7 +42,8 @@
               }
             ],
             "list": [
-              "value_attack"
+              "value_attack",
+              "other_attack"
             ]
           },
           "operator": "phrase_match"
