@@ -49,7 +49,8 @@ export class DDWAF {
     custom_rules?: diagnosticsInfo,
     exclusions?: diagnosticsInfo,
     rules_override?: diagnosticsInfo,
-    rules_data?: diagnosticsInfo
+    rules_data?: diagnosticsInfo,
+    processors?: diagnosticsInfo
   };
 
   readonly requiredAddresses: Set<string>;
