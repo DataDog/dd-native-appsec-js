@@ -1,37 +1,65 @@
 'use strict'
 
-const {
-  Worker,
-  isMainThread,
-  parentPort
-} = require('worker_threads')
+const { describe, it } = require('mocha')
+const assert = require('assert')
+
+const path = require('path')
+const { Worker } = require('worker_threads')
+
 const { DDWAF } = require('..')
 const rules = require('./rules.json')
 
-if (isMainThread) {
-  const { describe, it } = require('mocha')
+const WORKER_PATH = path.join(__dirname, 'worker.js')
 
-  describe('worker threads', () => {
-    it('DDWAF does not crash with worker threads', (done) => {
-      const waf = new DDWAF(rules)
-      const worker = new Worker(__filename)
+describe('worker threads', () => {
+  it('should not crash when worker created after DDWAF', (done) => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
 
-      worker.on('message', msg => {
-        const ip = '123.123.123.123'
-        const payload = {
-          persistent: {
-            'http.client_ip': ip
-          }
+    const result1 = context.run({
+      persistent: {
+        value_attack: 'whatev'
+      }
+    }, 1e9)
+    assert.strictEqual(result1?.status, 'match')
+
+    const worker = new Worker(WORKER_PATH)
+
+    worker.on('message', (result2) => {
+      assert.strictEqual(result2?.status, 'match')
+
+      const result3 = context.run({
+        persistent: {
+          key_attack: { key: 'whatev' }
         }
+      }, 1e9)
+      assert.strictEqual(result3?.status, 'match')
 
-        const context = waf.createContext()
-        context.run(payload, 9999e3)
-        context.dispose()
-
-        done()
-      })
+      context.dispose()
+      waf.dispose()
+      done()
     })
   })
-} else {
-  parentPort.postMessage('started')
-}
+
+  it('should not crash when worker created before DDWAF', (done) => {
+    const worker = new Worker(WORKER_PATH)
+
+    worker.on('message', (result1) => {
+      assert.strictEqual(result1?.status, 'match')
+
+      const waf = new DDWAF(rules)
+      const context = waf.createContext()
+
+      const result2 = context.run({
+        persistent: {
+          value_attack: 'whatev'
+        }
+      }, 1e9)
+      assert.strictEqual(result2?.status, 'match')
+
+      context.dispose()
+      waf.dispose()
+      done()
+    })
+  })
+})
