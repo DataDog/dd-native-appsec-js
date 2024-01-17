@@ -5,7 +5,7 @@ Node.js bindings for [libddwaf](https://github.com/datadog/libddwaf).
 
 This package supports the following platforms:
 
-* **Node.js version:** 12 and higher
+* **Node.js version:** 14 and higher
 * **Operating Systems:**
   * MacOS
     * x64
