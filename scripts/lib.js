@@ -27,7 +27,9 @@ const dirNames = {
   },
   linux: {
     arm64: 'linux-aarch64',
-    x64: 'linux-x86_64'
+    arm: 'linux-arm7',
+    x64: 'linux-x86_64',
+    ia32: 'linux-i386'
   }
 }
 
