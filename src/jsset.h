@@ -8,7 +8,7 @@
 
 #include <napi.h>
 class JsSet : public Napi::Object {
-  public:
+ public:
     JsSet(napi_env env, napi_value value) : Object(env, value) {}
 
     static JsSet Create(Napi::Env env) {
