@@ -832,6 +832,7 @@ describe('limit tests', () => {
 
     const body = { a: 'not_an_attack' }
 
+    // should not match
     const context1 = waf.createContext()
     const result1 = context1.run({
       persistent: {
@@ -845,7 +846,7 @@ describe('limit tests', () => {
       return { a: '.htaccess' }
     }
 
-    // test last item in big rule
+    // should match
     const context2 = waf.createContext()
     const result2 = context2.run({
       persistent: {
