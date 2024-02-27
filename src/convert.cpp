@@ -56,6 +56,12 @@ ddwaf_object* to_ddwaf_object_object(
   int depth,
   bool lim
 ) {
+  Napi::Value toJSON = obj.Get("toJSON");
+  if (toJSON.IsFunction()) {
+    Napi::Value json = toJSON.As<Napi::Function>().Call({});
+    obj = json.ToObject();
+  }
+
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
