@@ -58,7 +58,7 @@ ddwaf_object* to_ddwaf_object_object(
 ) {
   Napi::Value toJSON = obj.Get("toJSON");
   if (toJSON.IsFunction()) {
-    Napi::Value json = toJSON.As<Napi::Function>().Call({});
+    Napi::Value json = toJSON.As<Napi::Function>().Call(obj, {});
     obj = json.ToObject();
   }
 

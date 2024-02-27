@@ -840,7 +840,10 @@ describe('limit tests', () => {
     }, TIMEOUT)
     assert(!result1.status)
 
-    body.toJSON = () => ({ a: '.htaccess' })
+    body.toJSON = function toJSON () {
+      assert(this === body)
+      return { a: '.htaccess' }
+    }
 
     // test last item in big rule
     const context2 = waf.createContext()
