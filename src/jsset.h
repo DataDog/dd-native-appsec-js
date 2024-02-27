@@ -1,8 +1,14 @@
-#ifndef DD_NATIVE_APPSEC_JS_JSSET_H
+/**
+* Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
+* This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
+**/
+
+#ifndef SRC_JSSET_H_
+#define SRC_JSSET_H_
+
 #include <napi.h>
-#define DD_NATIVE_APPSEC_JS_JSSET_H
 class JsSet : public Napi::Object {
-public:
+  public:
     JsSet(napi_env env, napi_value value) : Object(env, value) {}
 
     static JsSet Create(Napi::Env env) {
@@ -21,4 +27,4 @@ public:
         Get("delete").As<Napi::Function>().Call(*this, {value});
     }
 };
-#endif //DD_NATIVE_APPSEC_JS_JSSET_H
+#endif  // SRC_JSSET_H_
