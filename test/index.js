@@ -856,6 +856,115 @@ describe('limit tests', () => {
     assert(result2.status)
     assert(result2.events)
   })
+
+  it('should use custom toJSON function in arrays', () => {
+    const waf = new DDWAF(rules)
+
+    const body = [{ a: 'not_an_attack' }]
+
+    // should not match
+    const context1 = waf.createContext()
+    const result1 = context1.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(!result1.status)
+
+    body.toJSON = function toJSON () {
+      assert(this === body)
+      return [{ a: '.htaccess' }]
+    }
+
+    // should match
+    const context2 = waf.createContext()
+    const result2 = context2.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(result2.status)
+    assert(result2.events)
+  })
+
+  it('should work with array/object changes in toJSON', () => {
+    const a1 = ['val']
+    a1.toJSON = function () {
+      return {
+        key0: this[0]
+      }
+    }
+    const body = {
+      a: {
+        a1
+      },
+      toJSON: function () {
+        return [this.a]
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        [
+          [
+            { a1: [{ key0: [8] }] }
+          ]
+        ],
+        { len: 1 }
+      ]
+    })
+  })
+
+  it('should not call nested toJSON functions', () => {
+    const body = {
+      a: 1,
+      b: {
+        b: 'b',
+        toJSON: function () {
+          return { b: 'KO' }
+        }
+      },
+      c: {
+        c: 'c',
+        toJSON: function () {
+          return { c: 'OK' }
+        }
+      },
+      toJSON: function () {
+        return this.c
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          c: [8],
+          toJSON: [0]
+        }
+      ]
+    })
+  })
 })
 
 function createNestedObject (n, obj) {
