@@ -115,8 +115,7 @@ describe('DDWAF', () => {
       ephemeral: {
         'server.request.headers.no_cookies': 'value_ATTack'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -127,8 +126,7 @@ describe('DDWAF', () => {
       ephemeral: {
         'server.request.headers.no_cookies': 'other_attack'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -417,8 +415,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.response.status': '404'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
@@ -453,14 +450,12 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.headers.no_cookies': 'value_attack'
       }
-    }, -1),
-    greaterError)
+    }, -1), greaterError)
     assert.throws(() => context.run({
       persistent: {
         'server.request.headers.no_cookies': 'value_attack'
       }
-    }, 0),
-    greaterError)
+    }, 0), greaterError)
   })
 
   it('should parse keys correctly', () => {
@@ -493,8 +488,7 @@ describe('DDWAF', () => {
             [key]: 'value'
           }
         }
-      },
-      TIMEOUT)
+      }, TIMEOUT)
 
       assert.strictEqual(result.status, 'match')
       assert(result.events)
@@ -532,8 +526,7 @@ describe('DDWAF', () => {
             key: value
           }
         }
-      },
-      TIMEOUT)
+      }, TIMEOUT)
 
       assert.strictEqual(result.timeout, false)
 
@@ -559,8 +552,7 @@ describe('DDWAF', () => {
           }
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(result)
     assert(result.events)
@@ -580,8 +572,7 @@ describe('DDWAF', () => {
           header: 'value_attack'
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(result)
     assert(result.events)
@@ -607,8 +598,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
@@ -637,8 +627,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
@@ -681,8 +670,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [
@@ -726,8 +714,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.body': ''
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.derivatives, undefined)
 
@@ -738,8 +725,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
@@ -747,8 +733,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.query': ''
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
 
@@ -771,8 +756,7 @@ describe('limit tests', () => {
           a0: '404'
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert.strictEqual(result1.status, 'match')
     assert(result1.events)
 
@@ -786,8 +770,7 @@ describe('limit tests', () => {
       persistent: {
         'server.response.status': item
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
   })
@@ -800,8 +783,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
@@ -815,8 +797,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(!result.status)
     assert(!result.events)
@@ -831,8 +812,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.body': { a: '.htaccess' }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert(result1.status)
     assert(result1.events)
 
@@ -842,8 +822,33 @@ describe('limit tests', () => {
       persistent: {
         'server.request.body': { a: 'yarn.lock' }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
+    assert(result2.status)
+    assert(result2.events)
+  })
+
+  it('should use custom toJSON function', () => {
+    const waf = new DDWAF(rules)
+
+    const body = { a: 'not_an_attack' }
+
+    const context1 = waf.createContext()
+    const result1 = context1.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(!result1.status)
+
+    body.toJSON = () => ({ a: '.htaccess' })
+
+    // test last item in big rule
+    const context2 = waf.createContext()
+    const result2 = context2.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
     assert(result2.status)
     assert(result2.events)
   })
