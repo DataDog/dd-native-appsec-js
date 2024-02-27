@@ -789,6 +789,54 @@ describe('limit tests', () => {
     assert(result.events)
   })
 
+  it('Circular property dependency', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+    payload.child1 = payload
+    payload.child2 = payload
+    payload.child3 = payload
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert(result.derivatives['server.request.body.schema'][0].child1[0] === 0)
+    assert(result.derivatives['server.request.body.schema'][0].child2[0] === 0)
+    assert(result.derivatives['server.request.body.schema'][0].child3[0] === 0)
+  })
+
+  it('Array with same instance', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const item = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+
+    const payload = []
+    payload.push(item)
+    payload.push(item)
+    payload.push(item)
+    payload.push(item)
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    },
+    TIMEOUT)
+
+    assert(result.derivatives['server.request.body.schema'][1].len === 4)
+  })
+
   it('should not match an extremely deeply nested object', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
