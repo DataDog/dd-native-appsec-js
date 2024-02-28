@@ -913,6 +913,7 @@ describe('limit tests', () => {
         }
       }
     }, TIMEOUT)
+
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [
         [
@@ -961,6 +962,52 @@ describe('limit tests', () => {
         {
           c: [8],
           toJSON: [0]
+        }
+      ]
+    })
+  })
+
+  it('should call toJSON functions on children properties', () => {
+    const body = {
+      a: 1,
+      b: {
+        b: 2,
+        toJSON: function () {
+          return { b: 'b-OK' }
+        }
+      },
+      c: {
+        c: 3,
+        toJSON: function () {
+          return { c: 'c-OK' }
+        }
+      },
+      toJSON: function () {
+        return {
+          a: this.a,
+          b: this.b,
+          c: this.c
+        }
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          a: [16],
+          b: [{ b: [8] }],
+          c: [{ c: [8] }]
         }
       ]
     })
