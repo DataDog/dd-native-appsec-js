@@ -860,7 +860,7 @@ describe('limit tests', () => {
   it('should use custom toJSON function in arrays', () => {
     const waf = new DDWAF(rules)
 
-    const body = [{ a: 'not_an_attack' }]
+    const body = ['not_an_attack']
 
     // should not match
     const context1 = waf.createContext()
@@ -873,7 +873,7 @@ describe('limit tests', () => {
 
     body.toJSON = function toJSON () {
       assert(this === body)
-      return [{ a: '.htaccess' }]
+      return ['.htaccess']
     }
 
     // should match

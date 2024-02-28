@@ -13,16 +13,6 @@
 #include "src/convert.h"
 #include "src/log.h"
 
-
-ddwaf_object* to_ddwaf_object(
-        ddwaf_object *object,
-        Napi::Env env,
-        Napi::Value val,
-        int depth,
-        bool lim,
-        bool ignoreToJson
-);
-
 ddwaf_object* to_ddwaf_object_array(
   ddwaf_object *object,
   Napi::Env env,
@@ -125,15 +115,7 @@ ddwaf_object* to_ddwaf_string(ddwaf_object *object, Napi::Value val, bool lim) {
   }
   return ddwaf_object_stringl(object, str.c_str(), len);
 }
-ddwaf_object* to_ddwaf_object(
-        ddwaf_object *object,
-        Napi::Env env,
-        Napi::Value val,
-        int depth,
-        bool lim
-) {
-  return to_ddwaf_object(object, env, val, depth, lim, false);
-}
+
 ddwaf_object* to_ddwaf_object(
   ddwaf_object *object,
   Napi::Env env,
