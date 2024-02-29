@@ -854,7 +854,7 @@ describe('limit tests', () => {
   it('should set as invalid circular array dependency', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
-    const payload = [{ key: 'value' }]
+    const payload = []
     payload.push(payload, payload, payload)
 
     const result = context.run({
@@ -865,7 +865,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, {
-      'server.request.body.schema': [[[0], [{ key: [8] }]], { len: 4 }]
+      'server.request.body.schema': [[[0]], { len: 3 }]
     })
   })
 
