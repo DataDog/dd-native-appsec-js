@@ -820,6 +820,37 @@ describe('limit tests', () => {
     })
   })
 
+  it('should set as invalid circular property dependency in deeper level', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+    payload.child1 = { payload }
+    payload.child2 = { payload }
+    payload.child3 = { payload }
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          mail: [8],
+          key: [8],
+          child1: [{ payload: [0] }],
+          child2: [{ payload: [0] }],
+          child3: [{ payload: [0] }]
+        }
+      ]
+    })
+  })
+
   it('should set as invalid circular array dependency', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
@@ -835,6 +866,26 @@ describe('limit tests', () => {
 
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [[[0], [{ key: [8] }]], { len: 4 }]
+    })
+  })
+
+  it('should set as invalid circular array dependency in deeper levels', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = []
+    payload.push({ paygstload })
+    payload.push({ payload })
+    payload.push({ payload })
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [[[{ payload: [0] }]], { len: 3 }]
     })
   })
 
