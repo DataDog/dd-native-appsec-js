@@ -13,15 +13,21 @@
 #include "src/convert.h"
 #include "src/log.h"
 
-
-
 ddwaf_object* to_ddwaf_object_array(
   ddwaf_object *object,
   Napi::Env env,
   Napi::Array arr,
   int depth,
-  bool lim
+  bool lim,
+  bool ignoreToJSON
 ) {
+  if (!ignoreToJSON) {
+      Napi::Value toJSON = arr.Get("toJSON");
+      if (toJSON.IsFunction()) {
+        return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(arr, {}), depth, lim, true);
+      }
+  }
+
   uint32_t len = arr.Length();
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
@@ -54,8 +60,16 @@ ddwaf_object* to_ddwaf_object_object(
   Napi::Env env,
   Napi::Object obj,
   int depth,
-  bool lim
+  bool lim,
+  bool ignoreToJSON
 ) {
+  if (!ignoreToJSON) {
+    Napi::Value toJSON = obj.Get("toJSON");
+    if (toJSON.IsFunction()) {
+      return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(obj, {}), depth, lim, true);
+    }
+  }
+
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
@@ -107,7 +121,8 @@ ddwaf_object* to_ddwaf_object(
   Napi::Env env,
   Napi::Value val,
   int depth,
-  bool lim
+  bool lim,
+  bool ignoreToJson
 ) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
@@ -148,7 +163,7 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsArray()) {
     mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim);
+    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson);
   }
   if (val.IsFunction()) {
     // Special case because a function will evaluate true for both IsFunction and IsObject.
@@ -156,7 +171,7 @@ ddwaf_object* to_ddwaf_object(
   }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim);
+    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson);
   }
   mlog("creating invalid object");
   return ddwaf_object_invalid(object);

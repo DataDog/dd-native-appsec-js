@@ -115,8 +115,7 @@ describe('DDWAF', () => {
       ephemeral: {
         'server.request.headers.no_cookies': 'value_ATTack'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -127,8 +126,7 @@ describe('DDWAF', () => {
       ephemeral: {
         'server.request.headers.no_cookies': 'other_attack'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
@@ -417,8 +415,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.response.status': '404'
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
@@ -453,14 +450,12 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.headers.no_cookies': 'value_attack'
       }
-    }, -1),
-    greaterError)
+    }, -1), greaterError)
     assert.throws(() => context.run({
       persistent: {
         'server.request.headers.no_cookies': 'value_attack'
       }
-    }, 0),
-    greaterError)
+    }, 0), greaterError)
   })
 
   it('should parse keys correctly', () => {
@@ -493,8 +488,7 @@ describe('DDWAF', () => {
             [key]: 'value'
           }
         }
-      },
-      TIMEOUT)
+      }, TIMEOUT)
 
       assert.strictEqual(result.status, 'match')
       assert(result.events)
@@ -532,8 +526,7 @@ describe('DDWAF', () => {
             key: value
           }
         }
-      },
-      TIMEOUT)
+      }, TIMEOUT)
 
       assert.strictEqual(result.timeout, false)
 
@@ -559,8 +552,7 @@ describe('DDWAF', () => {
           }
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(result)
     assert(result.events)
@@ -580,8 +572,7 @@ describe('DDWAF', () => {
           header: 'value_attack'
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(result)
     assert(result.events)
@@ -607,8 +598,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
@@ -637,8 +627,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
@@ -681,8 +670,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [
@@ -726,8 +714,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.body': ''
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.derivatives, undefined)
 
@@ -738,8 +725,7 @@ describe('DDWAF', () => {
           'extract-schema': true
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
 
@@ -747,8 +733,7 @@ describe('DDWAF', () => {
       persistent: {
         'server.request.query': ''
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
 
@@ -771,8 +756,7 @@ describe('limit tests', () => {
           a0: '404'
         }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert.strictEqual(result1.status, 'match')
     assert(result1.events)
 
@@ -786,8 +770,7 @@ describe('limit tests', () => {
       persistent: {
         'server.response.status': item
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
   })
@@ -800,8 +783,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
     assert(result.events)
@@ -815,8 +797,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert(!result.status)
     assert(!result.events)
@@ -831,8 +812,7 @@ describe('limit tests', () => {
       persistent: {
         'server.request.body': { a: '.htaccess' }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert(result1.status)
     assert(result1.events)
 
@@ -842,10 +822,195 @@ describe('limit tests', () => {
       persistent: {
         'server.request.body': { a: 'yarn.lock' }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
     assert(result2.status)
     assert(result2.events)
+  })
+
+  it('should use custom toJSON function', () => {
+    const waf = new DDWAF(rules)
+
+    const body = { a: 'not_an_attack' }
+
+    // should not match
+    const context1 = waf.createContext()
+    const result1 = context1.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(!result1.status)
+
+    body.toJSON = function toJSON () {
+      assert(this === body)
+      return { a: '.htaccess' }
+    }
+
+    // should match
+    const context2 = waf.createContext()
+    const result2 = context2.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(result2.status)
+    assert(result2.events)
+  })
+
+  it('should use custom toJSON function in arrays', () => {
+    const waf = new DDWAF(rules)
+
+    const body = ['not_an_attack']
+
+    // should not match
+    const context1 = waf.createContext()
+    const result1 = context1.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(!result1.status)
+
+    body.toJSON = function toJSON () {
+      assert(this === body)
+      return ['.htaccess']
+    }
+
+    // should match
+    const context2 = waf.createContext()
+    const result2 = context2.run({
+      persistent: {
+        'server.request.body': body
+      }
+    }, TIMEOUT)
+    assert(result2.status)
+    assert(result2.events)
+  })
+
+  it('should work with array/object changes in toJSON', () => {
+    const a1 = ['val']
+    a1.toJSON = function () {
+      return {
+        key0: this[0]
+      }
+    }
+    const body = {
+      a: {
+        a1
+      },
+      toJSON: function () {
+        return [this.a]
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        [
+          [
+            { a1: [{ key0: [8] }] }
+          ]
+        ],
+        { len: 1 }
+      ]
+    })
+  })
+
+  it('should not call nested toJSON functions', () => {
+    const body = {
+      a: 1,
+      b: {
+        b: 'b',
+        toJSON: function () {
+          return { b: 'KO' }
+        }
+      },
+      c: {
+        c: 'c',
+        toJSON: function () {
+          return { c: 'OK' }
+        }
+      },
+      toJSON: function () {
+        return this.c
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          c: [8],
+          toJSON: [0]
+        }
+      ]
+    })
+  })
+
+  it('should call toJSON functions on children properties', () => {
+    const body = {
+      a: 1,
+      b: {
+        b: 2,
+        toJSON: function () {
+          return { b: 'b-OK' }
+        }
+      },
+      c: {
+        c: 3,
+        toJSON: function () {
+          return { c: 'c-OK' }
+        }
+      },
+      toJSON: function () {
+        return {
+          a: this.a,
+          b: this.b,
+          c: this.c
+        }
+      }
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          a: [16],
+          b: [{ b: [8] }],
+          c: [{ c: [8] }]
+        }
+      ]
+    })
   })
 })
 
