@@ -189,7 +189,8 @@ ddwaf_object* to_ddwaf_object(
 
   if (val.IsArray()) {
     mlog("creating Array");
-    auto result = to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, jsSet);
+    auto result =
+      to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, jsSet);
     jsSet.Delete(val);
     return result;
   }
