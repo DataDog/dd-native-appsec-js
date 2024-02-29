@@ -86,46 +86,47 @@ ddwaf_object* to_ddwaf_object_object(
   if (jsSet.Has(obj)) {
     mlog("Circular dependency")
     return ddwaf_object_invalid(object);
-  } else {
-    jsSet.Add(obj);
-    Napi::Array properties = obj.GetPropertyNames();
-    uint32_t len = properties.Length();
-    if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
-      len = DDWAF_MAX_CONTAINER_SIZE;
-    }
-    if (env.IsExceptionPending()) {
-      mlog("Exception pending");
-      jsSet.Delete(obj);
-      return nullptr;
-    }
-
-    ddwaf_object *map = ddwaf_object_map(object);
-    if (map == nullptr) {
-      mlog("failed to create map");
-      jsSet.Delete(obj);
-      return nullptr;
-    }
-
-    for (uint32_t i = 0; i < len; ++i) {
-      mlog("Getting properties");
-      Napi::Value keyV = properties.Get(i);
-      if (!obj.HasOwnProperty(keyV) || !keyV.IsString()) {
-        // We avoid inherited properties here.
-        // If the key is not a String, well this is weird
-        continue;
-      }
-      std::string key = keyV.ToString().Utf8Value();
-      Napi::Value valV = obj.Get(keyV);
-      mlog("Looping into ToPWArgs");
-      ddwaf_object val;
-      to_ddwaf_object(&val, env, valV, depth, lim, false, jsSet);
-      if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
-        mlog("add to object failed, freeing");
-        ddwaf_object_free(&val);
-      }
-    }
-    jsSet.Delete(obj);
   }
+
+  jsSet.Add(obj);
+  Napi::Array properties = obj.GetPropertyNames();
+  uint32_t len = properties.Length();
+  if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
+    len = DDWAF_MAX_CONTAINER_SIZE;
+  }
+  if (env.IsExceptionPending()) {
+    mlog("Exception pending");
+    jsSet.Delete(obj);
+    return nullptr;
+  }
+
+  ddwaf_object *map = ddwaf_object_map(object);
+  if (map == nullptr) {
+    mlog("failed to create map");
+    jsSet.Delete(obj);
+    return nullptr;
+  }
+
+  for (uint32_t i = 0; i < len; ++i) {
+    mlog("Getting properties");
+    Napi::Value keyV = properties.Get(i);
+    if (!obj.HasOwnProperty(keyV) || !keyV.IsString()) {
+      // We avoid inherited properties here.
+      // If the key is not a String, well this is weird
+      continue;
+    }
+    std::string key = keyV.ToString().Utf8Value();
+    Napi::Value valV = obj.Get(keyV);
+    mlog("Looping into ToPWArgs");
+    ddwaf_object val;
+    to_ddwaf_object(&val, env, valV, depth, lim, false, jsSet);
+    if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
+      mlog("add to object failed, freeing");
+      ddwaf_object_free(&val);
+    }
+  }
+  jsSet.Delete(obj);
+
   return object;
 }
 
