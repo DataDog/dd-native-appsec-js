@@ -7,7 +7,6 @@
 
 #include <napi.h>
 #include <ddwaf.h>
-#include "src/jsset.h"
 
 ddwaf_object* to_ddwaf_object(
   ddwaf_object *object,

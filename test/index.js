@@ -789,7 +789,7 @@ describe('limit tests', () => {
     assert(result.events)
   })
 
-  it('Circular property dependency', () => {
+  it('should set as invalid circular property dependency', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
     const payload = {
@@ -807,12 +807,20 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert(result.derivatives['server.request.body.schema'][0].child1[0] === 0)
-    assert(result.derivatives['server.request.body.schema'][0].child2[0] === 0)
-    assert(result.derivatives['server.request.body.schema'][0].child3[0] === 0)
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          mail: [8],
+          key: [8],
+          child1: [0],
+          child2: [0],
+          child3: [0]
+        }
+      ]
+    })
   })
 
-  it('Array with same instance', () => {
+  it('should iterate same instances in array', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
     const item = {
@@ -835,6 +843,38 @@ describe('limit tests', () => {
     TIMEOUT)
 
     assert(result.derivatives['server.request.body.schema'][1].len === 4)
+  })
+
+  it('should iterate same instance in different properties', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const prop = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+
+    const payload = {}
+    payload.prop1 = prop
+    payload.prop2 = prop
+    payload.prop3 = prop
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    },
+    TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          prop1: [{ mail: [8], key: [8] }],
+          prop2: [{ mail: [8], key: [8] }],
+          prop3: [{ mail: [8], key: [8] }]
+        }
+      ]
+    })
   })
 
   it('should not match an extremely deeply nested object', () => {
