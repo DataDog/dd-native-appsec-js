@@ -873,7 +873,7 @@ describe('limit tests', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
     const payload = []
-    payload.push({ paygstload })
+    payload.push({ payload })
     payload.push({ payload })
     payload.push({ payload })
 
