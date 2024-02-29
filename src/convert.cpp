@@ -100,7 +100,7 @@ ddwaf_object* to_ddwaf_object_object(
     return nullptr;
   }
 
-  ddwaf_object *map = ddwaf_object_map(object);
+  ddwaf_object* map = ddwaf_object_map(object);
   if (map == nullptr) {
     mlog("failed to create map");
     jsSet.Delete(obj);
