@@ -820,7 +820,25 @@ describe('limit tests', () => {
     })
   })
 
-  it('should iterate same instances in array', () => {
+  it('should set as invalid circular array dependency', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = [{ key: 'value' }]
+    payload.push(payload, payload, payload)
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [[[0], [{ key: [8] }]], { len: 4 }]
+    })
+  })
+
+  it('should not set as invalid same instances in array', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
     const item = {
@@ -828,24 +846,24 @@ describe('limit tests', () => {
       mail: 'from@domain.com'
     }
 
-    const payload = []
-    payload.push(item)
-    payload.push(item)
-    payload.push(item)
-    payload.push(item)
+    const payload = [item, item, item, item]
 
     const result = context.run({
       persistent: {
         'server.request.body': payload,
         'waf.context.processor': { 'extract-schema': true }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
-    assert(result.derivatives['server.request.body.schema'][1].len === 4)
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        [[{ mail: [8], key: [8] }]],
+        { len: 4 }
+      ]
+    })
   })
 
-  it('should iterate same instance in different properties', () => {
+  it('should not set as invalid same instance in different properties', () => {
     const waf = new DDWAF(processor)
     const context = waf.createContext()
     const prop = {
@@ -863,8 +881,7 @@ describe('limit tests', () => {
         'server.request.body': payload,
         'waf.context.processor': { 'extract-schema': true }
       }
-    },
-    TIMEOUT)
+    }, TIMEOUT)
 
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [

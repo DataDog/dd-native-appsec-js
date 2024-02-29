@@ -64,6 +64,7 @@ ddwaf_object* to_ddwaf_object_array(
       ddwaf_object_free(&val);
     }
   }
+
   return object;
 }
 
@@ -83,12 +84,6 @@ ddwaf_object* to_ddwaf_object_object(
     }
   }
 
-  if (jsSet.Has(obj)) {
-    mlog("Circular dependency")
-    return ddwaf_object_invalid(object);
-  }
-  jsSet.Add(obj);
-
   Napi::Array properties = obj.GetPropertyNames();
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
@@ -96,14 +91,12 @@ ddwaf_object* to_ddwaf_object_object(
   }
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
-    jsSet.Delete(obj);
     return nullptr;
   }
 
   ddwaf_object* map = ddwaf_object_map(object);
   if (map == nullptr) {
     mlog("failed to create map");
-    jsSet.Delete(obj);
     return nullptr;
   }
 
@@ -125,7 +118,6 @@ ddwaf_object* to_ddwaf_object_object(
       ddwaf_object_free(&val);
     }
   }
-  jsSet.Delete(obj);
 
   return object;
 }
@@ -185,17 +177,27 @@ ddwaf_object* to_ddwaf_object(
     bool boolValue = val.ToBoolean().Value();
     return ddwaf_object_bool(object, boolValue);
   }
-  if (val.IsArray()) {
-    mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, jsSet);
-  }
   if (val.IsFunction()) {
     // Special case because a function will evaluate true for both IsFunction and IsObject.
     return ddwaf_object_invalid(object);
   }
+  if (jsSet.Has(val)) {
+    mlog("Circular dependency")
+    return ddwaf_object_invalid(object);
+  }
+  jsSet.Add(val);
+
+  if (val.IsArray()) {
+    mlog("creating Array");
+    auto result = to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, jsSet);
+    jsSet.Delete(val);
+    return result;
+  }
   if (val.IsObject()) {
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson, jsSet);
+    auto result = to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson, jsSet);
+    jsSet.Delete(val);
+    return result;
   }
   mlog("creating invalid object");
   return ddwaf_object_invalid(object);
