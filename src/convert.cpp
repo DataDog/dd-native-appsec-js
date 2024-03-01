@@ -12,6 +12,17 @@
 
 #include "src/convert.h"
 #include "src/log.h"
+#include "src/jsset.h"
+
+ddwaf_object* to_ddwaf_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  int depth,
+  bool lim,
+  bool ignoreToJSON,
+  JsSet stack
+);
 
 ddwaf_object* to_ddwaf_object_array(
   ddwaf_object *object,
@@ -19,13 +30,14 @@ ddwaf_object* to_ddwaf_object_array(
   Napi::Array arr,
   int depth,
   bool lim,
-  bool ignoreToJSON
+  bool ignoreToJSON,
+  JsSet stack
 ) {
   if (!ignoreToJSON) {
-      Napi::Value toJSON = arr.Get("toJSON");
-      if (toJSON.IsFunction()) {
-        return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(arr, {}), depth, lim, true);
-      }
+    Napi::Value toJSON = arr.Get("toJSON");
+    if (toJSON.IsFunction()) {
+      return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(arr, {}), depth, lim, true, stack);
+    }
   }
 
   uint32_t len = arr.Length();
@@ -46,12 +58,13 @@ ddwaf_object* to_ddwaf_object_array(
   for (uint32_t i = 0; i < len; ++i) {
     Napi::Value item  = arr.Get(i);
     ddwaf_object val;
-    to_ddwaf_object(&val, env, item, depth, lim);
+    to_ddwaf_object(&val, env, item, depth, lim, false, stack);
     if (!ddwaf_object_array_add(object, &val)) {
       mlog("add to array failed, freeing");
       ddwaf_object_free(&val);
     }
   }
+
   return object;
 }
 
@@ -61,12 +74,13 @@ ddwaf_object* to_ddwaf_object_object(
   Napi::Object obj,
   int depth,
   bool lim,
-  bool ignoreToJSON
+  bool ignoreToJSON,
+  JsSet stack
 ) {
   if (!ignoreToJSON) {
     Napi::Value toJSON = obj.Get("toJSON");
     if (toJSON.IsFunction()) {
-      return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(obj, {}), depth, lim, true);
+      return to_ddwaf_object(object, env, toJSON.As<Napi::Function>().Call(obj, {}), depth, lim, true, stack);
     }
   }
 
@@ -88,22 +102,23 @@ ddwaf_object* to_ddwaf_object_object(
 
   for (uint32_t i = 0; i < len; ++i) {
     mlog("Getting properties");
-    Napi::Value keyV  = properties.Get(i);
+    Napi::Value keyV = properties.Get(i);
     if (!obj.HasOwnProperty(keyV) || !keyV.IsString()) {
       // We avoid inherited properties here.
       // If the key is not a String, well this is weird
       continue;
     }
-    std::string key   = keyV.ToString().Utf8Value();
-    Napi::Value valV  = obj.Get(keyV);
+    std::string key = keyV.ToString().Utf8Value();
+    Napi::Value valV = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
-    to_ddwaf_object(&val, env, valV, depth, lim);
+    to_ddwaf_object(&val, env, valV, depth, lim, false, stack);
     if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
     }
   }
+
   return object;
 }
 
@@ -122,7 +137,8 @@ ddwaf_object* to_ddwaf_object(
   Napi::Value val,
   int depth,
   bool lim,
-  bool ignoreToJson
+  bool ignoreToJson,
+  JsSet stack
 ) {
   mlog("starting to convert an object");
   if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
@@ -161,20 +177,43 @@ ddwaf_object* to_ddwaf_object(
     bool boolValue = val.ToBoolean().Value();
     return ddwaf_object_bool(object, boolValue);
   }
-  if (val.IsArray()) {
-    mlog("creating Array");
-    return to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson);
-  }
   if (val.IsFunction()) {
     // Special case because a function will evaluate true for both IsFunction and IsObject.
     return ddwaf_object_invalid(object);
   }
+  if (stack.Has(val)) {
+    mlog("Circular dependency")
+    return ddwaf_object_invalid(object);
+  }
+
+  if (val.IsArray()) {
+    stack.Add(val);
+    mlog("creating Array");
+    auto result =
+      to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, stack);
+    stack.Delete(val);
+    return result;
+  }
   if (val.IsObject()) {
+    stack.Add(val);
     mlog("creating Object");
-    return to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson);
+    auto result = to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson, stack);
+    stack.Delete(val);
+    return result;
   }
   mlog("creating invalid object");
   return ddwaf_object_invalid(object);
+}
+
+ddwaf_object* to_ddwaf_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  int depth,
+  bool lim,
+  bool ignoreToJson
+) {
+  return to_ddwaf_object(object, env, val, depth, lim, ignoreToJson, JsSet::Create(env));
 }
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {

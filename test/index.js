@@ -789,6 +789,162 @@ describe('limit tests', () => {
     assert(result.events)
   })
 
+  it('should set as invalid circular property dependency', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+    payload.child1 = payload
+    payload.child2 = payload
+    payload.child3 = payload
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          mail: [8],
+          key: [8],
+          child1: [0],
+          child2: [0],
+          child3: [0]
+        }
+      ]
+    })
+  })
+
+  it('should set as invalid circular property dependency in deeper level', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+    payload.child1 = { payload }
+    payload.child2 = { payload }
+    payload.child3 = { payload }
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          mail: [8],
+          key: [8],
+          child1: [{ payload: [0] }],
+          child2: [{ payload: [0] }],
+          child3: [{ payload: [0] }]
+        }
+      ]
+    })
+  })
+
+  it('should set as invalid circular array dependency', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = []
+    payload.push(payload, payload, payload)
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [[[0]], { len: 3 }]
+    })
+  })
+
+  it('should set as invalid circular array dependency in deeper levels', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const payload = []
+    payload.push({ payload })
+    payload.push({ payload })
+    payload.push({ payload })
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [[[{ payload: [0] }]], { len: 3 }]
+    })
+  })
+
+  it('should not set as invalid same instances in array', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const item = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+
+    const payload = [item, item, item, item]
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        [[{ mail: [8], key: [8] }]],
+        { len: 4 }
+      ]
+    })
+  })
+
+  it('should not set as invalid same instance in different properties', () => {
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const prop = {
+      key: 'value',
+      mail: 'from@domain.com'
+    }
+
+    const payload = {}
+    payload.prop1 = prop
+    payload.prop2 = prop
+    payload.prop3 = prop
+
+    const result = context.run({
+      persistent: {
+        'server.request.body': payload,
+        'waf.context.processor': { 'extract-schema': true }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          prop1: [{ mail: [8], key: [8] }],
+          prop2: [{ mail: [8], key: [8] }],
+          prop3: [{ mail: [8], key: [8] }]
+        }
+      ]
+    })
+  })
+
   it('should not match an extremely deeply nested object', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
