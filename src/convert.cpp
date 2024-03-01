@@ -200,6 +200,7 @@ ddwaf_object* to_ddwaf_object(
     jsSet.Delete(val);
     return result;
   }
+  jsSet.Delete(val);
   mlog("creating invalid object");
   return ddwaf_object_invalid(object);
 }
