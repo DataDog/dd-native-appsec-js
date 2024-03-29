@@ -216,12 +216,7 @@ ddwaf_object* to_ddwaf_object(
   return to_ddwaf_object(object, env, val, depth, lim, ignoreToJson, JsSet::Create(env));
 }
 
-Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
-  if (depth >= DDWAF_MAX_CONTAINER_DEPTH) {
-    mlog("Max depth reached");
-    return env.Null();
-  }
-
+Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
   DDWAF_OBJ_TYPE type = object->type;
 
   Napi::Value result;
@@ -246,7 +241,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
         ddwaf_object* e = &object->array[i];
-        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
+        Napi::Value v = from_ddwaf_object(e, env);
         arr[i] = v;
       }
 
@@ -263,7 +258,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env, int depth) {
           mlog("Exception pending");
           continue;
         }
-        Napi::Value v = from_ddwaf_object(e, env, depth + 1);
+        Napi::Value v = from_ddwaf_object(e, env);
         obj.Set(k, v);
       }
 
