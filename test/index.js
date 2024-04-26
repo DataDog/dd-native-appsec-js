@@ -89,7 +89,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert(result.events)
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
     assert(!context.disposed)
 
     context.dispose()
@@ -120,7 +120,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
 
     result = context.run({
       ephemeral: {
@@ -131,7 +131,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'other_attack')
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
 
     context.dispose()
 
@@ -285,7 +285,13 @@ describe('DDWAF', () => {
       assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
       assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
       assert(resultAfterUpdatingRuleData.events)
-      assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
+      assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '403',
+          type: 'auto'
+        }
+      })
       assert(!context.disposed)
     })
 
@@ -387,7 +393,7 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultMonitor.timeout, false)
           assert.strictEqual(resultMonitor.status, 'match')
-          assert.deepStrictEqual(resultMonitor.actions, [])
+          assert.deepStrictEqual(resultMonitor.actions, {})
           assert(resultMonitor.events)
 
           const updateWithRulesOverride = {
@@ -401,7 +407,13 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultBlock.timeout, false)
           assert.strictEqual(resultBlock.status, 'match')
-          assert.deepStrictEqual(resultBlock.actions, ['block'])
+          assert.deepStrictEqual(resultBlock.actions, {
+            block_request: {
+              grpc_status_code: '10',
+              status_code: '403',
+              type: 'auto'
+            }
+          })
         })
       })
     })
