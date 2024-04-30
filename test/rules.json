@@ -3,6 +3,17 @@
   "metadata": {
     "rules_version": "1.3.1"
   },
+  "actions": [
+    {
+      "id": "customblock",
+      "type": "block_request",
+      "parameters": {
+        "status_code": "418",
+        "grpc_status_code": "10",
+        "type": "auto"
+      }
+    }
+  ],
   "rules": [
     {
       "id": "block_ip",
@@ -1304,6 +1315,29 @@
       ],
       "transformers": [
         "lowercase"
+      ]
+    },
+    {
+      "id": "custom_action",
+      "name": "Custom action defined",
+      "tags": {
+        "type": "custom_match_action"
+      },
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {
+                "address": "custom_value_attack"
+              }
+            ],
+            "regex": ".*"
+          }
+        }
+      ],
+      "on_match": [
+        "customblock"
       ]
     }
   ]

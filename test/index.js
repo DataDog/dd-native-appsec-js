@@ -24,6 +24,13 @@ describe('DDWAF', () => {
 
     assert.deepStrictEqual(waf.diagnostics, {
       ruleset_version: '1.3.1',
+      actions: {
+        errors: {},
+        failed: [],
+        loaded: [
+          'customblock'
+        ]
+      },
       rules: {
         addresses: {
           optional: [],
@@ -33,7 +40,8 @@ describe('DDWAF', () => {
             'server.response.status',
             'value_attack',
             'key_attack',
-            'server.request.body'
+            'server.request.body',
+            'custom_value_attack'
           ]
         },
         loaded: [
@@ -43,7 +51,8 @@ describe('DDWAF', () => {
           'nfd-000-001',
           'value_matchall',
           'key_matchall',
-          'long_rule'
+          'long_rule',
+          'custom_action'
         ],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
         errors: {
@@ -68,7 +77,8 @@ describe('DDWAF', () => {
       'server.response.status',
       'value_attack',
       'key_attack',
-      'server.request.body'
+      'server.request.body',
+      'custom_value_attack'
     ]))
   })
 
@@ -210,6 +220,13 @@ describe('DDWAF', () => {
       waf.update(rules)
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.1',
+        actions: {
+          errors: {},
+          failed: [],
+          loaded: [
+            'customblock'
+          ]
+        },
         rules: {
           addresses: {
             optional: [],
@@ -219,7 +236,8 @@ describe('DDWAF', () => {
               'server.response.status',
               'value_attack',
               'key_attack',
-              'server.request.body'
+              'server.request.body',
+              'custom_value_attack'
             ]
           },
           loaded: [
@@ -229,7 +247,8 @@ describe('DDWAF', () => {
             'nfd-000-001',
             'value_matchall',
             'key_matchall',
-            'long_rule'
+            'long_rule',
+            'custom_action'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
           errors: {
@@ -249,7 +268,8 @@ describe('DDWAF', () => {
         'server.response.status',
         'value_attack',
         'key_attack',
-        'server.request.body'
+        'server.request.body',
+        'custom_value_attack'
       ]))
 
       waf.dispose()
@@ -754,6 +774,65 @@ describe('DDWAF', () => {
 
     waf.dispose()
     assert(waf.disposed)
+  })
+
+  describe('Action semantics', () => {
+    it('should support action definition in initialisation', () => {
+      const waf = new DDWAF(rules)
+      const context = waf.createContext()
+
+      const result = context.run({
+        persistent: {
+          custom_value_attack: 'match'
+        }
+      }, TIMEOUT)
+
+      assert.strictEqual(result.timeout, false)
+      assert.strictEqual(result.status, 'match')
+      assert(result.events)
+      assert.deepStrictEqual(result.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '418',
+          type: 'auto'
+        }
+      })
+    })
+
+    it('should support action definition in update', () => {
+      const waf = new DDWAF(rules)
+
+      const updatedRules = Object.assign({}, rules)
+      updatedRules.actions = [{
+        id: 'customblock',
+        type: 'block_request',
+        parameters: {
+          status_code: '404',
+          grpc_status_code: '10',
+          type: 'auto'
+        }
+      }]
+
+      waf.update(updatedRules)
+
+      const context = waf.createContext()
+      const resultWithUpdatedAction = context.run({
+        persistent: {
+          custom_value_attack: 'match'
+        }
+      }, TIMEOUT)
+
+      assert.strictEqual(resultWithUpdatedAction.timeout, false)
+      assert.strictEqual(resultWithUpdatedAction.status, 'match')
+      assert(resultWithUpdatedAction.events)
+      assert.deepStrictEqual(resultWithUpdatedAction.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '404',
+          type: 'auto'
+        }
+      })
+    })
   })
 })
 
