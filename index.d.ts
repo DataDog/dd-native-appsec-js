@@ -22,7 +22,7 @@ type result = {
   totalRuntime?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   status?: 'match'; // TODO: remove this if new statuses are never added
-  actions?: string[];
+  actions?: object[];
   derivatives?: object;
 }
 
@@ -50,7 +50,8 @@ export class DDWAF {
     exclusions?: diagnosticsInfo,
     rules_override?: diagnosticsInfo,
     rules_data?: diagnosticsInfo,
-    processors?: diagnosticsInfo
+    processors?: diagnosticsInfo,
+    actions?: diagnosticsInfo
   };
 
   readonly knownAddresses: Set<string>;
