@@ -24,18 +24,15 @@ jobs:
 
   build:
     needs: download-libddwaf
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-      - uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
-        with:
-          cache: true
-          napi: true
-          package-manager: 'npm'
-          postbuild: 'node scripts/postbuild'
-          skip: 'linux-arm linux-ia32'
-          target-name: 'appsec'
-          min-node-version: 14
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@ccapell/prebuild-download-artifact
+    with:
+      cache: true
+      napi: true
+      package-manager: 'npm'
+      postbuild: 'node scripts/postbuild'
+      skip: 'linux-arm linux-ia32'
+      target-name: 'appsec'
+      min-node-version: 14
 
   static-checks:
     strategy:
