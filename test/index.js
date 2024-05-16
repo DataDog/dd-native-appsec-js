@@ -40,8 +40,8 @@ describe('DDWAF', () => {
             'server.response.status',
             'value_attack',
             'key_attack',
-            'server.request.body',
-            'custom_value_attack'
+            'custom_value_attack',
+            'server.request.body'
           ]
         },
         loaded: [
@@ -51,8 +51,8 @@ describe('DDWAF', () => {
           'nfd-000-001',
           'value_matchall',
           'key_matchall',
-          'long_rule',
-          'custom_action'
+          'custom_action_rule',
+          'long_rule'
         ],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
         errors: {
@@ -236,8 +236,8 @@ describe('DDWAF', () => {
               'server.response.status',
               'value_attack',
               'key_attack',
-              'server.request.body',
-              'custom_value_attack'
+              'custom_value_attack',
+              'server.request.body'
             ]
           },
           loaded: [
@@ -247,8 +247,8 @@ describe('DDWAF', () => {
             'nfd-000-001',
             'value_matchall',
             'key_matchall',
-            'long_rule',
-            'custom_action'
+            'custom_action_rule',
+            'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
           errors: {
