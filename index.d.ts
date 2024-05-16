@@ -5,16 +5,19 @@
 type rules = object;
 
 type diagnosticsInfo = {
-  addresses: {
+  addresses?: {
     optional: string[],
     required: string[]
   },
   loaded: string[],
   failed: string[],
-  error: string,
   errors: {
     [errorString: string]: string[]
   }
+}
+
+type diagnosticsError = {
+  error: string
 }
 
 type result = {
@@ -45,13 +48,13 @@ export class DDWAF {
 
   readonly diagnostics: {
     ruleset_version?: string,
-    rules?: diagnosticsInfo,
-    custom_rules?: diagnosticsInfo,
-    exclusions?: diagnosticsInfo,
-    rules_override?: diagnosticsInfo,
-    rules_data?: diagnosticsInfo,
-    processors?: diagnosticsInfo,
-    actions?: diagnosticsInfo
+    rules?: diagnosticsError | diagnosticsInfo,
+    custom_rules?: diagnosticsError | diagnosticsInfo,
+    exclusions?: diagnosticsError | diagnosticsInfo,
+    rules_override?: diagnosticsError | diagnosticsInfo,
+    rules_data?: diagnosticsError | diagnosticsInfo,
+    processors?: diagnosticsError | diagnosticsInfo,
+    actions?: diagnosticsError | diagnosticsInfo
   };
 
   readonly knownAddresses: Set<string>;
