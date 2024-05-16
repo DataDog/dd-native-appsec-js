@@ -191,7 +191,7 @@
       ]
     },
     {
-      "id": "custom_action",
+      "id": "custom_action_rule",
       "name": "Custom action defined",
       "tags": {
         "type": "custom_match_action"
