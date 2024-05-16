@@ -191,6 +191,29 @@
       ]
     },
     {
+      "id": "custom_action",
+      "name": "Custom action defined",
+      "tags": {
+        "type": "custom_match_action"
+      },
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {
+                "address": "custom_value_attack"
+              }
+            ],
+            "regex": ".*"
+          }
+        }
+      ],
+      "on_match": [
+        "customblock"
+      ]
+    },
+    {
       "id": "long_rule",
       "name": "long rule that shouldn't be truncated",
       "tags": {
@@ -1315,29 +1338,6 @@
       ],
       "transformers": [
         "lowercase"
-      ]
-    },
-    {
-      "id": "custom_action",
-      "name": "Custom action defined",
-      "tags": {
-        "type": "custom_match_action"
-      },
-      "conditions": [
-        {
-          "operator": "match_regex",
-          "parameters": {
-            "inputs": [
-              {
-                "address": "custom_value_attack"
-              }
-            ],
-            "regex": ".*"
-          }
-        }
-      ],
-      "on_match": [
-        "customblock"
       ]
     }
   ]
