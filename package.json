@@ -41,7 +41,7 @@
     "node-gyp-build": "^3.9.0"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   },
   "files": [
     "index.js",
