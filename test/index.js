@@ -24,6 +24,13 @@ describe('DDWAF', () => {
 
     assert.deepStrictEqual(waf.diagnostics, {
       ruleset_version: '1.3.1',
+      actions: {
+        errors: {},
+        failed: [],
+        loaded: [
+          'customblock'
+        ]
+      },
       rules: {
         addresses: {
           optional: [],
@@ -33,6 +40,7 @@ describe('DDWAF', () => {
             'server.response.status',
             'value_attack',
             'key_attack',
+            'custom_value_attack',
             'server.request.body'
           ]
         },
@@ -43,6 +51,7 @@ describe('DDWAF', () => {
           'nfd-000-001',
           'value_matchall',
           'key_matchall',
+          'custom_action_rule',
           'long_rule'
         ],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -68,7 +77,8 @@ describe('DDWAF', () => {
       'server.response.status',
       'value_attack',
       'key_attack',
-      'server.request.body'
+      'server.request.body',
+      'custom_value_attack'
     ]))
   })
 
@@ -89,7 +99,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert(result.events)
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
     assert(!context.disposed)
 
     context.dispose()
@@ -120,7 +130,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
 
     result = context.run({
       ephemeral: {
@@ -131,7 +141,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'other_attack')
-    assert.deepStrictEqual(result.actions, [])
+    assert.deepStrictEqual(result.actions, {})
 
     context.dispose()
 
@@ -210,6 +220,13 @@ describe('DDWAF', () => {
       waf.update(rules)
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.1',
+        actions: {
+          errors: {},
+          failed: [],
+          loaded: [
+            'customblock'
+          ]
+        },
         rules: {
           addresses: {
             optional: [],
@@ -219,6 +236,7 @@ describe('DDWAF', () => {
               'server.response.status',
               'value_attack',
               'key_attack',
+              'custom_value_attack',
               'server.request.body'
             ]
           },
@@ -229,6 +247,7 @@ describe('DDWAF', () => {
             'nfd-000-001',
             'value_matchall',
             'key_matchall',
+            'custom_action_rule',
             'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -249,7 +268,8 @@ describe('DDWAF', () => {
         'server.response.status',
         'value_attack',
         'key_attack',
-        'server.request.body'
+        'server.request.body',
+        'custom_value_attack'
       ]))
 
       waf.dispose()
@@ -285,7 +305,13 @@ describe('DDWAF', () => {
       assert.strictEqual(resultAfterUpdatingRuleData.timeout, false)
       assert.strictEqual(resultAfterUpdatingRuleData.status, 'match')
       assert(resultAfterUpdatingRuleData.events)
-      assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, ['block'])
+      assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '403',
+          type: 'auto'
+        }
+      })
       assert(!context.disposed)
     })
 
@@ -387,7 +413,7 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultMonitor.timeout, false)
           assert.strictEqual(resultMonitor.status, 'match')
-          assert.deepStrictEqual(resultMonitor.actions, [])
+          assert.deepStrictEqual(resultMonitor.actions, {})
           assert(resultMonitor.events)
 
           const updateWithRulesOverride = {
@@ -401,7 +427,13 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultBlock.timeout, false)
           assert.strictEqual(resultBlock.status, 'match')
-          assert.deepStrictEqual(resultBlock.actions, ['block'])
+          assert.deepStrictEqual(resultBlock.actions, {
+            block_request: {
+              grpc_status_code: '10',
+              status_code: '403',
+              type: 'auto'
+            }
+          })
         })
       })
     })
@@ -742,6 +774,65 @@ describe('DDWAF', () => {
 
     waf.dispose()
     assert(waf.disposed)
+  })
+
+  describe('Action semantics', () => {
+    it('should support action definition in initialisation', () => {
+      const waf = new DDWAF(rules)
+      const context = waf.createContext()
+
+      const result = context.run({
+        persistent: {
+          custom_value_attack: 'match'
+        }
+      }, TIMEOUT)
+
+      assert.strictEqual(result.timeout, false)
+      assert.strictEqual(result.status, 'match')
+      assert(result.events)
+      assert.deepStrictEqual(result.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '418',
+          type: 'auto'
+        }
+      })
+    })
+
+    it('should support action definition in update', () => {
+      const waf = new DDWAF(rules)
+
+      const updatedRules = Object.assign({}, rules)
+      updatedRules.actions = [{
+        id: 'customblock',
+        type: 'block_request',
+        parameters: {
+          status_code: '404',
+          grpc_status_code: '10',
+          type: 'auto'
+        }
+      }]
+
+      waf.update(updatedRules)
+
+      const context = waf.createContext()
+      const resultWithUpdatedAction = context.run({
+        persistent: {
+          custom_value_attack: 'match'
+        }
+      }, TIMEOUT)
+
+      assert.strictEqual(resultWithUpdatedAction.timeout, false)
+      assert.strictEqual(resultWithUpdatedAction.status, 'match')
+      assert(resultWithUpdatedAction.events)
+      assert.deepStrictEqual(resultWithUpdatedAction.actions, {
+        block_request: {
+          grpc_status_code: '10',
+          status_code: '404',
+          type: 'auto'
+        }
+      })
+    })
   })
 })
 
