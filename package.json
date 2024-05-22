@@ -1,6 +1,6 @@
 {
   "name": "@datadog/native-appsec",
-  "version": "7.1.1",
+  "version": "8.0.0",
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
   "libddwaf_version": "1.18.0",
@@ -41,7 +41,7 @@
     "node-gyp-build": "^3.9.0"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   },
   "files": [
     "index.js",
