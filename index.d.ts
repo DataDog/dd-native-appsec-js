@@ -20,6 +20,8 @@ type diagnosticsError = {
   error: string
 }
 
+type diagnosticsResult = diagnosticsInfo | diagnosticsError
+
 type result = {
   timeout: boolean;
   totalRuntime?: number;
@@ -48,13 +50,13 @@ export class DDWAF {
 
   readonly diagnostics: {
     ruleset_version?: string,
-    rules?: diagnosticsError | diagnosticsInfo,
-    custom_rules?: diagnosticsError | diagnosticsInfo,
-    exclusions?: diagnosticsError | diagnosticsInfo,
-    rules_override?: diagnosticsError | diagnosticsInfo,
-    rules_data?: diagnosticsError | diagnosticsInfo,
-    processors?: diagnosticsError | diagnosticsInfo,
-    actions?: diagnosticsError | diagnosticsInfo
+    rules?: diagnosticsResult,
+    custom_rules?: diagnosticsResult,
+    exclusions?: diagnosticsResult,
+    rules_override?: diagnosticsResult,
+    rules_data?: diagnosticsResult,
+    processors?: diagnosticsResult,
+    actions?: diagnosticsResult
   };
 
   readonly knownAddresses: Set<string>;
