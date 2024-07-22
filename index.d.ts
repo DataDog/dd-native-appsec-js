@@ -60,6 +60,7 @@ export class DDWAF {
   };
 
   readonly knownAddresses: Set<string>;
+  readonly knownActions: Set<string>;
 
   constructor(rules: rules, config?: {
     obfuscatorKeyRegex?: string,
