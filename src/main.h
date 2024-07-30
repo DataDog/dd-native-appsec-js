@@ -28,6 +28,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
 
  private:
     void update_known_addresses(const Napi::CallbackInfo& info);
+    void update_known_actions(const Napi::CallbackInfo& info);
 
     bool _disposed;
     ddwaf_handle _handle;
