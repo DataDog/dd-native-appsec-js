@@ -219,6 +219,13 @@ describe('DDWAF', () => {
 
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.0',
+        actions: {
+          errors: {},
+          failed: [],
+          loaded: [
+            'customredirect'
+          ]
+        },
         rules: {
           addresses: {
             optional: [],
