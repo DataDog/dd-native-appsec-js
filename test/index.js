@@ -239,7 +239,7 @@ describe('DDWAF', () => {
       assert.deepStrictEqual(waf.knownAddresses, new Set([
         'http.client_ip'
       ]))
-      assert.deepStrictEqual(waf.knownAddresses, new Set([
+      assert.deepStrictEqual(waf.knownActions, new Set([
         'redirect_request'
       ]))
 
