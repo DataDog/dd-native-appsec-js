@@ -86,13 +86,7 @@ describe('DDWAF', () => {
     const waf = new DDWAF(rules)
 
     assert.deepStrictEqual(waf.knownActions, new Set([
-      'http.client_ip',
-      'server.request.headers.no_cookies',
-      'server.response.status',
-      'value_attack',
-      'key_attack',
-      'server.request.body',
-      'custom_value_attack'
+      'block_request'
     ]))
   })
 
@@ -184,12 +178,20 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update diagnostics, knownAddresses, and knownActions when updating a WAF instance with new ruleSet', () => {
+    it('should update diagnostics, knownAddresses, and knownActions when updating an instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
           rules_version: '1.3.0'
         },
+        actions: [{
+            id: 'customredirect',
+            type: 'redirect_request',
+            parameters: {
+              status_code: '301'
+            }
+          }
+        ],
         rules: [{
           id: 'block_ip',
           name: 'block ip',
@@ -229,6 +231,9 @@ describe('DDWAF', () => {
       })
       assert.deepStrictEqual(waf.knownAddresses, new Set([
         'http.client_ip'
+      ]))
+      assert.deepStrictEqual(waf.knownAddresses, new Set([
+        'redirect_request'
       ]))
 
       waf.update(rules)
@@ -284,6 +289,9 @@ describe('DDWAF', () => {
         'key_attack',
         'server.request.body',
         'custom_value_attack'
+      ]))
+      assert.deepStrictEqual(waf.knownActions, new Set([
+        'block_request'
       ]))
 
       waf.dispose()
