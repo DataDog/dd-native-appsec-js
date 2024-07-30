@@ -116,7 +116,6 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   this->update_known_addresses(info);
   this->update_known_actions(info);
-
 }
 
 void DDWAF::Finalize(Napi::Env env) {
