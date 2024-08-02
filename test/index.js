@@ -212,7 +212,7 @@ describe('DDWAF', () => {
           ],
           transformers: [],
           on_match: [
-            'block'
+            'customredirect'
           ]
         }]
       })
