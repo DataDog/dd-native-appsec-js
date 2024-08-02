@@ -185,13 +185,13 @@ describe('DDWAF', () => {
           rules_version: '1.3.0'
         },
         actions: [{
-            id: 'customredirect',
-            type: 'redirect_request',
-            parameters: {
-              status_code: '301'
-            }
+          id: 'customredirect',
+          type: 'redirect_request',
+          parameters: {
+            status_code: '301',
+            location: '/'
           }
-        ],
+        }],
         rules: [{
           id: 'block_ip',
           name: 'block ip',
