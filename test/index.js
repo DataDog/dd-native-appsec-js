@@ -82,6 +82,14 @@ describe('DDWAF', () => {
     ]))
   })
 
+  it('should have knownActions', () => {
+    const waf = new DDWAF(rules)
+
+    assert.deepStrictEqual(waf.knownActions, new Set([
+      'block_request'
+    ]))
+  })
+
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
@@ -170,12 +178,20 @@ describe('DDWAF', () => {
       assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
     })
 
-    it('should update diagnostics and knownAddresses when updating a WAF instance with new ruleSet', () => {
+    it('should update diagnostics, knownAddresses, and knownActions when updating an instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',
         metadata: {
           rules_version: '1.3.0'
         },
+        actions: [{
+          id: 'customredirect',
+          type: 'redirect_request',
+          parameters: {
+            status_code: '301',
+            location: '/'
+          }
+        }],
         rules: [{
           id: 'block_ip',
           name: 'block ip',
@@ -196,13 +212,20 @@ describe('DDWAF', () => {
           ],
           transformers: [],
           on_match: [
-            'block'
+            'customredirect'
           ]
         }]
       })
 
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.0',
+        actions: {
+          errors: {},
+          failed: [],
+          loaded: [
+            'customredirect'
+          ]
+        },
         rules: {
           addresses: {
             optional: [],
@@ -215,6 +238,9 @@ describe('DDWAF', () => {
       })
       assert.deepStrictEqual(waf.knownAddresses, new Set([
         'http.client_ip'
+      ]))
+      assert.deepStrictEqual(waf.knownActions, new Set([
+        'redirect_request'
       ]))
 
       waf.update(rules)
@@ -270,6 +296,9 @@ describe('DDWAF', () => {
         'key_attack',
         'server.request.body',
         'custom_value_attack'
+      ]))
+      assert.deepStrictEqual(waf.knownActions, new Set([
+        'block_request'
       ]))
 
       waf.dispose()

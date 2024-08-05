@@ -115,6 +115,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   this->_disposed = false;
 
   this->update_known_addresses(info);
+  this->update_known_actions(info);
 }
 
 void DDWAF::Finalize(Napi::Env env) {
@@ -176,6 +177,7 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   this->_handle = updated_handle;
 
   this->update_known_addresses(info);
+  this->update_known_actions(info);
 }
 
 void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
@@ -193,6 +195,23 @@ void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
   }
 
   info.This().As<Napi::Object>().Set("knownAddresses", set);
+}
+
+void DDWAF::update_known_actions(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  uint32_t size = 0;
+  const char* const* known_actions = ddwaf_known_actions(this->_handle, &size);
+
+  Napi::Value set = env.RunScript("new Set()");
+  Napi::Function set_add = set.As<Napi::Object>().Get("add").As<Napi::Function>();
+
+  for (uint32_t i = 0; i < size; ++i) {
+    Napi::String address = Napi::String::New(env, known_actions[i]);
+    set_add.Call(set, {address});
+  }
+
+  info.This().As<Napi::Object>().Set("knownActions", set);
 }
 
 Napi::Value DDWAF::createContext(const Napi::CallbackInfo& info) {
