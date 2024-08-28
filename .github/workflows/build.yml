@@ -42,6 +42,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: prebuilds
+      - run: ls -lha
       - run: npm pack
       - uses: codex-team/action-nodejs-package-info@v1.1
         id: package
