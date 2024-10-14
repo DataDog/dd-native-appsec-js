@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <cstdio>
 #define mlog(X, ...) {                                  \
-    fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
-    fprintf(stderr, X, ##__VA_ARGS__);                  \
-    fprintf(stderr, "\n");                  \
+    std::fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
+    std::fprintf(stderr, X, ##__VA_ARGS__);                  \
+    std::fprintf(stderr, "\n");                  \
 }
 #else
 #define mlog(X, ...) { }
