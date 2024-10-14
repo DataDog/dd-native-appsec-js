@@ -8,6 +8,7 @@
 
 #if DEBUG == 1
 #include <stdio.h>
+#include <cstdio>
 #define mlog(X, ...) {                                  \
     fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
     fprintf(stderr, X, ##__VA_ARGS__);                  \
