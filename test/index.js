@@ -29,7 +29,8 @@ describe('DDWAF', () => {
         failed: [],
         loaded: [
           'customblock'
-        ]
+        ],
+        skipped: []
       },
       rules: {
         addresses: {
@@ -54,6 +55,7 @@ describe('DDWAF', () => {
           'custom_action_rule',
           'long_rule'
         ],
+        skipped: [],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
         errors: {
           'missing key \'regex\'': [
@@ -224,7 +226,8 @@ describe('DDWAF', () => {
           failed: [],
           loaded: [
             'customredirect'
-          ]
+          ],
+          skipped: []
         },
         rules: {
           addresses: {
@@ -233,6 +236,7 @@ describe('DDWAF', () => {
           },
           loaded: ['block_ip'],
           failed: [],
+          skipped: [],
           errors: {}
         }
       })
@@ -251,7 +255,8 @@ describe('DDWAF', () => {
           failed: [],
           loaded: [
             'customblock'
-          ]
+          ],
+          skipped: []
         },
         rules: {
           addresses: {
@@ -277,6 +282,7 @@ describe('DDWAF', () => {
             'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
+          skipped: [],
           errors: {
             'missing key \'regex\'': [
               'invalid_1'
