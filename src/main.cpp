@@ -319,8 +319,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     ddwafPersistent,
     ddwafEphemeral,
     &result,
-    static_cast<uint64_t>(timeout)
-  );
+    static_cast<uint64_t>(timeout));
 
   switch (code) {
     case DDWAF_ERR_INTERNAL:
