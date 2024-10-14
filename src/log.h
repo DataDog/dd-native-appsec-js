@@ -7,7 +7,6 @@
 #define DEBUG 0
 
 #if DEBUG == 1
-#include <stdio.h>
 #include <cstdio>
 #define mlog(X, ...) {                                  \
     std::fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
