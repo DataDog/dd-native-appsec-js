@@ -5,13 +5,13 @@
 #ifndef SRC_LOG_H_
 #define SRC_LOG_H_
 #define DEBUG 0
+#include <cstdio>
 
 #if DEBUG == 1
-#include <stdio.h>
 #define mlog(X, ...) {                                  \
-    fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
-    fprintf(stderr, X, ##__VA_ARGS__);                  \
-    fprintf(stderr, "\n");                  \
+    std::fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
+    std::fprintf(stderr, X, ##__VA_ARGS__);                  \
+    std::fprintf(stderr, "\n");                  \
 }
 #else
 #define mlog(X, ...) { }
