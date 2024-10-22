@@ -32,8 +32,13 @@ const libddwafFolder = path.join(__dirname, '..', 'libddwaf')
 
 for (const name of fs.readdirSync(libddwafFolder)) {
   const file = path.join(libddwafFolder, name)
-
   tar.x({ file, cwd: libddwafFolder, sync: true })
 
   fs.rmSync(file)
+}
+
+for (const name of fs.readdirSync(libddwafFolder)) {
+  const newDir = path.join(libddwafFolder, name)
+  const renamedDir = newDir.substring(0, newDir.indexOf('-a381e2f'))
+  fs.renameSync(newDir, renamedDir)
 }
