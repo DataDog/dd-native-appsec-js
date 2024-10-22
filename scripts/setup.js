@@ -4,31 +4,31 @@
  **/
 'use strict'
 // const assert = require('assert')
-const childProcess = require('child_process')
+// const childProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const tar = require('tar')
 
-const pkg = require('../package.json')
+// const pkg = require('../package.json')
 
-const libddwafVersion = process.argv[2] || pkg.libddwaf_version
+// const libddwafVersion = process.argv[2] || pkg.libddwaf_version
 
 // only relevant if libddwaf repo is private
 // assert(process.env.GH_TOKEN, 'GH_TOKEN must be set')
 
 const libddwafFolder = path.join(__dirname, '..', 'libddwaf')
 
-fs.mkdirSync(libddwafFolder, { recursive: true })
+// fs.mkdirSync(libddwafFolder, { recursive: true })
 
-childProcess.spawnSync('gh', [
-  'release', 'download',
-  '--repo', 'DataDog/libddwaf',
-  '--dir', libddwafFolder,
-  '--pattern', `libddwaf-${libddwafVersion}-*-linux-musl.tar.gz`,
-  '--pattern', `libddwaf-${libddwafVersion}-darwin-*.tar.gz`,
-  '--pattern', `libddwaf-${libddwafVersion}-windows-*.tar.gz`,
-  libddwafVersion
-])
+// childProcess.spawnSync('gh', [
+//   'release', 'download',
+//   '--repo', 'DataDog/libddwaf',
+//   '--dir', libddwafFolder,
+//   '--pattern', `libddwaf-${libddwafVersion}-*-linux-musl.tar.gz`,
+//   '--pattern', `libddwaf-${libddwafVersion}-darwin-*.tar.gz`,
+//   '--pattern', `libddwaf-${libddwafVersion}-windows-*.tar.gz`,
+//   libddwafVersion
+// ])
 
 for (const name of fs.readdirSync(libddwafFolder)) {
   const file = path.join(libddwafFolder, name)
