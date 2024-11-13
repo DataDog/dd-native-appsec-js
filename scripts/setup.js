@@ -39,6 +39,6 @@ for (const name of fs.readdirSync(libddwafFolder)) {
 
 for (const name of fs.readdirSync(libddwafFolder)) {
   const newDir = path.join(libddwafFolder, name)
-  const renamedDir = newDir.substring(0, newDir.indexOf('-a381e2f'))
+  const renamedDir = newDir.substring(0, newDir.indexOf('-c03e4f9'))
   fs.renameSync(newDir, renamedDir)
 }
