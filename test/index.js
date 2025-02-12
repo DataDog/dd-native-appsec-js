@@ -900,7 +900,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
-    assert.strictEqual(result2.maxTruncatedContainerSize, length)
+    assert.strictEqual(result2.metrics.maxTruncatedContainerSize, length)
   })
 
   it('should match a moderately deeply nested object', () => {
@@ -1085,7 +1085,7 @@ describe('limit tests', () => {
 
     assert(!result.status)
     assert(!result.events)
-    assert.strictEqual(result.maxTruncatedContainerDepth, 20)
+    assert.strictEqual(result.metrics.maxTruncatedContainerDepth, 20)
   })
 
   it('should not limit the rules object', () => {
@@ -1322,7 +1322,7 @@ describe('limit tests', () => {
 
     assert(!result2.status)
     assert(!result2.events)
-    assert.strictEqual(result2.maxTruncatedString, 5001)
+    assert.strictEqual(result2.metrics.maxTruncatedString, 5001)
   })
 
   it('should handle multiple truncations in complex nested structure', () => {
@@ -1361,9 +1361,9 @@ describe('limit tests', () => {
 
     assert(!result.status)
     assert(!result.events)
-    assert.strictEqual(result.maxTruncatedString, 6000)
-    assert.strictEqual(result.maxTruncatedContainerSize, 400)
-    assert.strictEqual(result.maxTruncatedContainerDepth, 20)
+    assert.strictEqual(result.metrics.maxTruncatedString, 6000)
+    assert.strictEqual(result.metrics.maxTruncatedContainerSize, 400)
+    assert.strictEqual(result.metrics.maxTruncatedContainerDepth, 20)
   })
 
   it('should handle invalid arguments number', () => {

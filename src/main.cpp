@@ -323,20 +323,23 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     static_cast<uint64_t>(timeout));
 
   Napi::Object res = Napi::Object::New(env);
+  Napi::Object metrics = Napi::Object::New(env);
+
+  res.Set("metrics", metrics);
 
   if (this->_metrics.max_truncated_string_length > 0) {
-    res.Set("maxTruncatedString",
-            Napi::Number::New(env, this->_metrics.max_truncated_string_length));
+    metrics.Set("maxTruncatedString",
+                Napi::Number::New(env, this->_metrics.max_truncated_string_length));
   }
 
   if (this->_metrics.max_truncated_container_size > 0) {
-    res.Set("maxTruncatedContainerSize",
-            Napi::Number::New(env, this->_metrics.max_truncated_container_size));
+    metrics.Set("maxTruncatedContainerSize",
+                Napi::Number::New(env, this->_metrics.max_truncated_container_size));
   }
 
   if (this->_metrics.max_truncated_container_depth > 0) {
-    res.Set("maxTruncatedContainerDepth",
-            Napi::Number::New(env, this->_metrics.max_truncated_container_depth));
+    metrics.Set("maxTruncatedContainerDepth",
+                Napi::Number::New(env, this->_metrics.max_truncated_container_depth));
   }
 
   // Report if there is an error first
@@ -344,7 +347,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     case DDWAF_ERR_INTERNAL:
     case DDWAF_ERR_INVALID_OBJECT:
     case DDWAF_ERR_INVALID_ARGUMENT:
-      res.Set("error", Napi::Number::New(env, code));
+      res.Set("errorCode", Napi::Number::New(env, code));
       ddwaf_result_free(&result);
       return res;
     default:
