@@ -887,7 +887,8 @@ describe('limit tests', () => {
     assert(result1.events)
 
     const item = {}
-    for (let i = 0; i < 1000; ++i) {
+    const length = 1000
+    for (let i = 0; i < length; ++i) {
       item[`a${i}`] = `${i}`
     }
 
@@ -899,6 +900,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
+    assert.strictEqual(result2.maxTruncatedContainerSize, length)
   })
 
   it('should match a moderately deeply nested object', () => {
@@ -1083,6 +1085,7 @@ describe('limit tests', () => {
 
     assert(!result.status)
     assert(!result.events)
+    assert.strictEqual(result.maxTruncatedContainerDepth, 20)
   })
 
   it('should not limit the rules object', () => {
@@ -1293,6 +1296,121 @@ describe('limit tests', () => {
         }
       ]
     })
+  })
+
+  it('should truncate string values exceeding maximum length', () => {
+    const waf = new DDWAF(rules)
+
+    const context1 = waf.createContext()
+    const result1 = context1.run({
+      persistent: {
+        'server.response.status': '404'
+      }
+    }, TIMEOUT)
+    assert.strictEqual(result1.status, 'match')
+    assert(result1.events)
+
+    const longValue = 'a'.repeat(5000)
+
+    const context2 = waf.createContext()
+    const result2 = context2.run({
+      persistent: {
+        'server.response.status': longValue,
+        'server.request.body': { a: longValue + 'a' }
+      }
+    }, TIMEOUT)
+
+    assert(!result2.status)
+    assert(!result2.events)
+    assert.strictEqual(result2.maxTruncatedString, 5001)
+  })
+
+  it('should handle multiple truncations in complex nested structure', () => {
+    const waf = new DDWAF(rules)
+
+    const longValue1 = 'a'.repeat(5000)
+    const longValue2 = 'b'.repeat(6000)
+
+    const largeObject1 = {}
+    const largeObject2 = {}
+    const length1 = 300
+    const length2 = 400
+    for (let i = 0; i < length1; ++i) {
+      largeObject1[`key${i}`] = `value${i}`
+    }
+    for (let i = 0; i < length2; ++i) {
+      largeObject2[`item${i}`] = `data${i}`
+    }
+
+    const deepObject1 = createNestedObject(25, { value: longValue1 })
+    const deepObject2 = createNestedObject(30, { data: longValue2 })
+
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': {
+          deep1: deepObject1,
+          large1: largeObject1,
+          deep2: deepObject2,
+          large2: largeObject2,
+          str1: longValue1,
+          str2: longValue2
+        }
+      }
+    }, TIMEOUT)
+
+    assert(!result.status)
+    assert(!result.events)
+    assert.strictEqual(result.maxTruncatedString, 6000)
+    assert.strictEqual(result.maxTruncatedContainerSize, 400)
+    assert.strictEqual(result.maxTruncatedContainerDepth, 20)
+  })
+
+  it('should handle invalid arguments number', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    try {
+      context.run({
+        persistent: {}
+      })
+    } catch (e) {
+      assert.strictEqual(e.message, 'Wrong number of arguments, 2 expected')
+    }
+  })
+
+  it('should handle invalid timeout arguments', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    try {
+      context.run({
+        persistent: {}
+      }, 'TIMEOUT')
+    } catch (e) {
+      assert.strictEqual(e.message, 'Timeout argument must be a number')
+    }
+
+    try {
+      context.run({
+        persistent: {}
+      }, 0)
+    } catch (e) {
+      assert.strictEqual(e.message, 'Timeout argument must be greater than 0')
+    }
+  })
+
+  it('should handle invalid arguments', () => {
+    const waf = new DDWAF(rules)
+    const context = waf.createContext()
+
+    try {
+      context.run({
+        persistent: 'invalid_object'
+      }, TIMEOUT)
+    } catch (e) {
+      assert.strictEqual(e.message, 'Persistent or ephemeral must be an object')
+    }
   })
 })
 

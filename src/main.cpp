@@ -93,7 +93,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   ddwaf_object rules;
   mlog("building rules");
-  to_ddwaf_object(&rules, env, info[0], 0, false);
+  to_ddwaf_object(&rules, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
 
   ddwaf_object diagnostics;
 
@@ -153,7 +153,7 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
 
   ddwaf_object update;
   mlog("building rules update");
-  to_ddwaf_object(&update, env, info[0], 0, false);
+  to_ddwaf_object(&update, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
 
   ddwaf_object diagnostics;
 
@@ -299,17 +299,18 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
 
   ddwaf_object *ddwafPersistent = nullptr;
+  this->_metrics = {};
 
   if (persistent.IsObject()) {
     ddwafPersistent = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
-    to_ddwaf_object(ddwafPersistent, env, persistent, 0, true);
+    to_ddwaf_object(ddwafPersistent, env, persistent, 0, true, false, JsSet::Create(env), &this->_metrics);
   }
 
   ddwaf_object *ddwafEphemeral = nullptr;
 
   if (ephemeral.IsObject()) {
     ddwafEphemeral = static_cast<ddwaf_object *>(alloca(sizeof(ddwaf_object)));
-    to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true);
+    to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true, false, JsSet::Create(env), &this->_metrics);
   }
 
   ddwaf_result result;
@@ -321,24 +322,36 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     &result,
     static_cast<uint64_t>(timeout));
 
+  Napi::Object res = Napi::Object::New(env);
+
+  if (this->_metrics.max_truncated_string_length > 0) {
+    res.Set("maxTruncatedString",
+            Napi::Number::New(env, this->_metrics.max_truncated_string_length));
+  }
+
+  if (this->_metrics.max_truncated_container_size > 0) {
+    res.Set("maxTruncatedContainerSize",
+            Napi::Number::New(env, this->_metrics.max_truncated_container_size));
+  }
+
+  if (this->_metrics.max_truncated_container_depth > 0) {
+    res.Set("maxTruncatedContainerDepth",
+            Napi::Number::New(env, this->_metrics.max_truncated_container_depth));
+  }
+
+  // Report if there is an error first
   switch (code) {
     case DDWAF_ERR_INTERNAL:
-      Napi::Error::New(env, "Internal error").ThrowAsJavaScriptException();
-      ddwaf_result_free(&result);
-      return env.Null();
     case DDWAF_ERR_INVALID_OBJECT:
-      Napi::Error::New(env, "Invalid ddwaf object").ThrowAsJavaScriptException();
-      ddwaf_result_free(&result);
-      return env.Null();
     case DDWAF_ERR_INVALID_ARGUMENT:
-      Napi::Error::New(env, "Invalid arguments").ThrowAsJavaScriptException();
+      res.Set("error", Napi::Number::New(env, code));
       ddwaf_result_free(&result);
-      return env.Null();
+      return res;
     default:
       break;
   }
   // there is no error. We need to collect perf data
-  Napi::Object res = Napi::Object::New(env);
+
   mlog("Set timeout");
   res.Set("timeout", Napi::Boolean::New(env, result.timeout));
 
