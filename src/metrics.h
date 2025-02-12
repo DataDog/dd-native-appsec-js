@@ -14,4 +14,4 @@ struct WAFTruncationMetrics {
   size_t max_truncated_container_depth = 0;
 };
 
-#endif // SRC_METRICS_H_
+#endif  // SRC_METRICS_H_

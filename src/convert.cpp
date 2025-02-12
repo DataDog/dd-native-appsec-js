@@ -9,6 +9,7 @@
 
 #include <limits>
 #include <string>
+#include <algorithm>
 
 #include "src/convert.h"
 #include "src/log.h"
@@ -55,7 +56,7 @@ ddwaf_object* to_ddwaf_object_array(
   // TODO(@vdeturckheim): handle arrays with
   // more than DDWAF_MAX_CONTAINER_SIZE chars
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
-    if(metrics) {
+    if (metrics) {
       metrics->max_truncated_container_size = std::max(metrics->max_truncated_container_size,
                                                        static_cast<size_t>(len));
     }
@@ -134,15 +135,15 @@ ddwaf_object* to_ddwaf_object_object(
 }
 
 ddwaf_object* to_ddwaf_string(
-  ddwaf_object *object, 
-  Napi::Value val, 
+  ddwaf_object *object,
+  Napi::Value val,
   bool lim,
   WAFTruncationMetrics* metrics
 ) {
   std::string str = val.ToString().Utf8Value();
   int len = str.length();
   if (lim && len > DDWAF_MAX_STRING_LENGTH) {
-    if(metrics) {
+    if (metrics) {
       metrics->max_truncated_string_length = std::max(metrics->max_truncated_string_length,
                                                       static_cast<size_t>(len));
     }
@@ -215,7 +216,8 @@ ddwaf_object* to_ddwaf_object(
     stack.Add(val);
     mlog("creating Array");
     auto result =
-      to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, stack, metrics);
+      to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, stack,
+                            metrics);
     stack.Delete(val);
     return result;
   }
