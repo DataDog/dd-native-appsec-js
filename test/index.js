@@ -111,7 +111,7 @@ describe('DDWAF', () => {
     assert(result.events)
     assert.deepStrictEqual(result.actions, {})
     assert(!context.disposed)
-
+    
     context.dispose()
     assert(context.disposed)
 
@@ -1330,6 +1330,7 @@ describe('limit tests', () => {
 
     const longValue1 = 'a'.repeat(5000)
     const longValue2 = 'b'.repeat(6000)
+    const longValue3 = 'b'.repeat(7000)
 
     const largeObject1 = {}
     const largeObject2 = {}
@@ -1343,7 +1344,7 @@ describe('limit tests', () => {
     }
 
     const deepObject1 = createNestedObject(25, { value: longValue1 })
-    const deepObject2 = createNestedObject(30, { data: longValue2 })
+    const deepObject2 = createNestedObject(30, { data: longValue3 })
 
     const context = waf.createContext()
     const result = context.run({
