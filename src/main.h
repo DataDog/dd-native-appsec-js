@@ -6,6 +6,7 @@
 #define SRC_MAIN_H_
 #include <napi.h>
 #include <ddwaf.h>
+#include "src/metrics.h"
 
 // TODO(@vdeturckheim): logs with ddwaf_set_log_cb
 // TODO(@vdeturckheim): fix issue when used with workers
@@ -54,5 +55,6 @@ class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
  private:
     bool _disposed;
     ddwaf_context _context;
+    WAFTruncationMetrics _metrics;
 };
 #endif  // SRC_MAIN_H_

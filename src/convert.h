@@ -7,6 +7,8 @@
 
 #include <napi.h>
 #include <ddwaf.h>
+#include "src/jsset.h"
+#include "src/metrics.h"
 
 ddwaf_object* to_ddwaf_object(
   ddwaf_object *object,
@@ -14,7 +16,9 @@ ddwaf_object* to_ddwaf_object(
   Napi::Value val,
   int depth,
   bool lim,
-  bool ignoreToJson = false
+  bool ignoreToJson,
+  JsSet stack,
+  WAFTruncationMetrics *metrics
 );
 
 Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env);

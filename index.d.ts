@@ -22,6 +22,12 @@ type diagnosticsError = {
 
 type diagnosticsResult = diagnosticsInfo | diagnosticsError
 
+type TruncationMetrics = {
+  maxTruncatedString?: number;
+  maxTruncatedContainerSize?: number;
+  maxTruncatedContainerDepth?: number;
+}
+
 type result = {
   timeout: boolean;
   totalRuntime?: number;
@@ -29,6 +35,8 @@ type result = {
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: object[];
   derivatives?: object;
+  metrics?: TruncationMetrics;
+  errorCode?: number;
 }
 
 type payload = {
