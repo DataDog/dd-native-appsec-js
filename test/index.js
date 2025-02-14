@@ -111,7 +111,7 @@ describe('DDWAF', () => {
     assert(result.events)
     assert.deepStrictEqual(result.actions, {})
     assert(!context.disposed)
-    
+
     context.dispose()
     assert(context.disposed)
 
@@ -141,6 +141,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
     assert.deepStrictEqual(result.actions, {})
+    assert.deepStrictEqual(result.metrics, {})
 
     result = context.run({
       ephemeral: {
@@ -152,6 +153,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'other_attack')
     assert.deepStrictEqual(result.actions, {})
+    assert.deepStrictEqual(result.metrics, {})
 
     context.dispose()
 
@@ -832,6 +834,7 @@ describe('DDWAF', () => {
           type: 'auto'
         }
       })
+      assert.deepStrictEqual(result.metrics, {})
     })
 
     it('should support action definition in update', () => {
@@ -867,6 +870,7 @@ describe('DDWAF', () => {
           type: 'auto'
         }
       })
+      assert.deepStrictEqual(resultWithUpdatedAction.metrics, {})
     })
   })
 })
@@ -914,6 +918,7 @@ describe('limit tests', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
+    assert.deepStrictEqual(result.metrics, {})
     assert(result.events)
   })
 
@@ -1366,7 +1371,9 @@ describe('limit tests', () => {
     assert.strictEqual(result.metrics.maxTruncatedContainerSize, 400)
     assert.strictEqual(result.metrics.maxTruncatedContainerDepth, 20)
   })
+})
 
+describe('Handle errors', () => {
   it('should handle invalid arguments number', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
