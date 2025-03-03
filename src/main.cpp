@@ -15,7 +15,10 @@
 #include "src/log.h"
 #include "src/convert.h"
 
-std::string DDWAF::rulesetVersion = "";
+static std::string &rulesetVersion() {
+  static std::string version;
+  return version;
+}
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
@@ -37,9 +40,9 @@ Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
   return Napi::String::New(info.Env(), ddwaf_get_version());
 }
 
-Napi::Value DDWAF::getRulesetVersion(const Napi::CallbackInfo &info){
+Napi::Value DDWAF::getRulesetVersion(const Napi::CallbackInfo &info) {
   mlog("Get ruleset version");
-  return Napi::String::New(info.Env(), rulesetVersion);
+  return Napi::String::New(info.Env(), rulesetVersion());
 }
 
 Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
@@ -115,7 +118,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   if (diagnostics_js.IsObject()) {
     Napi::Object diagObj = diagnostics_js.As<Napi::Object>();
     if (diagObj.Has("ruleset_version") && diagObj.Get("ruleset_version").IsString()) {
-      rulesetVersion = diagObj.Get("ruleset_version").ToString().Utf8Value();
+      rulesetVersion() = diagObj.Get("ruleset_version").ToString().Utf8Value();
     }
   }
 
@@ -182,7 +185,7 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
   if (diagnostics_js.IsObject()) {
     Napi::Object diagObj = diagnostics_js.As<Napi::Object>();
     if (diagObj.Has("ruleset_version") && diagObj.Get("ruleset_version").IsString()) {
-      rulesetVersion = diagObj.Get("ruleset_version").ToString().Utf8Value();
+      rulesetVersion() = diagObj.Get("ruleset_version").ToString().Utf8Value();
     }
   }
 

@@ -32,7 +32,6 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     void update_known_addresses(const Napi::CallbackInfo& info);
     void update_known_actions(const Napi::CallbackInfo& info);
 
-    static std::string rulesetVersion;
     bool _disposed;
     ddwaf_handle _handle;
 };

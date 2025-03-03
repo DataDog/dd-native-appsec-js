@@ -94,7 +94,7 @@ describe('DDWAF', () => {
 
   it('Should get waf version and rules version with wrong rules', () => {
     assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
-    assert.equal(DDWAF.getRulesetVersion(), '')
+    assert.equal(DDWAF.getRulesetVersion(), '1.3.1')
 
     const wrongRules = {
       version: rules.version,
@@ -200,7 +200,7 @@ describe('DDWAF', () => {
 
     it('Should get waf version and rules version after update', () => {
       assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
-      assert.equal(DDWAF.getRulesetVersion(), '')
+      assert.equal(DDWAF.getRulesetVersion(), '1.3.1')
 
       const waf = new DDWAF(rules)
       assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
