@@ -92,6 +92,27 @@ describe('DDWAF', () => {
     ]))
   })
 
+  it('Should get waf version and rules version with wrong rules', () => {
+    assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
+    assert.equal(DDWAF.getRulesetVersion(), '')
+
+    const wrongRules = {
+      version: rules.version,
+      metadata: rules.metadata,
+      actions: rules.actions
+    }
+
+    let waf
+
+    try {
+      waf = new DDWAF(wrongRules)
+    } catch (error) {
+      assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
+      assert.equal(DDWAF.getRulesetVersion(), rules.metadata.rules_version)
+      assert.equal(waf, undefined)
+    }
+  })
+
   it('should collect an attack and cleanup everything', () => {
     const waf = new DDWAF(rules)
     const context = waf.createContext()
@@ -175,6 +196,24 @@ describe('DDWAF', () => {
     it('should throw a type error when updating a WAF instance with invalid arguments', () => {
       const waf = new DDWAF(rules)
       assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
+    })
+
+    it('Should get waf version and rules version after update', () => {
+      assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
+      assert.equal(DDWAF.getRulesetVersion(), '')
+
+      const waf = new DDWAF(rules)
+      assert.match(DDWAF.version(), /^\d+\.\d+\.\d+$/)
+      assert.equal(DDWAF.getRulesetVersion(), rules.metadata.rules_version)
+
+      waf.update({
+        ...rules,
+        metadata: {
+          rules_version: '2.0.0'
+        }
+      })
+
+      assert.equal(DDWAF.getRulesetVersion(), '2.0.0')
     })
 
     it('should throw an exception when WAF update has not been updated - nothing to update', () => {

@@ -16,6 +16,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     static Napi::Value version(const Napi::CallbackInfo& info);
+    static Napi::Value getRulesetVersion(const Napi::CallbackInfo &info);
 
     // JS constructor
     explicit DDWAF(const Napi::CallbackInfo& info);
@@ -31,6 +32,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     void update_known_addresses(const Napi::CallbackInfo& info);
     void update_known_actions(const Napi::CallbackInfo& info);
 
+    static std::string rulesetVersion;
     bool _disposed;
     ddwaf_handle _handle;
 };

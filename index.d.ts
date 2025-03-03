@@ -53,6 +53,7 @@ declare class DDWAFContext {
 
 export class DDWAF {
   static version(): string;
+  static getRulesetVersion(): string;
 
   readonly disposed: boolean;
 

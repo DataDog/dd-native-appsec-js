@@ -15,11 +15,13 @@
 #include "src/log.h"
 #include "src/convert.h"
 
+std::string DDWAF::rulesetVersion = "";
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
+    StaticMethod<&DDWAF::getRulesetVersion>("getRulesetVersion"),
     InstanceMethod<&DDWAF::update>("update"),
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
@@ -33,6 +35,11 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
 Napi::Value DDWAF::version(const Napi::CallbackInfo& info) {
   mlog("Get libddwaf version");
   return Napi::String::New(info.Env(), ddwaf_get_version());
+}
+
+Napi::Value DDWAF::getRulesetVersion(const Napi::CallbackInfo &info){
+  mlog("Get ruleset version");
+  return Napi::String::New(info.Env(), rulesetVersion);
 }
 
 Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
@@ -104,6 +111,14 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
 
+  // Extract ruleset_version if available
+  if (diagnostics_js.IsObject()) {
+    Napi::Object diagObj = diagnostics_js.As<Napi::Object>();
+    if (diagObj.Has("ruleset_version") && diagObj.Get("ruleset_version").IsString()) {
+      rulesetVersion = diagObj.Get("ruleset_version").ToString().Utf8Value();
+    }
+  }
+
   ddwaf_object_free(&diagnostics);
 
   if (handle == nullptr) {
@@ -163,6 +178,13 @@ void DDWAF::update(const Napi::CallbackInfo& info) {
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
+
+  if (diagnostics_js.IsObject()) {
+    Napi::Object diagObj = diagnostics_js.As<Napi::Object>();
+    if (diagObj.Has("ruleset_version") && diagObj.Get("ruleset_version").IsString()) {
+      rulesetVersion = diagObj.Get("ruleset_version").ToString().Utf8Value();
+    }
+  }
 
   ddwaf_object_free(&diagnostics);
 
