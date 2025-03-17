@@ -1327,7 +1327,7 @@ describe('limit tests', () => {
     assert.deepStrictEqual(result.derivatives, {
       'server.request.body.schema': [
         {
-          a: [1],
+          a: [0],
           c: [8]
         }
       ]

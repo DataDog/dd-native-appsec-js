@@ -42,7 +42,7 @@ ddwaf_object* to_ddwaf_object_array(
       Napi::Value toJSONResult = toJSON.As<Napi::Function>().Call(arr, {});
       if (env.IsExceptionPending()) {
         env.GetAndClearPendingException();
-        toJSONResult = env.Null();
+        return ddwaf_object_invalid(object);
       }
       return to_ddwaf_object(object, env, toJSONResult, depth, lim, true, stack, metrics);
     }
@@ -96,7 +96,7 @@ ddwaf_object* to_ddwaf_object_object(
       Napi::Value toJSONResult = toJSON.As<Napi::Function>().Call(obj, {});
       if (env.IsExceptionPending()) {
         env.GetAndClearPendingException();
-        toJSONResult = env.Null();
+        return ddwaf_object_invalid(object);
       }
       return to_ddwaf_object(object, env, toJSONResult, depth, lim, true, stack, metrics);
     }
