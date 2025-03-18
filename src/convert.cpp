@@ -41,6 +41,7 @@ ddwaf_object* to_ddwaf_object_array(
     if (toJSON.IsFunction()) {
       Napi::Value toJSONResult = toJSON.As<Napi::Function>().Call(arr, {});
       if (env.IsExceptionPending()) {
+        mlog("Exception pending");
         env.GetAndClearPendingException();
         return ddwaf_object_invalid(object);
       }
@@ -95,6 +96,7 @@ ddwaf_object* to_ddwaf_object_object(
     if (toJSON.IsFunction()) {
       Napi::Value toJSONResult = toJSON.As<Napi::Function>().Call(obj, {});
       if (env.IsExceptionPending()) {
+        mlog("Exception pending");
         env.GetAndClearPendingException();
         return ddwaf_object_invalid(object);
       }

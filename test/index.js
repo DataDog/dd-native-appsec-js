@@ -1303,7 +1303,7 @@ describe('limit tests', () => {
     })
   })
 
-  it('should handle toJSON errors gracefully with null fallback', () => {
+  it('should handle toJSON errors gracefully with invalid fallback', () => {
     const body = {
       a: {
         toJSON: function () {
