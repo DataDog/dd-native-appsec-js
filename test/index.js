@@ -1303,6 +1303,37 @@ describe('limit tests', () => {
     })
   })
 
+  it('should handle toJSON errors gracefully with invalid fallback', () => {
+    const body = {
+      a: {
+        toJSON: function () {
+          throw new Error('error')
+        }
+      },
+      c: 'c'
+    }
+
+    const waf = new DDWAF(processor)
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.body': body,
+        'waf.context.processor': {
+          'extract-schema': true
+        }
+      }
+    }, TIMEOUT)
+
+    assert.deepStrictEqual(result.derivatives, {
+      'server.request.body.schema': [
+        {
+          a: [0],
+          c: [8]
+        }
+      ]
+    })
+  })
+
   it('should truncate string values exceeding maximum length', () => {
     const waf = new DDWAF(rules)
 
