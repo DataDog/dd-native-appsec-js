@@ -206,18 +206,15 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
   ddwaf_handle updated_handle = ddwaf_builder_build_instance(this->_builder);
   ddwaf_object_free(&update);
 
-  if (updated_handle == nullptr) {
-    mlog("DDWAF updated handle is null");
-    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
-    return;
+  if (updated_handle != nullptr) {
+    mlog("New DDWAF updated instance")
+    ddwaf_destroy(this->_handle);
+    this->_handle = updated_handle;
+
+    this->update_known_addresses(info);
+    this->update_known_actions(info);
   }
 
-  mlog("New DDWAF updated instance")
-  ddwaf_destroy(this->_handle);
-  this->_handle = updated_handle;
-
-  this->update_known_addresses(info);
-  this->update_known_actions(info);
   return Napi::Boolean::New(env, true);
 }
 
@@ -257,18 +254,15 @@ Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
   mlog("Update DDWAF instance");
   ddwaf_handle updated_handle = ddwaf_builder_build_instance(this->_builder);
 
-  if (updated_handle == nullptr) {
-    mlog("DDWAF handle after removing config is null");
-    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
-    return;
+  if (updated_handle != nullptr) {
+    mlog("New DDWAF updated instance")
+    ddwaf_destroy(this->_handle);
+    this->_handle = updated_handle;
+
+    this->update_known_addresses(info);
+    this->update_known_actions(info);
   }
 
-  mlog("New DDWAF updated instance")
-  ddwaf_destroy(this->_handle);
-  this->_handle = updated_handle;
-
-  this->update_known_addresses(info);
-  this->update_known_actions(info);
   return Napi::Boolean::New(env, true);
 }
 

@@ -151,7 +151,7 @@ describe('DDWAF', () => {
   })
 
   describe('WAF update', () => {
-    it('should throw an error when updating a disposed WAF instance', () => {
+    it('should throw an error when updating configuration on a disposed WAF instance', () => {
       const waf = new DDWAF(rules, 'recommended')
       waf.dispose()
       assert.throws(
@@ -159,17 +159,17 @@ describe('DDWAF', () => {
         new Error('Could not update a disposed WAF instance'))
     })
 
-    it('should throw an error when updating a WAF instance with no arguments', () => {
+    it('should throw an error when updating configuration with no arguments', () => {
       const waf = new DDWAF(rules, 'recommended')
       assert.throws(() => waf.createOrUpdateConfig(), new Error('Wrong number of arguments, expected at least 2'))
     })
 
-    it('should throw an error when updating a WAF instance with just one argument', () => {
+    it('should throw an error when updating configuration with just one argument', () => {
       const waf = new DDWAF(rules, 'recommended')
       assert.throws(() => waf.createOrUpdateConfig({}), new Error('Wrong number of arguments, expected at least 2'))
     })
 
-    it('should throw a type error when updating a WAF instance with invalid arguments', () => {
+    it('should throw a type error when updating configuration with invalid arguments', () => {
       const waf = new DDWAF(rules, 'recommended')
       assert.throws(
         () => waf.createOrUpdateConfig('string', 'config/update'),
@@ -177,12 +177,82 @@ describe('DDWAF', () => {
       )
     })
 
-    it('should throw an exception when WAF update has not been updated - nothing to update', () => {
+    it('should return false when updating configuration with invalid configuration', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      assert.strictEqual(waf.createOrUpdateConfig({}, 'config/update'), false)
+    })
+
+    it('should return true when updating configuration', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      const newConfig = {
+        version: '2.2',
+        metadata: {
+          rules_version: '1.3.0'
+        },
+        actions: [{
+          id: 'customredirect',
+          type: 'redirect_request',
+          parameters: {
+            status_code: '301',
+            location: '/'
+          }
+        }],
+        rules: [{
+          id: 'block_ip_original',
+          name: 'block ip',
+          tags: {
+            type: 'ip_addresses',
+            category: 'blocking'
+          },
+          conditions: [
+            {
+              parameters: {
+                inputs: [
+                  { address: 'http.client_ip' }
+                ],
+                data: 'blocked_ips'
+              },
+              operator: 'ip_match'
+            }
+          ],
+          transformers: [],
+          on_match: [
+            'customredirect'
+          ]
+        }]
+      }
+      assert.strictEqual(waf.createOrUpdateConfig(newConfig, 'config/update'), true)
+    })
+
+    it('should throw an error when removing a configuration on a disposed WAF instance', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      waf.dispose()
+      assert.throws(
+        () => waf.removeConfig('config/update'),
+        new Error('Could not update a disposed WAF instance'))
+    })
+
+    it('should throw an error when removing a configuration with no arguments', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      assert.throws(() => waf.removeConfig(), new Error('Wrong number of arguments, expected at least 1'))
+    })
+
+    it('should throw a type error when removing a configuration with invalid arguments', () => {
       const waf = new DDWAF(rules, 'recommended')
       assert.throws(
-        () => waf.createOrUpdateConfig({}, 'config/update'),
-        new Error('WAF has not been updated')
+        () => waf.removeConfig(null),
+        new TypeError('First argument must be a string')
       )
+    })
+
+    it('should return true when removing an existing configuration', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      assert.strictEqual(waf.removeConfig('recommended'), true)
+    })
+
+    it('should return false when removing a non-existing configuration', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      assert.strictEqual(waf.removeConfig('config/update'), false)
     })
 
     it('should update diagnostics, knownAddresses, and knownActions when updating an instance with new ruleSet', () => {
