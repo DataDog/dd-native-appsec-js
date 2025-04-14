@@ -208,7 +208,8 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
 
   if (updated_handle == nullptr) {
     mlog("DDWAF updated handle is null");
-    return Napi::Boolean::New(env, false);
+    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
+    return;
   }
 
   mlog("New DDWAF updated instance")
@@ -258,7 +259,8 @@ Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
 
   if (updated_handle == nullptr) {
     mlog("DDWAF handle after removing config is null");
-    return Napi::Boolean::New(env, false);
+    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
+    return;
   }
 
   mlog("New DDWAF updated instance")
