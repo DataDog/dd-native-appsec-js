@@ -23,6 +23,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     // JS instance methods
     Napi::Value update_config(const Napi::CallbackInfo& info);
     Napi::Value remove_config(const Napi::CallbackInfo& info);
+    Napi::Value GetConfigPaths(const Napi::CallbackInfo& info);
     Napi::Value createContext(const Napi::CallbackInfo& info);
     void Finalize(Napi::Env env);
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);

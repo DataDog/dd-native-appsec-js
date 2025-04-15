@@ -255,6 +255,43 @@ describe('DDWAF', () => {
       assert.strictEqual(waf.removeConfig('config/update'), false)
     })
 
+    it('should have no loaded configuration paths on WAF disposed instance', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      waf.dispose()
+      assert.strictEqual(waf.configPaths.length, 0)
+    })
+
+    it('should have loaded configuration paths', () => {
+      const waf = new DDWAF(rules, 'recommended')
+      const newConfig = {
+        rules: [{
+          id: 'block_ip_original',
+          name: 'block ip',
+          tags: {
+            type: 'ip_addresses',
+            category: 'blocking'
+          },
+          conditions: [
+            {
+              parameters: {
+                inputs: [
+                  { address: 'http.client_ip' }
+                ],
+                data: 'blocked_ips'
+              },
+              operator: 'ip_match'
+            }
+          ],
+          transformers: [],
+          on_match: [
+            'customredirect'
+          ]
+        }]
+      }
+      waf.createOrUpdateConfig(newConfig, 'config/update')
+      assert.deepStrictEqual(['config/update', 'recommended'], waf.configPaths)
+    })
+
     it('should update diagnostics, knownAddresses, and knownActions when updating an instance with new ruleSet', () => {
       const waf = new DDWAF({
         version: '2.2',

@@ -56,6 +56,8 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
+  readonly configPaths: string[];
+
   readonly diagnostics: {
     ruleset_version?: string,
     rules?: diagnosticsResult,

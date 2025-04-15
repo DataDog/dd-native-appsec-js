@@ -22,6 +22,7 @@ Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
     StaticMethod<&DDWAF::version>("version"),
     InstanceMethod<&DDWAF::update_config>("createOrUpdateConfig"),
     InstanceMethod<&DDWAF::remove_config>("removeConfig"),
+    InstanceAccessor("configPaths", &DDWAF::GetConfigPaths, nullptr, napi_enumerable),
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
@@ -264,6 +265,23 @@ Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
   }
 
   return Napi::Boolean::New(env, true);
+}
+
+Napi::Value DDWAF::GetConfigPaths(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  if (this->_disposed) {
+    return Napi::Array::New(info.Env(), 0);
+  }
+
+  ddwaf_object config_paths;
+  uint32_t path_count = ddwaf_builder_get_config_paths(this->_builder, &config_paths, nullptr, 0);
+
+  Napi::Value config_paths_js = from_ddwaf_object(&config_paths, info.Env());
+
+  ddwaf_object_free(&config_paths);
+
+  return config_paths_js;
 }
 
 void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
