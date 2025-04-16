@@ -8,6 +8,8 @@
 #include <ddwaf.h>
 #include "src/metrics.h"
 
+#define LSTRARG(value) value, (uint32_t)strlen(value)
+
 // TODO(@vdeturckheim): logs with ddwaf_set_log_cb
 // TODO(@vdeturckheim): fix issue when used with workers
 
