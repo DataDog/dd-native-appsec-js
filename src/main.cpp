@@ -268,13 +268,13 @@ Napi::Value DDWAF::GetConfigPaths(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
   if (this->_disposed) {
-    return Napi::Array::New(info.Env(), 0);
+    return Napi::Array::New(env, 0);
   }
 
   ddwaf_object config_paths;
-  uint32_t path_count = ddwaf_builder_get_config_paths(this->_builder, &config_paths, nullptr, 0);
+  ddwaf_builder_get_config_paths(this->_builder, &config_paths, nullptr, 0);
 
-  Napi::Value config_paths_js = from_ddwaf_object(&config_paths, info.Env());
+  Napi::Value config_paths_js = from_ddwaf_object(&config_paths, env);
 
   ddwaf_object_free(&config_paths);
 
