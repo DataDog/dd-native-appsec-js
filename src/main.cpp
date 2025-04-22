@@ -145,6 +145,7 @@ void DDWAF::Finalize(Napi::Env env) {
     return;
   }
   ddwaf_destroy(this->_handle);
+  ddwaf_builder_destroy(this->_builder);
   this->_disposed = true;
 }
 
