@@ -294,7 +294,11 @@ describe('DDWAF', () => {
           }]
         }
         waf.createOrUpdateConfig(newConfig, 'config/update')
-        assert.deepStrictEqual(['config/update', 'recommended'], waf.configPaths)
+        assert.ok(
+          waf.configPaths.includes('recommended') &&
+          waf.configPaths.includes('config/update') &&
+          waf.configPaths.length === 2
+        )
       })
     })
 
