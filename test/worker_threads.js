@@ -13,7 +13,7 @@ const WORKER_PATH = path.join(__dirname, 'worker.js')
 
 describe('worker threads', () => {
   it('should not crash when worker created after DDWAF', (done) => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     const result1 = context.run({
@@ -47,7 +47,7 @@ describe('worker threads', () => {
     worker.on('message', (result1) => {
       assert.strictEqual(result1?.status, 'match')
 
-      const waf = new DDWAF(rules)
+      const waf = new DDWAF(rules, 'recommended')
       const context = waf.createContext()
 
       const result2 = context.run({
