@@ -151,7 +151,6 @@ describe('DDWAF', () => {
   })
 
   describe('WAF update', () => {
-
     describe('Update config', () => {
       it('should throw an error when updating configuration on a disposed WAF instance', () => {
         const waf = new DDWAF(rules, 'recommended')
