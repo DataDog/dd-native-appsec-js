@@ -176,11 +176,13 @@ describe('DDWAF', () => {
           () => waf.createOrUpdateConfig('string', 'config/update'),
           new TypeError('First argument must be an object')
         )
+        assert.strictEqual(waf.disposed, false)
       })
 
       it('should return false when updating configuration with invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
         assert.strictEqual(waf.createOrUpdateConfig({}, 'config/update'), false)
+        assert.strictEqual(waf.disposed, false)
       })
 
       it('should return true when updating configuration', () => {
@@ -251,11 +253,16 @@ describe('DDWAF', () => {
       it('should return true when removing an existing configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
         assert.strictEqual(waf.removeConfig('recommended'), true)
+        assert.strictEqual(waf.configPaths.length, 0)
       })
 
       it('should return false when removing a non-existing configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
         assert.strictEqual(waf.removeConfig('config/update'), false)
+        assert.ok(
+          waf.configPaths.includes('recommended') &&
+          waf.configPaths.length === 1
+        )
       })
     })
 
