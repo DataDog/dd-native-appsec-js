@@ -2,7 +2,7 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-// min support Node.js 16.0.0 - https://nodejs.org/api/n-api.html#node-api-version-matrix
+// min support Node.js 18.0.0 - https://nodejs.org/api/n-api.html#node-api-version-matrix
 #define NAPI_VERSION  8
 #include <napi.h>
 #include <stdio.h>
