@@ -20,7 +20,7 @@ const libddwafFolder = path.join(__dirname, '..', 'libddwaf')
 
 fs.mkdirSync(libddwafFolder, { recursive: true })
 
-childProcess.spawnSync('gh', [
+const res = childProcess.spawnSync('gh', [
   'release', 'download',
   '--repo', 'DataDog/libddwaf',
   '--dir', libddwafFolder,
@@ -29,6 +29,8 @@ childProcess.spawnSync('gh', [
   '--pattern', `libddwaf-${libddwafVersion}-windows-*.tar.gz`,
   libddwafVersion
 ])
+
+console.log(res.stderr.toString())
 
 for (const name of fs.readdirSync(libddwafFolder)) {
   const file = path.join(libddwafFolder, name)
