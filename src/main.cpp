@@ -102,14 +102,13 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_object rules;
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
-  std::string config_path_str = info[1].As<Napi::String>().Utf8Value();
-  const char* config_path = config_path_str.c_str();
+  std::string config_path = info[1].As<Napi::String>().Utf8Value();
 
   ddwaf_object diagnostics;
 
   mlog("Init Builder");
   ddwaf_builder builder = ddwaf_builder_init(&waf_config);
-  bool result = ddwaf_builder_add_or_update_config(builder, LSTRARG(config_path), &rules, &diagnostics);
+  bool result = ddwaf_builder_add_or_update_config(builder, LSTRARG(config_path.c_str()), &rules, &diagnostics);
 
   ddwaf_object_free(&rules);
 
@@ -184,13 +183,12 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
   to_ddwaf_object(&update, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
 
   mlog("Obtaining config update path");
-  std::string config_path_str = info[1].As<Napi::String>().Utf8Value();
-  const char* config_path = config_path_str.c_str();
+  std::string config_path = info[1].As<Napi::String>().Utf8Value();
 
   ddwaf_object diagnostics;
 
   mlog("Applying new config to builder");
-  bool update_result = ddwaf_builder_add_or_update_config(this->_builder, LSTRARG(config_path), &update, &diagnostics);
+  bool update_result = ddwaf_builder_add_or_update_config(this->_builder, LSTRARG(config_path.c_str()), &update, &diagnostics);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
@@ -239,11 +237,10 @@ Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
   }
 
   mlog("Obtaining config remove path");
-  std::string config_path_str = info[0].As<Napi::String>().Utf8Value();
-  const char* config_path = config_path_str.c_str();
+  std::string config_path = info[0].As<Napi::String>().Utf8Value();
 
   mlog("Applying removed config to builder");
-  bool remove_result = ddwaf_builder_remove_config(this->_builder, LSTRARG(config_path));
+  bool remove_result = ddwaf_builder_remove_config(this->_builder, LSTRARG(config_path.c_str()));
 
   if (!remove_result) {
     mlog("DDWAF Builder remove config has failed");
