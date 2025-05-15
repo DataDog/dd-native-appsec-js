@@ -188,7 +188,10 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
   ddwaf_object diagnostics;
 
   mlog("Applying new config to builder");
-  bool update_result = ddwaf_builder_add_or_update_config(this->_builder, LSTRARG(config_path.c_str()), &update, &diagnostics);
+  bool update_result = ddwaf_builder_add_or_update_config(
+    this->_builder,
+    LSTRARG(config_path.c_str()),
+    &update, &diagnostics);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
