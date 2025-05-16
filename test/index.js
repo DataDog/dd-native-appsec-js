@@ -185,6 +185,28 @@ describe('DDWAF', () => {
         assert.strictEqual(waf.disposed, false)
       })
 
+      it('should keep functional handle after updating an invalid configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        waf.createOrUpdateConfig({}, 'config/update')
+
+        assert(!waf.disposed)
+
+        const context = waf.createContext()
+        const payload = {
+          persistent: {
+            'server.request.headers.no_cookies': 'value_ATTack'
+          }
+        }
+
+        const result = context.run(payload, TIMEOUT)
+
+        assert.strictEqual(result.timeout, false)
+        assert.strictEqual(result.status, 'match')
+        assert(result.events)
+        assert.deepStrictEqual(result.actions, {})
+        assert(!context.disposed)
+      })
+
       it('should return true when updating configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
         const newConfig = {
