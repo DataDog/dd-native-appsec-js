@@ -56,6 +56,8 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
+  readonly configPaths: string[];
+
   readonly diagnostics: {
     ruleset_version?: string,
     rules?: diagnosticsResult,
@@ -70,12 +72,13 @@ export class DDWAF {
   readonly knownAddresses: Set<string>;
   readonly knownActions: Set<string>;
 
-  constructor(rules: rules, config?: {
+  constructor(rules: rules, rulesPath: string, config?: {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string
   });
 
-  update(rules: rules): void;
+  createOrUpdateConfig(config: rules, path: string): boolean;
+  removeConfig(path: string): boolean;
 
   createContext(): DDWAFContext;
   dispose(): void;

@@ -8,6 +8,8 @@
 #include <ddwaf.h>
 #include "src/metrics.h"
 
+#define LSTRARG(value) value, static_cast<uint32_t>(strlen(value))
+
 // TODO(@vdeturckheim): logs with ddwaf_set_log_cb
 // TODO(@vdeturckheim): fix issue when used with workers
 
@@ -21,7 +23,9 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     explicit DDWAF(const Napi::CallbackInfo& info);
 
     // JS instance methods
-    void update(const Napi::CallbackInfo& info);
+    Napi::Value update_config(const Napi::CallbackInfo& info);
+    Napi::Value remove_config(const Napi::CallbackInfo& info);
+    Napi::Value GetConfigPaths(const Napi::CallbackInfo& info);
     Napi::Value createContext(const Napi::CallbackInfo& info);
     void Finalize(Napi::Env env);
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);
@@ -32,6 +36,7 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
     void update_known_actions(const Napi::CallbackInfo& info);
 
     bool _disposed;
+    ddwaf_builder _builder;
     ddwaf_handle _handle;
 };
 
