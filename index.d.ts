@@ -37,6 +37,7 @@ type result = {
   derivatives?: object;
   metrics?: TruncationMetrics;
   errorCode?: number;
+  keep?: boolean;
 }
 
 type payload = {
