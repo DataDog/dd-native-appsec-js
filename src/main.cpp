@@ -497,25 +497,32 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
 
   if (duration && duration->type == DDWAF_OBJ_UNSIGNED && duration->uintValue > 0) {
-    mlog("Set total_runtime");
-    res.Set("totalRuntime", Napi::Number::New(env, duration->uintValue));
+    mlog("Set duration");
+    res.Set("duration", Napi::Number::New(env, duration->uintValue));
   }
 
   if (attributes && ddwaf_object_size(attributes) > 0) {
-    res.Set("derivatives", from_ddwaf_object(const_cast<ddwaf_object*>(attributes), env));
+    mlog("Set attributes");
+    res.Set("attributes", from_ddwaf_object(const_cast<ddwaf_object*>(attributes), env));
   }
 
   if (code == DDWAF_MATCH) {
+    mlog("ddwaf result is a match")
     res.Set("status", Napi::String::New(env, "match"));
+
     if (events) {
+      mlog("Set events")
       res.Set("events", from_ddwaf_object(const_cast<ddwaf_object*>(events), env));
     }
+
     if (actions) {
+      mlog("Set actions")
       res.Set("actions", from_ddwaf_object(const_cast<ddwaf_object*>(actions), env));
     }
   }
 
   if (keep && keep->type == DDWAF_OBJ_BOOL) {
+    mlog("Set keep")
     res.Set("keep", Napi::Boolean::New(env, keep->boolean));
   }
 
