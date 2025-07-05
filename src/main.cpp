@@ -503,7 +503,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
   if (attributes && ddwaf_object_size(attributes) > 0) {
     mlog("Set attributes");
-    res.Set("attributes", from_ddwaf_object(const_cast<ddwaf_object*>(attributes), env));
+    res.Set("attributes", from_ddwaf_object(attributes, env));
   }
 
   if (code == DDWAF_MATCH) {
@@ -512,12 +512,12 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
 
     if (events) {
       mlog("Set events")
-      res.Set("events", from_ddwaf_object(const_cast<ddwaf_object*>(events), env));
+      res.Set("events", from_ddwaf_object(events, env));
     }
 
     if (actions) {
       mlog("Set actions")
-      res.Set("actions", from_ddwaf_object(const_cast<ddwaf_object*>(actions), env));
+      res.Set("actions", from_ddwaf_object(actions, env));
     }
   }
 
