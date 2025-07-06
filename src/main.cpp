@@ -457,7 +457,13 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
   // there is no error. We need to collect perf data
 
-  // Extract all relevant objects efficiently using a loop
+  constexpr size_t EVENTS_LEN = 6;
+  constexpr size_t ACTIONS_LEN = 7;
+  constexpr size_t ATTRIBUTES_LEN = 10;
+  constexpr size_t KEEP_LEN = 4;
+  constexpr size_t DURATION_LEN = 8;
+  constexpr size_t TIMEOUT_LEN = 7;
+
   const ddwaf_object *events = nullptr, *actions = nullptr, *attributes = nullptr,
                      *keep = nullptr, *duration = nullptr, *run_timeout = nullptr;
 
@@ -475,17 +481,17 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
       continue;
     }
 
-    if (length == (sizeof("events") - 1) && memcmp(key, "events", length) == 0) {
+    if (length == EVENTS_LEN && memcmp(key, "events", EVENTS_LEN) == 0) {
       events = child;
-    } else if (length == (sizeof("actions") - 1) && memcmp(key, "actions", length) == 0) {
+    } else if (length == ACTIONS_LEN && memcmp(key, "actions", ACTIONS_LEN) == 0) {
       actions = child;
-    } else if (length == (sizeof("attributes") - 1) && memcmp(key, "attributes", length) == 0) {
+    } else if (length == ATTRIBUTES_LEN && memcmp(key, "attributes", ATTRIBUTES_LEN) == 0) {
       attributes = child;
-    } else if (length == (sizeof("keep") - 1) && memcmp(key, "keep", length) == 0) {
+    } else if (length == KEEP_LEN && memcmp(key, "keep", KEEP_LEN) == 0) {
       keep = child;
-    } else if (length == (sizeof("duration") - 1) && memcmp(key, "duration", length) == 0) {
+    } else if (length == DURATION_LEN && memcmp(key, "duration", DURATION_LEN) == 0) {
       duration = child;
-    } else if (length == (sizeof("timeout") - 1) && memcmp(key, "timeout", length) == 0) {
+    } else if (length == TIMEOUT_LEN && memcmp(key, "timeout", TIMEOUT_LEN) == 0) {
       run_timeout = child;
     }
   }
