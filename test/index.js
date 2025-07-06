@@ -939,6 +939,35 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
+  it('should include keep field in result object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+
+    // Non-match result
+    let result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'normal_value'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(typeof result.keep, 'boolean')
+
+    // Match result
+    result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'value_attack'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(typeof result.keep, 'boolean')
+
+    context.dispose()
+    waf.dispose()
+  })
+
   describe('Action semantics', () => {
     it('should support action definition in initialisation', () => {
       const waf = new DDWAF(rules, 'recommended')
