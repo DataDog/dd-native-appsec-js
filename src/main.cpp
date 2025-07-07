@@ -455,7 +455,8 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     default:
       break;
   }
-  // there is no error. We need to collect perf data
+
+  // No error. Collect result data and return
 
   constexpr size_t EVENTS_LEN = 6;
   constexpr size_t ACTIONS_LEN = 7;
@@ -496,7 +497,6 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     }
   }
 
-  // Now use the extracted objects
   mlog("Set timeout");
   if (run_timeout && run_timeout->type == DDWAF_OBJ_BOOL) {
     res.Set("timeout", Napi::Boolean::New(env, run_timeout->boolean));
