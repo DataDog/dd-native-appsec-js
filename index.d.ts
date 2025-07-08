@@ -30,13 +30,14 @@ type TruncationMetrics = {
 
 type result = {
   timeout: boolean;
-  totalRuntime?: number;
+  duration?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: object[];
-  derivatives?: object;
+  attributes?: object;
   metrics?: TruncationMetrics;
   errorCode?: number;
+  keep?: boolean;
 }
 
 type payload = {

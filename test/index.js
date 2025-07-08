@@ -787,7 +787,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
-  it('should collect derivatives information when a rule match', () => {
+  it('should collect result attributes information when a rule match', () => {
     const waf = new DDWAF(processor, 'processor_rules')
 
     const context = waf.createContext()
@@ -805,7 +805,7 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
@@ -814,7 +814,7 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect derivatives information when a rule does not match', () => {
+  it('should collect result attributes information when a rule does not match', () => {
     const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
@@ -830,7 +830,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
@@ -839,7 +839,7 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect all derivatives types', () => {
+  it('should collect all result attributes types', () => {
     const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
@@ -870,7 +870,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           null: [1],
@@ -898,7 +898,7 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect derivatives in two consecutive calls', () => {
+  it('should collect result attributes in two consecutive calls', () => {
     const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
@@ -911,7 +911,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.strictEqual(result.derivatives, undefined)
+    assert.strictEqual(result.attributes, undefined)
 
     result = context.run({
       persistent: {
@@ -922,7 +922,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     result = context.run({
       persistent: {
@@ -930,13 +930,44 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.query.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
 
     waf.dispose()
     assert(waf.disposed)
+  })
+
+  it('should include keep field in result object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+
+    // Non-match result
+    let result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'normal_value'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, false)
+
+    // Match result
+    result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'value_attack'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, true)
+
+    context.dispose()
+    waf.dispose()
   })
 
   describe('Action semantics', () => {
@@ -1067,7 +1098,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           mail: [8],
@@ -1098,7 +1129,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           mail: [8],
@@ -1124,7 +1155,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [[[0]], { len: 3 }]
     })
   })
@@ -1144,7 +1175,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [[[{ payload: [0] }]], { len: 3 }]
     })
   })
@@ -1166,7 +1197,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         [[{ mail: [8], key: [8] }]],
         { len: 4 }
@@ -1194,7 +1225,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           prop1: [{ mail: [8], key: [8] }],
@@ -1331,7 +1362,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         [
           [
@@ -1374,7 +1405,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           c: [8],
@@ -1419,7 +1450,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           a: [16],
@@ -1451,7 +1482,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           a: [0],

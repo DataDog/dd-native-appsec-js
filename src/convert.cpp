@@ -244,7 +244,7 @@ ddwaf_object* to_ddwaf_object(
   return ddwaf_object_invalid(object);
 }
 
-Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
+Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env) {
   DDWAF_OBJ_TYPE type = object->type;
 
   Napi::Value result;
@@ -268,7 +268,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
       }
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object* e = &object->array[i];
+        const ddwaf_object* e = &object->array[i];
         Napi::Value v = from_ddwaf_object(e, env);
         arr[i] = v;
       }
@@ -280,7 +280,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
       Napi::Object obj = Napi::Object::New(env);
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object* e = &object->array[i];
+        const ddwaf_object* e = &object->array[i];
         Napi::String k = Napi::String::New(env, e->parameterName, e->parameterNameLength);
         if (env.IsExceptionPending()) {
           mlog("Exception pending");

@@ -15,6 +15,13 @@
 #include "src/log.h"
 #include "src/convert.h"
 
+// libddwaf result field name constants
+constexpr size_t EVENTS_LEN = 6;
+constexpr size_t ACTIONS_LEN = 7;
+constexpr size_t ATTRIBUTES_LEN = 10;
+constexpr size_t KEEP_LEN = 4;
+constexpr size_t DURATION_LEN = 8;
+constexpr size_t TIMEOUT_LEN = 7;
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
@@ -415,7 +422,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true, false, JsSet::Create(env), &this->_metrics);
   }
 
-  ddwaf_result result;
+  ddwaf_object result;
 
   DDWAF_RET_CODE code = ddwaf_run(
     this->_context,
@@ -450,32 +457,82 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     case DDWAF_ERR_INVALID_OBJECT:
     case DDWAF_ERR_INVALID_ARGUMENT:
       res.Set("errorCode", Napi::Number::New(env, code));
-      ddwaf_result_free(&result);
+      ddwaf_object_free(&result);
       return res;
     default:
       break;
   }
-  // there is no error. We need to collect perf data
 
-  mlog("Set timeout");
-  res.Set("timeout", Napi::Boolean::New(env, result.timeout));
+  // No error. Collect result data and return
 
-  if (result.total_runtime) {
-    mlog("Set total_runtime");
-    res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
+  const ddwaf_object *events = nullptr, *actions = nullptr, *attributes = nullptr,
+                     *keep = nullptr, *duration = nullptr, *run_timeout = nullptr;
+
+  for (size_t i = 0; i < ddwaf_object_size(&result); ++i) {
+    const ddwaf_object *child = ddwaf_object_get_index(&result, i);
+    if (child == nullptr) {
+      mlog("ddwaf result child is null")
+      continue;
+    }
+
+    size_t length = 0;
+    const char *key = ddwaf_object_get_key(child, &length);
+    if (key == nullptr) {
+      mlog("ddwaf result key is null")
+      continue;
+    }
+
+    if (length == EVENTS_LEN && memcmp(key, "events", EVENTS_LEN) == 0) {
+      events = child;
+    } else if (length == ACTIONS_LEN && memcmp(key, "actions", ACTIONS_LEN) == 0) {
+      actions = child;
+    } else if (length == ATTRIBUTES_LEN && memcmp(key, "attributes", ATTRIBUTES_LEN) == 0) {
+      attributes = child;
+    } else if (length == KEEP_LEN && memcmp(key, "keep", KEEP_LEN) == 0) {
+      keep = child;
+    } else if (length == DURATION_LEN && memcmp(key, "duration", DURATION_LEN) == 0) {
+      duration = child;
+    } else if (length == TIMEOUT_LEN && memcmp(key, "timeout", TIMEOUT_LEN) == 0) {
+      run_timeout = child;
+    }
   }
 
-  if (ddwaf_object_size(&result.derivatives)) {
-    res.Set("derivatives", from_ddwaf_object(&result.derivatives, env));
+  mlog("Set timeout");
+  if (run_timeout && run_timeout->type == DDWAF_OBJ_BOOL) {
+    res.Set("timeout", Napi::Boolean::New(env, run_timeout->boolean));
+  }
+
+  if (duration && duration->type == DDWAF_OBJ_UNSIGNED && duration->uintValue > 0) {
+    mlog("Set duration");
+    res.Set("duration", Napi::Number::New(env, duration->uintValue));
+  }
+
+  if (attributes && ddwaf_object_size(attributes) > 0) {
+    mlog("Set attributes");
+    res.Set("attributes", from_ddwaf_object(attributes, env));
   }
 
   if (code == DDWAF_MATCH) {
+    mlog("ddwaf result is a match")
     res.Set("status", Napi::String::New(env, "match"));
-    res.Set("events", from_ddwaf_object(&result.events, env));
-    res.Set("actions", from_ddwaf_object(&result.actions, env));
+
+    if (events) {
+      mlog("Set events")
+      res.Set("events", from_ddwaf_object(events, env));
+    }
+
+    if (actions) {
+      mlog("Set actions")
+      res.Set("actions", from_ddwaf_object(actions, env));
+    }
   }
 
-  ddwaf_result_free(&result);
+  if (keep && keep->type == DDWAF_OBJ_BOOL) {
+    mlog("Set keep")
+    res.Set("keep", Napi::Boolean::New(env, keep->boolean));
+  }
+
+  ddwaf_object_free(&result);
 
   return res;
 }
