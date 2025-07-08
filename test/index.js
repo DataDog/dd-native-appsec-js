@@ -952,6 +952,7 @@ describe('DDWAF', () => {
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, false)
 
     // Match result
     result = context.run({
@@ -963,6 +964,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, true)
 
     context.dispose()
     waf.dispose()
