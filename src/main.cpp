@@ -15,6 +15,13 @@
 #include "src/log.h"
 #include "src/convert.h"
 
+// libddwaf result field name constants
+constexpr size_t EVENTS_LEN = 6;
+constexpr size_t ACTIONS_LEN = 7;
+constexpr size_t ATTRIBUTES_LEN = 10;
+constexpr size_t KEEP_LEN = 4;
+constexpr size_t DURATION_LEN = 8;
+constexpr size_t TIMEOUT_LEN = 7;
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
@@ -457,13 +464,6 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
   }
 
   // No error. Collect result data and return
-
-  constexpr size_t EVENTS_LEN = 6;
-  constexpr size_t ACTIONS_LEN = 7;
-  constexpr size_t ATTRIBUTES_LEN = 10;
-  constexpr size_t KEEP_LEN = 4;
-  constexpr size_t DURATION_LEN = 8;
-  constexpr size_t TIMEOUT_LEN = 7;
 
   const ddwaf_object *events = nullptr, *actions = nullptr, *attributes = nullptr,
                      *keep = nullptr, *duration = nullptr, *run_timeout = nullptr;
