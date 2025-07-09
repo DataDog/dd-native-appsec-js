@@ -42,7 +42,8 @@ describe('DDWAF', () => {
           'value_matchall',
           'key_matchall',
           'custom_action_rule',
-          'long_rule'
+          'long_rule',
+          'test-marshalling'
         ],
         skipped: [],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -417,7 +418,8 @@ describe('DDWAF', () => {
             'value_matchall',
             'key_matchall',
             'custom_action_rule',
-            'long_rule'
+            'long_rule',
+            'test-marshalling'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
           skipped: [],
@@ -965,6 +967,36 @@ describe('DDWAF', () => {
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(typeof result.keep, 'boolean')
     assert.strictEqual(result.keep, true)
+
+    context.dispose()
+    waf.dispose()
+  })
+
+  it('should perform correct marshalling of ddwaf_object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'marshalling'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, true)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.integer'], 'number')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.negative_integer'], 'number')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.float'], 'number')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.float'], 2.71828)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.negative_float'], 'number')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_float'], -3.14159)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.bool'], 'boolean')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.bool'], true)
+    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.string'], 'string')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.string'], 'Gott ist tot')
 
     context.dispose()
     waf.dispose()

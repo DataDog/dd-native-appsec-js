@@ -1339,6 +1339,54 @@
       "transformers": [
         "lowercase"
       ]
+    },
+    {
+      "id": "test-marshalling",
+      "name": "Test ddwaf_object marshalling",
+      "tags": {
+        "type": "security_scanner",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.request.headers.no_cookies"
+              }
+            ],
+            "list": [
+              "marshalling"
+            ]
+          },
+          "operator": "phrase_match"
+        }
+      ],
+      "output": {
+        "event": false,
+        "keep": true,
+        "attributes": {
+          "_dd.appsec.trace.string": {
+            "value": "Gott ist tot"
+          },
+          "_dd.appsec.trace.integer": {
+            "value": 662607015
+          },
+          "_dd.appsec.trace.negative_integer": {
+            "value": -662607015
+          },
+          "_dd.appsec.trace.float": {
+            "value": 2.71828
+          },
+          "_dd.appsec.trace.negative_float": {
+            "value": -3.14159
+          },
+          "_dd.appsec.trace.bool": {
+            "value": true
+          }
+        }
+      },
+      "on_match": []
     }
   ]
 }
