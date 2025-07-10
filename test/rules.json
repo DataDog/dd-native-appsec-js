@@ -1367,7 +1367,7 @@
         "keep": true,
         "attributes": {
           "_dd.appsec.trace.string": {
-            "value": "Gott ist tot"
+            "value": "Lorem ipsum sit amet"
           },
           "_dd.appsec.trace.integer": {
             "value": 662607015

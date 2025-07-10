@@ -996,7 +996,7 @@ describe('DDWAF', () => {
     assert.strictEqual(typeof result.attributes['_dd.appsec.trace.bool'], 'boolean')
     assert.strictEqual(result.attributes['_dd.appsec.trace.bool'], true)
     assert.strictEqual(typeof result.attributes['_dd.appsec.trace.string'], 'string')
-    assert.strictEqual(result.attributes['_dd.appsec.trace.string'], 'Gott ist tot')
+    assert.strictEqual(result.attributes['_dd.appsec.trace.string'], 'Lorem ipsum sit amet')
 
     context.dispose()
     waf.dispose()
