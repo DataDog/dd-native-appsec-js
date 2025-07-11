@@ -42,6 +42,7 @@ describe('DDWAF', () => {
           'value_matchall',
           'key_matchall',
           'custom_action_rule',
+          'test-marshalling',
           'long_rule'
         ],
         skipped: [],
@@ -417,6 +418,7 @@ describe('DDWAF', () => {
             'value_matchall',
             'key_matchall',
             'custom_action_rule',
+            'test-marshalling',
             'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -965,6 +967,32 @@ describe('DDWAF', () => {
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(typeof result.keep, 'boolean')
     assert.strictEqual(result.keep, true)
+
+    context.dispose()
+    waf.dispose()
+  })
+
+  it('should perform correct marshalling of ddwaf_object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'marshalling'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(result.keep, true)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.float'], 2.71828)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_float'], -3.14159)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.bool'], true)
+    assert.strictEqual(
+      result.attributes['_dd.appsec.trace.string'],
+      'It was a bright cold day in April, and the clocks were striking thirteen.'
+    )
 
     context.dispose()
     waf.dispose()

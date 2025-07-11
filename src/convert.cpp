@@ -250,11 +250,20 @@ Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env) {
   Napi::Value result;
 
   switch (type) {
+    case DDWAF_OBJ_NULL:
+      result = env.Null();
+      break;
+    case DDWAF_OBJ_BOOL:
+      result = Napi::Boolean::New(env, object->boolean);
+      break;
     case DDWAF_OBJ_SIGNED:
       result = Napi::Number::New(env, object->intValue);
       break;
     case DDWAF_OBJ_UNSIGNED:
       result = Napi::Number::New(env, object->uintValue);
+      break;
+    case DDWAF_OBJ_FLOAT:
+      result = Napi::Number::New(env, object->f64);
       break;
     case DDWAF_OBJ_STRING:
       result = Napi::String::New(env, object->stringValue, object->nbEntries);
