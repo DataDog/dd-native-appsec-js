@@ -983,7 +983,6 @@ describe('DDWAF', () => {
 
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
-    assert.strictEqual(typeof result.keep, 'boolean')
     assert.strictEqual(result.keep, true)
     assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
     assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)
