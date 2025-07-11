@@ -42,8 +42,8 @@ describe('DDWAF', () => {
           'value_matchall',
           'key_matchall',
           'custom_action_rule',
-          'long_rule',
-          'test-marshalling'
+          'test-marshalling',
+          'long_rule'
         ],
         skipped: [],
         failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -418,8 +418,8 @@ describe('DDWAF', () => {
             'value_matchall',
             'key_matchall',
             'custom_action_rule',
-            'long_rule',
-            'test-marshalling'
+            'test-marshalling',
+            'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
           skipped: [],
@@ -985,18 +985,15 @@ describe('DDWAF', () => {
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(typeof result.keep, 'boolean')
     assert.strictEqual(result.keep, true)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.integer'], 'number')
     assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.negative_integer'], 'number')
     assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.float'], 'number')
     assert.strictEqual(result.attributes['_dd.appsec.trace.float'], 2.71828)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.negative_float'], 'number')
     assert.strictEqual(result.attributes['_dd.appsec.trace.negative_float'], -3.14159)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.bool'], 'boolean')
     assert.strictEqual(result.attributes['_dd.appsec.trace.bool'], true)
-    assert.strictEqual(typeof result.attributes['_dd.appsec.trace.string'], 'string')
-    assert.strictEqual(result.attributes['_dd.appsec.trace.string'], 'Lorem ipsum sit amet')
+    assert.strictEqual(
+      result.attributes['_dd.appsec.trace.string'],
+      'It was a bright cold day in April, and the clocks were striking thirteen.'
+    )
 
     context.dispose()
     waf.dispose()
