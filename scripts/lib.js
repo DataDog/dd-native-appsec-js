@@ -11,7 +11,7 @@ const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 
 const libNames = {
-  darwin: 'libddwaf.a',
+  darwin: 'libddwaf.a.stripped',
   win32: 'ddwaf_static.lib',
   linux: 'libddwaf.so'
 }
