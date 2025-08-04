@@ -182,13 +182,13 @@ describe('DDWAF', () => {
 
       it('should return false when updating configuration with invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        assert.strictEqual(waf.createOrUpdateConfig({}, 'config/update'), false)
+        assert.strictEqual(waf.createOrUpdateConfig(, 'config/update'), false)
         assert.strictEqual(waf.disposed, false)
       })
 
       it('should keep functional handle after updating an invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        waf.createOrUpdateConfig({}, 'config/update')
+        waf.createOrUpdateConfig(, 'config/update')
 
         assert(!waf.disposed)
 
