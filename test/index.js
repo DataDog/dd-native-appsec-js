@@ -153,6 +153,8 @@ describe('DDWAF', () => {
 
   describe('WAF update', () => {
     describe('Update config', () => {
+      const brokenConfig = { rules: [{ name: 'rule_with_missing_id' }] }
+
       it('should throw an error when updating configuration on a disposed WAF instance', () => {
         const waf = new DDWAF(rules, 'recommended')
         waf.dispose()
@@ -182,13 +184,13 @@ describe('DDWAF', () => {
 
       it('should return false when updating configuration with invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        assert.strictEqual(waf.createOrUpdateConfig({}, 'config/update'), false)
+        assert.strictEqual(waf.createOrUpdateConfig(brokenConfig, 'config/update'), false)
         assert.strictEqual(waf.disposed, false)
       })
 
       it('should keep functional handle after updating an invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        waf.createOrUpdateConfig({}, 'config/update')
+        waf.createOrUpdateConfig(brokenConfig, 'config/update')
 
         assert(!waf.disposed)
 

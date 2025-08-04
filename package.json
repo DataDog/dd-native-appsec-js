@@ -1,9 +1,9 @@
 {
   "name": "@datadog/native-appsec",
-  "version": "10.0.1",
+  "version": "10.1.0",
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
-  "libddwaf_version": "1.26.0",
+  "libddwaf_version": "1.27.0",
   "scripts": {
     "install": "exit 0",
     "rebuild": "node-gyp rebuild",
