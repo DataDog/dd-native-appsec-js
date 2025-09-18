@@ -153,6 +153,8 @@ describe('DDWAF', () => {
 
   describe('WAF update', () => {
     describe('Update config', () => {
+      const brokenConfig = { rules: [{ name: 'rule_with_missing_id' }] }
+
       it('should throw an error when updating configuration on a disposed WAF instance', () => {
         const waf = new DDWAF(rules, 'recommended')
         waf.dispose()
@@ -182,13 +184,13 @@ describe('DDWAF', () => {
 
       it('should return false when updating configuration with invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        assert.strictEqual(waf.createOrUpdateConfig({}, 'config/update'), false)
+        assert.strictEqual(waf.createOrUpdateConfig(brokenConfig, 'config/update'), false)
         assert.strictEqual(waf.disposed, false)
       })
 
       it('should keep functional handle after updating an invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
-        waf.createOrUpdateConfig({}, 'config/update')
+        waf.createOrUpdateConfig(brokenConfig, 'config/update')
 
         assert(!waf.disposed)
 
@@ -484,8 +486,8 @@ describe('DDWAF', () => {
       assert(resultAfterUpdatingRuleData.events)
       assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '403',
+          grpc_status_code: 10,
+          status_code: 403,
           type: 'auto'
         }
       })
@@ -606,8 +608,8 @@ describe('DDWAF', () => {
           assert.strictEqual(resultBlock.status, 'match')
           assert.deepStrictEqual(resultBlock.actions, {
             block_request: {
-              grpc_status_code: '10',
-              status_code: '403',
+              grpc_status_code: 10,
+              status_code: 403,
               type: 'auto'
             }
           })
@@ -1014,8 +1016,8 @@ describe('DDWAF', () => {
       assert(result.events)
       assert.deepStrictEqual(result.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '418',
+          grpc_status_code: 10,
+          status_code: 418,
           type: 'auto'
         }
       })
@@ -1051,8 +1053,8 @@ describe('DDWAF', () => {
       assert(resultWithUpdatedAction.events)
       assert.deepStrictEqual(resultWithUpdatedAction.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '404',
+          grpc_status_code: 10,
+          status_code: 404,
           type: 'auto'
         }
       })
