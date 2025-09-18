@@ -17,10 +17,13 @@
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
       "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "OTHER_LDFLAGS": ["-Wl,-S"],
+      "DEPLOYMENT_POSTPROCESSING": "YES",
+      "STRIP_INSTALLED_PRODUCT": "YES"
     },
     "conditions": [
       ["OS == 'linux'", {
-        'ldflags': ['-Wl,--rpath=\$$ORIGIN']
+        'ldflags': ['-Wl,--rpath=\$$ORIGIN', '-Wl,--strip-all']
       }],
       ["OS == 'win'", {
         "libraries": ["Ws2_32.lib"],
