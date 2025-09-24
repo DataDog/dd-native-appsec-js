@@ -10,10 +10,18 @@ const pkg = require('../package.json')
 const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 
-const libNames = {
+// Runtime filenames (what the addon will dlopen at runtime)
+const runtimeLibNames = {
   darwin: 'libddwaf.dylib',
   win32: 'ddwaf.dll',
   linux: 'libddwaf.so'
+}
+
+// Link-time filenames (what the linker should link against)
+const linkLibNames = {
+  darwin: runtimeLibNames.darwin,
+  win32: 'ddwaf.lib',
+  linux: runtimeLibNames.linux
 }
 
 const dirNames = {
@@ -40,13 +48,16 @@ function getDirName () {
 }
 
 const dirname = getDirName()
-const libName = libNames[platform]
+const runtimeLibName = runtimeLibNames[platform]
+const linkLibName = linkLibNames[platform]
 const basename = path.join(__dirname, '..', 'libddwaf', dirname)
 
 module.exports = {
   includePath: path.join(basename, 'include').split('\\').join('\\\\'),
-  libPath: path.join(basename, 'lib', libName).split('\\').join('\\\\'),
+  // Used by the linker during build
+  libPath: path.join(basename, 'lib', linkLibName).split('\\').join('\\\\'),
   libDir: path.join(basename, 'lib').split('\\').join('\\\\'),
   libName: platform === 'darwin' ? 'ddwaf' : (platform === 'win32' ? 'ddwaf' : 'ddwaf'),
-  libFile: libName
+  // Runtime library filename (for packaging/copying alongside the addon)
+  libFile: runtimeLibName
 }
