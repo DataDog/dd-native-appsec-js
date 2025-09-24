@@ -11,8 +11,8 @@ const platform = process.env.PLATFORM || os.platform()
 const arch = process.env.ARCH || os.arch()
 
 const libNames = {
-  darwin: 'libddwaf.a.stripped',
-  win32: 'ddwaf_static.lib',
+  darwin: 'libddwaf.dylib',
+  win32: 'ddwaf.dll',
   linux: 'libddwaf.so'
 }
 
@@ -46,5 +46,7 @@ const basename = path.join(__dirname, '..', 'libddwaf', dirname)
 module.exports = {
   includePath: path.join(basename, 'include').split('\\').join('\\\\'),
   libPath: path.join(basename, 'lib', libName).split('\\').join('\\\\'),
-  libName
+  libDir: path.join(basename, 'lib').split('\\').join('\\\\'),
+  libName: platform === 'darwin' ? 'ddwaf' : (platform === 'win32' ? 'ddwaf' : 'ddwaf'),
+  libFile: libName
 }
