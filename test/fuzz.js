@@ -62,3 +62,8 @@ describe('fuzzing', () => {
     }
   }).timeout(5000)
 })
+
+
+it('should test this shit', () => {
+  test(Buffer.from([0x80, 0xcf, 0x51, 0xdb, 0x8f, 0x1b, 0x47, 0xe4, 0xdd, 0xb6]))
+})
