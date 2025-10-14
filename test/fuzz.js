@@ -70,5 +70,5 @@ describe('fuzzing', () => {
 
 
 it('should test this shit', () => {
-  test(Buffer.from([0x80, 0xcf, 0x51, 0xdb, 0x8f, 0x1b, 0x47, 0xe4, 0xdd, 0xb6]))
+  test(Buffer.from('0046bee61d52a7cc1d06', 'hex'))
 })
