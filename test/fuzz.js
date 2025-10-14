@@ -37,11 +37,7 @@ function test (buff, encoding = 'utf8') {
   const r1 = context.run({ persistent: { value_attack: str } }, TIMEOUT)
   assert(r1 && r1.events, `Expected to handle string value 0x${buff.toString('hex')} in ${encoding}`)
 
-  const payload = { persistent: { key_attack: { [str]: '' } } }
-
-  console.log(JSON.stringify(payload))
-
-  const r2 = context.run(payload, TIMEOUT)
+  const r2 = context.run({ persistent: { key_attack: { [str]: '' } } }, TIMEOUT)
   assert(r2 && r2.events, `Expected to handle string key 0x${buff.toString('hex')} in ${encoding}`)
 
   context.dispose()
