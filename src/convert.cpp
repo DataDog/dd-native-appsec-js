@@ -137,7 +137,7 @@ ddwaf_object* to_ddwaf_object_object(
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
     to_ddwaf_object(&val, env, valV, depth, lim, false, stack, metrics);
-    if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
+    if (!ddwaf_object_map_addl(map, key.c_str(), key.length(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
     }
