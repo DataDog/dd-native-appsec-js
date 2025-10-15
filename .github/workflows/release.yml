@@ -94,6 +94,6 @@ jobs:
           name: datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
       - uses: actions/setup-node@v3
         with:
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install -g npm@latest
       - run: npm publish ./datadog-native-appsec-${{ steps.package.outputs.version }}.tgz
