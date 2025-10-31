@@ -1,6 +1,6 @@
 {
   "name": "@datadog/native-appsec",
-  "version": "10.3.0",
+  "version": "11.0.0",
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
   "libddwaf_version": "1.29.0",
