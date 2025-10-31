@@ -486,7 +486,7 @@ describe('DDWAF', () => {
       assert(resultAfterUpdatingRuleData.events)
       assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, {
         block_request: {
-          block_id: resultAfterUpdatingRuleData?.actions?.block_request?.block_id,
+          security_response_id: resultAfterUpdatingRuleData?.actions?.block_request?.security_response_id,
           grpc_status_code: 10,
           status_code: 403,
           type: 'auto'
@@ -609,7 +609,7 @@ describe('DDWAF', () => {
           assert.strictEqual(resultBlock.status, 'match')
           assert.deepStrictEqual(resultBlock.actions, {
             block_request: {
-              block_id: resultBlock?.actions?.block_request?.block_id,
+              security_response_id: resultBlock?.actions?.block_request?.security_response_id,
               grpc_status_code: 10,
               status_code: 403,
               type: 'auto'
@@ -1018,7 +1018,7 @@ describe('DDWAF', () => {
       assert(result.events)
       assert.deepStrictEqual(result.actions, {
         block_request: {
-          block_id: result?.actions?.block_request?.block_id,
+          security_response_id: result?.actions?.block_request?.security_response_id,
           grpc_status_code: 10,
           status_code: 418,
           type: 'auto'
@@ -1056,7 +1056,7 @@ describe('DDWAF', () => {
       assert(resultWithUpdatedAction.events)
       assert.deepStrictEqual(resultWithUpdatedAction.actions, {
         block_request: {
-          block_id: resultWithUpdatedAction?.actions?.block_request?.block_id,
+          security_response_id: resultWithUpdatedAction?.actions?.block_request?.security_response_id,
           grpc_status_code: 10,
           status_code: 404,
           type: 'auto'
