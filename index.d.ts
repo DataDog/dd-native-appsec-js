@@ -30,13 +30,14 @@ type TruncationMetrics = {
 
 type result = {
   timeout: boolean;
-  totalRuntime?: number;
+  duration?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: object[];
-  derivatives?: object;
+  attributes?: object;
   metrics?: TruncationMetrics;
   errorCode?: number;
+  keep?: boolean;
 }
 
 type payload = {
@@ -56,6 +57,8 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
+  readonly configPaths: string[];
+
   readonly diagnostics: {
     ruleset_version?: string,
     rules?: diagnosticsResult,
@@ -70,12 +73,13 @@ export class DDWAF {
   readonly knownAddresses: Set<string>;
   readonly knownActions: Set<string>;
 
-  constructor(rules: rules, config?: {
+  constructor(rules: rules, rulesPath: string, config?: {
     obfuscatorKeyRegex?: string,
     obfuscatorValueRegex?: string
   });
 
-  update(rules: rules): void;
+  createOrUpdateConfig(config: rules, path: string): boolean;
+  removeConfig(path: string): boolean;
 
   createContext(): DDWAFContext;
   dispose(): void;

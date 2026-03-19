@@ -137,7 +137,7 @@ ddwaf_object* to_ddwaf_object_object(
     mlog("Looping into ToPWArgs");
     ddwaf_object val;
     to_ddwaf_object(&val, env, valV, depth, lim, false, stack, metrics);
-    if (!ddwaf_object_map_add(map, key.c_str(), &val)) {
+    if (!ddwaf_object_map_addl(map, key.c_str(), key.length(), &val)) {
       mlog("add to object failed, freeing");
       ddwaf_object_free(&val);
     }
@@ -244,17 +244,26 @@ ddwaf_object* to_ddwaf_object(
   return ddwaf_object_invalid(object);
 }
 
-Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
+Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env) {
   DDWAF_OBJ_TYPE type = object->type;
 
   Napi::Value result;
 
   switch (type) {
+    case DDWAF_OBJ_NULL:
+      result = env.Null();
+      break;
+    case DDWAF_OBJ_BOOL:
+      result = Napi::Boolean::New(env, object->boolean);
+      break;
     case DDWAF_OBJ_SIGNED:
       result = Napi::Number::New(env, object->intValue);
       break;
     case DDWAF_OBJ_UNSIGNED:
       result = Napi::Number::New(env, object->uintValue);
+      break;
+    case DDWAF_OBJ_FLOAT:
+      result = Napi::Number::New(env, object->f64);
       break;
     case DDWAF_OBJ_STRING:
       result = Napi::String::New(env, object->stringValue, object->nbEntries);
@@ -268,7 +277,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
       }
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object* e = &object->array[i];
+        const ddwaf_object* e = &object->array[i];
         Napi::Value v = from_ddwaf_object(e, env);
         arr[i] = v;
       }
@@ -280,7 +289,7 @@ Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env) {
       Napi::Object obj = Napi::Object::New(env);
 
       for (uint32_t i = 0; i < object->nbEntries; ++i) {
-        ddwaf_object* e = &object->array[i];
+        const ddwaf_object* e = &object->array[i];
         Napi::String k = Napi::String::New(env, e->parameterName, e->parameterNameLength);
         if (env.IsExceptionPending()) {
           mlog("Exception pending");

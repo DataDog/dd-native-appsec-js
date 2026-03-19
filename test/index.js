@@ -20,12 +20,13 @@ describe('DDWAF', () => {
   })
 
   it('should have diagnostics', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     assert.deepStrictEqual(waf.diagnostics, {
       ruleset_version: '1.3.1',
       actions: {
         errors: {},
+        warnings: {},
         failed: [],
         loaded: [
           'customblock'
@@ -33,18 +34,6 @@ describe('DDWAF', () => {
         skipped: []
       },
       rules: {
-        addresses: {
-          optional: [],
-          required: [
-            'http.client_ip',
-            'server.request.headers.no_cookies',
-            'server.response.status',
-            'value_attack',
-            'key_attack',
-            'custom_value_attack',
-            'server.request.body'
-          ]
-        },
         loaded: [
           'block_ip',
           'value_attack',
@@ -53,6 +42,7 @@ describe('DDWAF', () => {
           'value_matchall',
           'key_matchall',
           'custom_action_rule',
+          'test-marshalling',
           'long_rule'
         ],
         skipped: [],
@@ -65,13 +55,14 @@ describe('DDWAF', () => {
             'invalid_2',
             'invalid_3'
           ]
-        }
+        },
+        warnings: {}
       }
     })
   })
 
   it('should have knownAddresses', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     assert.deepStrictEqual(waf.knownAddresses, new Set([
       'http.client_ip',
@@ -85,7 +76,7 @@ describe('DDWAF', () => {
   })
 
   it('should have knownActions', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     assert.deepStrictEqual(waf.knownActions, new Set([
       'block_request'
@@ -93,7 +84,7 @@ describe('DDWAF', () => {
   })
 
   it('should collect an attack and cleanup everything', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
     const payload = {
       persistent: {
@@ -129,7 +120,7 @@ describe('DDWAF', () => {
   })
 
   it('should collect different attacks on ephemeral addresses', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
     let result = context.run({
       ephemeral: {
@@ -161,25 +152,186 @@ describe('DDWAF', () => {
   })
 
   describe('WAF update', () => {
-    it('should throw an error when updating a disposed WAF instance', () => {
-      const waf = new DDWAF(rules)
-      waf.dispose()
-      assert.throws(() => waf.update(rules), new Error('Could not update a disposed WAF instance'))
+    describe('Update config', () => {
+      const brokenConfig = { rules: [{ name: 'rule_with_missing_id' }] }
+
+      it('should throw an error when updating configuration on a disposed WAF instance', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        waf.dispose()
+        assert.throws(
+          () => waf.createOrUpdateConfig(rules, 'config/update'),
+          new Error('Could not update a disposed WAF instance'))
+      })
+
+      it('should throw an error when updating configuration with no arguments', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.throws(() => waf.createOrUpdateConfig(), new Error('Wrong number of arguments, expected at least 2'))
+      })
+
+      it('should throw an error when updating configuration with just one argument', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.throws(() => waf.createOrUpdateConfig({}), new Error('Wrong number of arguments, expected at least 2'))
+      })
+
+      it('should throw a type error when updating configuration with invalid arguments', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.throws(
+          () => waf.createOrUpdateConfig('string', 'config/update'),
+          new TypeError('First argument must be an object')
+        )
+        assert.strictEqual(waf.disposed, false)
+      })
+
+      it('should return false when updating configuration with invalid configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.strictEqual(waf.createOrUpdateConfig(brokenConfig, 'config/update'), false)
+        assert.strictEqual(waf.disposed, false)
+      })
+
+      it('should keep functional handle after updating an invalid configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        waf.createOrUpdateConfig(brokenConfig, 'config/update')
+
+        assert(!waf.disposed)
+
+        const context = waf.createContext()
+        const payload = {
+          persistent: {
+            'server.request.headers.no_cookies': 'value_ATTack'
+          }
+        }
+
+        const result = context.run(payload, TIMEOUT)
+
+        assert.strictEqual(result.timeout, false)
+        assert.strictEqual(result.status, 'match')
+        assert(result.events)
+        assert.deepStrictEqual(result.actions, {})
+        assert(!context.disposed)
+      })
+
+      it('should return true when updating configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        const newConfig = {
+          version: '2.2',
+          metadata: {
+            rules_version: '1.3.0'
+          },
+          actions: [{
+            id: 'customredirect',
+            type: 'redirect_request',
+            parameters: {
+              status_code: '301',
+              location: '/'
+            }
+          }],
+          rules: [{
+            id: 'block_ip_original',
+            name: 'block ip',
+            tags: {
+              type: 'ip_addresses',
+              category: 'blocking'
+            },
+            conditions: [
+              {
+                parameters: {
+                  inputs: [
+                    { address: 'http.client_ip' }
+                  ],
+                  data: 'blocked_ips'
+                },
+                operator: 'ip_match'
+              }
+            ],
+            transformers: [],
+            on_match: [
+              'customredirect'
+            ]
+          }]
+        }
+        assert.strictEqual(waf.createOrUpdateConfig(newConfig, 'config/update'), true)
+      })
     })
 
-    it('should throw an error when updating a WAF instance with no arguments', () => {
-      const waf = new DDWAF(rules)
-      assert.throws(() => waf.update(), new Error('Wrong number of arguments, expected at least 1'))
+    describe('Remove config', () => {
+      it('should throw an error when removing a configuration on a disposed WAF instance', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        waf.dispose()
+        assert.throws(
+          () => waf.removeConfig('config/update'),
+          new Error('Could not update a disposed WAF instance'))
+      })
+
+      it('should throw an error when removing a configuration with no arguments', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.throws(() => waf.removeConfig(), new Error('Wrong number of arguments, expected at least 1'))
+      })
+
+      it('should throw a type error when removing a configuration with invalid arguments', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.throws(
+          () => waf.removeConfig(null),
+          new TypeError('First argument must be a string')
+        )
+      })
+
+      it('should return true when removing an existing configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.strictEqual(waf.removeConfig('recommended'), true)
+        assert.strictEqual(waf.configPaths.length, 0)
+      })
+
+      it('should return false when removing a non-existing configuration', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        assert.strictEqual(waf.removeConfig('config/update'), false)
+        assert.ok(
+          waf.configPaths.includes('recommended') &&
+          waf.configPaths.length === 1
+        )
+      })
     })
 
-    it('should throw a type error when updating a WAF instance with invalid arguments', () => {
-      const waf = new DDWAF(rules)
-      assert.throws(() => waf.update('string'), new TypeError('First argument must be an object'))
-    })
+    describe('Config paths', () => {
+      it('should have no loaded configuration paths on WAF disposed instance', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        waf.dispose()
+        assert.strictEqual(waf.configPaths.length, 0)
+      })
 
-    it('should throw an exception when WAF update has not been updated - nothing to update', () => {
-      const waf = new DDWAF(rules)
-      assert.throws(() => waf.update({}), new Error('WAF has not been updated'))
+      it('should have loaded configuration paths', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        const newConfig = {
+          rules: [{
+            id: 'block_ip_original',
+            name: 'block ip',
+            tags: {
+              type: 'ip_addresses',
+              category: 'blocking'
+            },
+            conditions: [
+              {
+                parameters: {
+                  inputs: [
+                    { address: 'http.client_ip' }
+                  ],
+                  data: 'blocked_ips'
+                },
+                operator: 'ip_match'
+              }
+            ],
+            transformers: [],
+            on_match: [
+              'customredirect'
+            ]
+          }]
+        }
+        waf.createOrUpdateConfig(newConfig, 'config/update')
+        assert.ok(
+          waf.configPaths.includes('recommended') &&
+          waf.configPaths.includes('config/update') &&
+          waf.configPaths.length === 2
+        )
+      })
     })
 
     it('should update diagnostics, knownAddresses, and knownActions when updating an instance with new ruleSet', () => {
@@ -197,7 +349,7 @@ describe('DDWAF', () => {
           }
         }],
         rules: [{
-          id: 'block_ip',
+          id: 'block_ip_original',
           name: 'block ip',
           tags: {
             type: 'ip_addresses',
@@ -219,12 +371,13 @@ describe('DDWAF', () => {
             'customredirect'
           ]
         }]
-      })
+      }, 'new_ruleset')
 
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.0',
         actions: {
           errors: {},
+          warnings: {},
           failed: [],
           loaded: [
             'customredirect'
@@ -232,14 +385,11 @@ describe('DDWAF', () => {
           skipped: []
         },
         rules: {
-          addresses: {
-            optional: [],
-            required: ['http.client_ip']
-          },
-          loaded: ['block_ip'],
+          loaded: ['block_ip_original'],
           failed: [],
           skipped: [],
-          errors: {}
+          errors: {},
+          warnings: {}
         }
       })
       assert.deepStrictEqual(waf.knownAddresses, new Set([
@@ -249,11 +399,12 @@ describe('DDWAF', () => {
         'redirect_request'
       ]))
 
-      waf.update(rules)
+      waf.createOrUpdateConfig(rules, 'config/update')
       assert.deepStrictEqual(waf.diagnostics, {
         ruleset_version: '1.3.1',
         actions: {
           errors: {},
+          warnings: {},
           failed: [],
           loaded: [
             'customblock'
@@ -261,18 +412,6 @@ describe('DDWAF', () => {
           skipped: []
         },
         rules: {
-          addresses: {
-            optional: [],
-            required: [
-              'http.client_ip',
-              'server.request.headers.no_cookies',
-              'server.response.status',
-              'value_attack',
-              'key_attack',
-              'custom_value_attack',
-              'server.request.body'
-            ]
-          },
           loaded: [
             'block_ip',
             'value_attack',
@@ -281,6 +420,7 @@ describe('DDWAF', () => {
             'value_matchall',
             'key_matchall',
             'custom_action_rule',
+            'test-marshalling',
             'long_rule'
           ],
           failed: ['invalid_1', 'invalid_2', 'invalid_3'],
@@ -293,7 +433,8 @@ describe('DDWAF', () => {
               'invalid_2',
               'invalid_3'
             ]
-          }
+          },
+          warnings: {}
         }
       })
       assert.deepStrictEqual(waf.knownAddresses, new Set([
@@ -306,7 +447,8 @@ describe('DDWAF', () => {
         'custom_value_attack'
       ]))
       assert.deepStrictEqual(waf.knownActions, new Set([
-        'block_request'
+        'block_request',
+        'redirect_request'
       ]))
 
       waf.dispose()
@@ -320,7 +462,7 @@ describe('DDWAF', () => {
         }
       }
 
-      const waf = new DDWAF(rules)
+      const waf = new DDWAF(rules, 'recommended')
       const context = waf.createContext()
       const resultBeforeUpdatingRuleData = context.run(payload, TIMEOUT)
       assert(!resultBeforeUpdatingRuleData.status)
@@ -335,7 +477,7 @@ describe('DDWAF', () => {
         ]
       }
 
-      waf.update(updateWithRulesData)
+      waf.createOrUpdateConfig(updateWithRulesData, 'config/update')
       const contextWithRuleData = waf.createContext()
       const resultAfterUpdatingRuleData = contextWithRuleData.run(payload, TIMEOUT)
 
@@ -344,8 +486,9 @@ describe('DDWAF', () => {
       assert(resultAfterUpdatingRuleData.events)
       assert.deepStrictEqual(resultAfterUpdatingRuleData.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '403',
+          security_response_id: resultAfterUpdatingRuleData?.actions?.block_request?.security_response_id,
+          grpc_status_code: 10,
+          status_code: 403,
           type: 'auto'
         }
       })
@@ -385,7 +528,7 @@ describe('DDWAF', () => {
               value_attack: 'matchall'
             }
           }
-          const waf = new DDWAF(rules)
+          const waf = new DDWAF(rules, 'recommended')
           const contextToggledOn = waf.createContext()
 
           const resultToggledOn = contextToggledOn.run(payload, TIMEOUT)
@@ -398,7 +541,7 @@ describe('DDWAF', () => {
             rules_override: testData.rulesOverride
           }
 
-          waf.update(updateWithRulesOverride)
+          waf.createOrUpdateConfig(updateWithRulesOverride, 'config/update')
           const contextToggledOff = waf.createContext()
 
           const resultToggledOff = contextToggledOff.run(payload, TIMEOUT)
@@ -443,7 +586,7 @@ describe('DDWAF', () => {
             }
           }
 
-          const waf = new DDWAF(rules)
+          const waf = new DDWAF(rules, 'recommended')
           const monitorContext = waf.createContext()
 
           const resultMonitor = monitorContext.run(payload, TIMEOUT)
@@ -457,7 +600,7 @@ describe('DDWAF', () => {
             rules_override: testData.rulesOverride
           }
 
-          waf.update(updateWithRulesOverride)
+          waf.createOrUpdateConfig(updateWithRulesOverride, 'config/update')
           const blockContext = waf.createContext()
 
           const resultBlock = blockContext.run(payload, TIMEOUT)
@@ -466,8 +609,9 @@ describe('DDWAF', () => {
           assert.strictEqual(resultBlock.status, 'match')
           assert.deepStrictEqual(resultBlock.actions, {
             block_request: {
-              grpc_status_code: '10',
-              status_code: '403',
+              security_response_id: resultBlock?.actions?.block_request?.security_response_id,
+              grpc_status_code: 10,
+              status_code: 403,
               type: 'auto'
             }
           })
@@ -477,7 +621,7 @@ describe('DDWAF', () => {
   })
 
   it('should support case_sensitive', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     const result = context.run({
@@ -491,12 +635,12 @@ describe('DDWAF', () => {
   })
 
   it('should refuse invalid rule', () => {
-    assert.throws(() => new DDWAF({}), new Error('Invalid rules'))
-    assert.throws(() => new DDWAF(''), new TypeError('First argument must be an object'))
+    assert.throws(() => new DDWAF({}, 'empty_rules'), new Error('Invalid rules'))
+    assert.throws(() => new DDWAF('', 'non_object_rules'), new TypeError('First argument must be an object'))
   })
 
   it('should refuse to run with bad signatures', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     const wronArgsError = new Error('Wrong number of arguments, 2 expected')
@@ -546,7 +690,7 @@ describe('DDWAF', () => {
       [function fn () {}, 'function fn () {}']
     ])
 
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     for (const [key, expected] of possibleKeys) {
       const context = waf.createContext()
@@ -584,7 +728,7 @@ describe('DDWAF', () => {
       [function fn () {}, undefined]
     ])
 
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     for (const [value, expected] of possibleValues) {
       const context = waf.createContext()
@@ -608,7 +752,7 @@ describe('DDWAF', () => {
   })
 
   it('should obfuscate keys', () => {
-    const waf = new DDWAF(rules, {
+    const waf = new DDWAF(rules, 'recommended', {
       obfuscatorKeyRegex: 'password'
     })
     const context = waf.createContext()
@@ -630,7 +774,7 @@ describe('DDWAF', () => {
   })
 
   it('should obfuscate values', () => {
-    const waf = new DDWAF(rules, {
+    const waf = new DDWAF(rules, 'recommended', {
       obfuscatorValueRegex: 'value_attack'
     })
     const context = waf.createContext()
@@ -649,14 +793,11 @@ describe('DDWAF', () => {
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].highlight[0], '<Redacted>')
   })
 
-  it('should collect derivatives information when a rule match', () => {
-    const waf = new DDWAF(processor)
+  it('should collect result attributes information when a rule match', () => {
+    const waf = new DDWAF(processor, 'processor_rules')
 
     const context = waf.createContext()
 
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
-    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
     assert(waf.diagnostics.processors.loaded.includes('processor-001'))
     assert.equal(waf.diagnostics.processors.failed.length, 0)
 
@@ -670,7 +811,7 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
@@ -679,13 +820,10 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect derivatives information when a rule does not match', () => {
-    const waf = new DDWAF(processor)
+  it('should collect result attributes information when a rule does not match', () => {
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
-    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
     assert(waf.diagnostics.processors.loaded.includes('processor-001'))
     assert.equal(waf.diagnostics.processors.failed.length, 0)
 
@@ -698,7 +836,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
@@ -707,13 +845,10 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect all derivatives types', () => {
-    const waf = new DDWAF(processor)
+  it('should collect all result attributes types', () => {
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
-    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
     assert(waf.diagnostics.processors.loaded.includes('processor-001'))
     assert.equal(waf.diagnostics.processors.failed.length, 0)
 
@@ -741,7 +876,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           null: [1],
@@ -769,13 +904,10 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
-  it('should collect derivatives in two consecutive calls', () => {
-    const waf = new DDWAF(processor)
+  it('should collect result attributes in two consecutive calls', () => {
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
 
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.query'))
-    assert(waf.diagnostics.processors.addresses.optional.includes('server.request.body'))
-    assert(waf.diagnostics.processors.addresses.required.includes('waf.context.processor'))
     assert(waf.diagnostics.processors.loaded.includes('processor-001'))
     assert.equal(waf.diagnostics.processors.failed.length, 0)
 
@@ -785,7 +917,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.strictEqual(result.derivatives, undefined)
+    assert.strictEqual(result.attributes, undefined)
 
     result = context.run({
       persistent: {
@@ -796,7 +928,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.body.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
 
     result = context.run({
       persistent: {
@@ -804,7 +936,7 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, { 'server.request.query.schema': [8] })
+    assert.deepStrictEqual(result.attributes, { 'server.request.query.schema': [8] })
 
     context.dispose()
     assert(context.disposed)
@@ -813,9 +945,66 @@ describe('DDWAF', () => {
     assert(waf.disposed)
   })
 
+  it('should include keep field in result object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+
+    // Non-match result
+    let result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'normal_value'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, false)
+
+    // Match result
+    result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'value_attack'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(typeof result.keep, 'boolean')
+    assert.strictEqual(result.keep, true)
+
+    context.dispose()
+    waf.dispose()
+  })
+
+  it('should perform correct marshalling of ddwaf_object', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+    const result = context.run({
+      persistent: {
+        'server.request.headers.no_cookies': 'marshalling'
+      }
+    }, TIMEOUT)
+
+    assert.strictEqual(result.timeout, false)
+    assert.strictEqual(result.status, 'match')
+    assert.strictEqual(result.keep, true)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.float'], 2.71828)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.negative_float'], -3.14159)
+    assert.strictEqual(result.attributes['_dd.appsec.trace.bool'], true)
+    assert.strictEqual(
+      result.attributes['_dd.appsec.trace.string'],
+      'It was a bright cold day in April, and the clocks were striking thirteen.'
+    )
+
+    context.dispose()
+    waf.dispose()
+  })
+
   describe('Action semantics', () => {
     it('should support action definition in initialisation', () => {
-      const waf = new DDWAF(rules)
+      const waf = new DDWAF(rules, 'recommended')
       const context = waf.createContext()
 
       const result = context.run({
@@ -829,8 +1018,9 @@ describe('DDWAF', () => {
       assert(result.events)
       assert.deepStrictEqual(result.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '418',
+          security_response_id: result?.actions?.block_request?.security_response_id,
+          grpc_status_code: 10,
+          status_code: 418,
           type: 'auto'
         }
       })
@@ -838,7 +1028,7 @@ describe('DDWAF', () => {
     })
 
     it('should support action definition in update', () => {
-      const waf = new DDWAF(rules)
+      const waf = new DDWAF(rules, 'recommended')
 
       const updatedRules = Object.assign({}, rules)
       updatedRules.actions = [{
@@ -851,7 +1041,8 @@ describe('DDWAF', () => {
         }
       }]
 
-      waf.update(updatedRules)
+      waf.removeConfig('recommended')
+      waf.createOrUpdateConfig(updatedRules, 'recommended_action_modified')
 
       const context = waf.createContext()
       const resultWithUpdatedAction = context.run({
@@ -865,8 +1056,9 @@ describe('DDWAF', () => {
       assert(resultWithUpdatedAction.events)
       assert.deepStrictEqual(resultWithUpdatedAction.actions, {
         block_request: {
-          grpc_status_code: '10',
-          status_code: '404',
+          security_response_id: resultWithUpdatedAction?.actions?.block_request?.security_response_id,
+          grpc_status_code: 10,
+          status_code: 404,
           type: 'auto'
         }
       })
@@ -877,7 +1069,7 @@ describe('DDWAF', () => {
 
 describe('limit tests', () => {
   it('should ignore elements too far in the objects', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     const context1 = waf.createContext()
     const result1 = context1.run({
@@ -908,7 +1100,7 @@ describe('limit tests', () => {
   })
 
   it('should match a moderately deeply nested object', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     const result = context.run({
@@ -923,7 +1115,7 @@ describe('limit tests', () => {
   })
 
   it('should set as invalid circular property dependency', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const payload = {
       key: 'value',
@@ -940,7 +1132,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           mail: [8],
@@ -954,7 +1146,7 @@ describe('limit tests', () => {
   })
 
   it('should set as invalid circular property dependency in deeper level', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const payload = {
       key: 'value',
@@ -971,7 +1163,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           mail: [8],
@@ -985,7 +1177,7 @@ describe('limit tests', () => {
   })
 
   it('should set as invalid circular array dependency', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const payload = []
     payload.push(payload, payload, payload)
@@ -997,13 +1189,13 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [[[0]], { len: 3 }]
     })
   })
 
   it('should set as invalid circular array dependency in deeper levels', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const payload = []
     payload.push({ payload })
@@ -1017,13 +1209,13 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [[[{ payload: [0] }]], { len: 3 }]
     })
   })
 
   it('should not set as invalid same instances in array', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const item = {
       key: 'value',
@@ -1039,7 +1231,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         [[{ mail: [8], key: [8] }]],
         { len: 4 }
@@ -1048,7 +1240,7 @@ describe('limit tests', () => {
   })
 
   it('should not set as invalid same instance in different properties', () => {
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const prop = {
       key: 'value',
@@ -1067,7 +1259,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           prop1: [{ mail: [8], key: [8] }],
@@ -1079,7 +1271,7 @@ describe('limit tests', () => {
   })
 
   it('should not match an extremely deeply nested object', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     const result = context.run({
@@ -1094,7 +1286,7 @@ describe('limit tests', () => {
   })
 
   it('should not limit the rules object', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     // test first item in big rule
     const context1 = waf.createContext()
@@ -1118,7 +1310,7 @@ describe('limit tests', () => {
   })
 
   it('should use custom toJSON function', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     const body = { a: 'not_an_attack' }
 
@@ -1148,7 +1340,7 @@ describe('limit tests', () => {
   })
 
   it('should use custom toJSON function in arrays', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     const body = ['not_an_attack']
 
@@ -1193,7 +1385,7 @@ describe('limit tests', () => {
       }
     }
 
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const result = context.run({
       persistent: {
@@ -1204,7 +1396,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         [
           [
@@ -1236,7 +1428,7 @@ describe('limit tests', () => {
       }
     }
 
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const result = context.run({
       persistent: {
@@ -1247,7 +1439,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           c: [8],
@@ -1281,7 +1473,7 @@ describe('limit tests', () => {
       }
     }
 
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const result = context.run({
       persistent: {
@@ -1292,7 +1484,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           a: [16],
@@ -1313,7 +1505,7 @@ describe('limit tests', () => {
       c: 'c'
     }
 
-    const waf = new DDWAF(processor)
+    const waf = new DDWAF(processor, 'processor_rules')
     const context = waf.createContext()
     const result = context.run({
       persistent: {
@@ -1324,7 +1516,7 @@ describe('limit tests', () => {
       }
     }, TIMEOUT)
 
-    assert.deepStrictEqual(result.derivatives, {
+    assert.deepStrictEqual(result.attributes, {
       'server.request.body.schema': [
         {
           a: [0],
@@ -1335,7 +1527,7 @@ describe('limit tests', () => {
   })
 
   it('should truncate string values exceeding maximum length', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     const context1 = waf.createContext()
     const result1 = context1.run({
@@ -1362,7 +1554,7 @@ describe('limit tests', () => {
   })
 
   it('should handle multiple truncations in complex nested structure', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
 
     const longValue1 = 'a'.repeat(5000)
     const longValue2 = 'b'.repeat(6000)
@@ -1406,7 +1598,7 @@ describe('limit tests', () => {
 
 describe('Handle errors', () => {
   it('should handle invalid arguments number', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     try {
@@ -1419,7 +1611,7 @@ describe('Handle errors', () => {
   })
 
   it('should handle invalid timeout arguments', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     try {
@@ -1440,7 +1632,7 @@ describe('Handle errors', () => {
   })
 
   it('should handle invalid arguments', () => {
-    const waf = new DDWAF(rules)
+    const waf = new DDWAF(rules, 'recommended')
     const context = waf.createContext()
 
     try {

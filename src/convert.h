@@ -21,6 +21,6 @@ ddwaf_object* to_ddwaf_object(
   WAFTruncationMetrics *metrics
 );
 
-Napi::Value from_ddwaf_object(ddwaf_object *object, Napi::Env env);
+Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env);
 
 #endif  // SRC_CONVERT_H_

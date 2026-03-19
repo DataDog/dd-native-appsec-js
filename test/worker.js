@@ -6,7 +6,7 @@ if (!isMainThread) {
   const { DDWAF } = require('..')
   const rules = require('./rules.json')
 
-  const waf = new DDWAF(rules)
+  const waf = new DDWAF(rules, 'recommended')
   const context = waf.createContext()
 
   const result = context.run({

@@ -15,12 +15,21 @@
 #include "src/log.h"
 #include "src/convert.h"
 
+// libddwaf result field name constants
+constexpr size_t EVENTS_LEN = 6;
+constexpr size_t ACTIONS_LEN = 7;
+constexpr size_t ATTRIBUTES_LEN = 10;
+constexpr size_t KEEP_LEN = 4;
+constexpr size_t DURATION_LEN = 8;
+constexpr size_t TIMEOUT_LEN = 7;
 
 Napi::Object DDWAF::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAF");
   Napi::Function func = DefineClass(env, "DDWAF", {
     StaticMethod<&DDWAF::version>("version"),
-    InstanceMethod<&DDWAF::update>("update"),
+    InstanceMethod<&DDWAF::update_config>("createOrUpdateConfig"),
+    InstanceMethod<&DDWAF::remove_config>("removeConfig"),
+    InstanceAccessor("configPaths", &DDWAF::GetConfigPaths, nullptr, napi_enumerable),
     InstanceMethod<&DDWAF::createContext>("createContext"),
     InstanceMethod<&DDWAF::dispose>("dispose"),
     InstanceAccessor("disposed", &DDWAF::GetDisposed, nullptr, napi_enumerable),
@@ -42,12 +51,18 @@ Napi::Value DDWAF::GetDisposed(const Napi::CallbackInfo& info) {
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
   size_t arg_len = info.Length();
-  if (arg_len < 1) {
-    Napi::Error::New(env, "Wrong number of arguments, expected at least 1").ThrowAsJavaScriptException();
+  if (arg_len < 2) {
+    Napi::Error::New(env, "Wrong number of arguments, expected at least 2").ThrowAsJavaScriptException();
     return;
   }
+
   if (!info[0].IsObject()) {
     Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
+    return;
+  }
+
+  if (!info[1].IsString()) {
+    Napi::TypeError::New(env, "Second argument must be a string").ThrowAsJavaScriptException();
     return;
   }
 
@@ -57,14 +72,14 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   std::string key_regex_str;
   std::string value_regex_str;
 
-  if (arg_len >= 2) {  // TODO(@simon-id): there is a bug here ?
+  if (arg_len >= 3) {  // TODO(@simon-id): there is a bug here ?
     // TODO(@simon-id) make a macro here someday
-    if (!info[1].IsObject()) {
+    if (!info[2].IsObject()) {
       Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
       return;
     }
 
-    Napi::Object config = info[1].ToObject();
+    Napi::Object config = info[2].ToObject();
 
     if (config.Has("obfuscatorKeyRegex")) {
       Napi::Value key_regex = config.Get("obfuscatorKeyRegex");
@@ -94,11 +109,14 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_object rules;
   mlog("building rules");
   to_ddwaf_object(&rules, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
+  std::string config_path = info[1].As<Napi::String>().Utf8Value();
 
   ddwaf_object diagnostics;
 
-  mlog("Init WAF");
-  ddwaf_handle handle = ddwaf_init(&rules, &waf_config, &diagnostics);
+  mlog("Init Builder");
+  ddwaf_builder builder = ddwaf_builder_init(&waf_config);
+  bool result = ddwaf_builder_add_or_update_config(builder, LSTRARG(config_path.c_str()), &rules, &diagnostics);
+
   ddwaf_object_free(&rules);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
@@ -106,11 +124,20 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
 
   ddwaf_object_free(&diagnostics);
 
+  if (!result) {
+    Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
+    return;
+  }
+
+  mlog("Init WAF");
+  ddwaf_handle handle = ddwaf_builder_build_instance(builder);
+
   if (handle == nullptr) {
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
     return;
   }
 
+  this->_builder = builder;
   this->_handle = handle;
   this->_disposed = false;
 
@@ -124,6 +151,7 @@ void DDWAF::Finalize(Napi::Env env) {
     return;
   }
   ddwaf_destroy(this->_handle);
+  ddwaf_builder_destroy(this->_builder);
   this->_disposed = true;
 }
 
@@ -132,52 +160,133 @@ void DDWAF::dispose(const Napi::CallbackInfo& info) {
   return this->Finalize(info.Env());
 }
 
-void DDWAF::update(const Napi::CallbackInfo& info) {
-  mlog("calling update on DDWAF");
+Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
+  mlog("Calling update config on DDWAF");
 
   Napi::Env env = info.Env();
 
   if (this->_disposed) {
     Napi::Error::New(env, "Could not update a disposed WAF instance").ThrowAsJavaScriptException();
-    return;
+    return env.Undefined();
   }
 
-  if (info.Length() < 1) {
-    Napi::Error::New(env, "Wrong number of arguments, expected at least 1").ThrowAsJavaScriptException();
-    return;
+  if (info.Length() < 2) {
+    Napi::Error::New(env, "Wrong number of arguments, expected at least 2").ThrowAsJavaScriptException();
+    return env.Undefined();
   }
+
   if (!info[0].IsObject()) {
     Napi::TypeError::New(env, "First argument must be an object").ThrowAsJavaScriptException();
-    return;
+    return env.Undefined();
+  }
+
+  if (!info[1].IsString()) {
+    Napi::TypeError::New(env, "Second argument must be a string").ThrowAsJavaScriptException();
+    return env.Undefined();
   }
 
   ddwaf_object update;
-  mlog("building rules update");
+  mlog("Building config update");
   to_ddwaf_object(&update, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
+
+  mlog("Obtaining config update path");
+  std::string config_path = info[1].As<Napi::String>().Utf8Value();
 
   ddwaf_object diagnostics;
 
-  mlog("Update DDWAF instance");
-  ddwaf_handle updated_handle = ddwaf_update(this->_handle, &update, &diagnostics);
-  ddwaf_object_free(&update);
+  mlog("Applying new config to builder");
+  bool update_result = ddwaf_builder_add_or_update_config(
+    this->_builder,
+    LSTRARG(config_path.c_str()),
+    &update, &diagnostics);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
 
   ddwaf_object_free(&diagnostics);
 
-  if (updated_handle == nullptr) {
-    mlog("DDWAF updated handle is null");
-    Napi::Error::New(env, "WAF has not been updated").ThrowAsJavaScriptException();
-    return;
+  if (!update_result) {
+    mlog("DDWAF Builder update config has failed");
+    return Napi::Boolean::New(env, false);
   }
 
-  mlog("New DDWAF updated instance")
-  ddwaf_destroy(this->_handle);
-  this->_handle = updated_handle;
+  mlog("Update DDWAF instance");
+  ddwaf_handle updated_handle = ddwaf_builder_build_instance(this->_builder);
+  ddwaf_object_free(&update);
 
-  this->update_known_addresses(info);
-  this->update_known_actions(info);
+  if (updated_handle != nullptr) {
+    mlog("New DDWAF updated instance")
+    ddwaf_destroy(this->_handle);
+    this->_handle = updated_handle;
+
+    this->update_known_addresses(info);
+    this->update_known_actions(info);
+  }
+
+  return Napi::Boolean::New(env, true);
+}
+
+Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
+  mlog("Calling remove config on DDWAF");
+
+  Napi::Env env = info.Env();
+
+  if (this->_disposed) {
+    Napi::Error::New(env, "Could not update a disposed WAF instance").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  if (info.Length() < 1) {
+    Napi::Error::New(env, "Wrong number of arguments, expected at least 1").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  if (!info[0].IsString()) {
+    Napi::TypeError::New(env, "First argument must be a string").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  mlog("Obtaining config remove path");
+  std::string config_path = info[0].As<Napi::String>().Utf8Value();
+
+  mlog("Applying removed config to builder");
+  bool remove_result = ddwaf_builder_remove_config(this->_builder, LSTRARG(config_path.c_str()));
+
+  if (!remove_result) {
+    mlog("DDWAF Builder remove config has failed");
+    return Napi::Boolean::New(env, false);
+  }
+
+  mlog("Update DDWAF instance");
+  ddwaf_handle updated_handle = ddwaf_builder_build_instance(this->_builder);
+
+  if (updated_handle != nullptr) {
+    mlog("New DDWAF updated instance")
+    ddwaf_destroy(this->_handle);
+    this->_handle = updated_handle;
+
+    this->update_known_addresses(info);
+    this->update_known_actions(info);
+  }
+
+  return Napi::Boolean::New(env, true);
+}
+
+Napi::Value DDWAF::GetConfigPaths(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+  if (this->_disposed) {
+    return Napi::Array::New(env, 0);
+  }
+
+  ddwaf_object config_paths;
+  ddwaf_builder_get_config_paths(this->_builder, &config_paths, nullptr, 0);
+
+  Napi::Value config_paths_js = from_ddwaf_object(&config_paths, env);
+
+  ddwaf_object_free(&config_paths);
+
+  return config_paths_js;
 }
 
 void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
@@ -313,7 +422,7 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     to_ddwaf_object(ddwafEphemeral, env, ephemeral, 0, true, false, JsSet::Create(env), &this->_metrics);
   }
 
-  ddwaf_result result;
+  ddwaf_object result;
 
   DDWAF_RET_CODE code = ddwaf_run(
     this->_context,
@@ -348,32 +457,82 @@ Napi::Value DDWAFContext::run(const Napi::CallbackInfo& info) {
     case DDWAF_ERR_INVALID_OBJECT:
     case DDWAF_ERR_INVALID_ARGUMENT:
       res.Set("errorCode", Napi::Number::New(env, code));
-      ddwaf_result_free(&result);
+      ddwaf_object_free(&result);
       return res;
     default:
       break;
   }
-  // there is no error. We need to collect perf data
 
-  mlog("Set timeout");
-  res.Set("timeout", Napi::Boolean::New(env, result.timeout));
+  // No error. Collect result data and return
 
-  if (result.total_runtime) {
-    mlog("Set total_runtime");
-    res.Set("totalRuntime", Napi::Number::New(env, result.total_runtime));
+  const ddwaf_object *events = nullptr, *actions = nullptr, *attributes = nullptr,
+                     *keep = nullptr, *duration = nullptr, *run_timeout = nullptr;
+
+  for (size_t i = 0; i < ddwaf_object_size(&result); ++i) {
+    const ddwaf_object *child = ddwaf_object_get_index(&result, i);
+    if (child == nullptr) {
+      mlog("ddwaf result child is null")
+      continue;
+    }
+
+    size_t length = 0;
+    const char *key = ddwaf_object_get_key(child, &length);
+    if (key == nullptr) {
+      mlog("ddwaf result key is null")
+      continue;
+    }
+
+    if (length == EVENTS_LEN && memcmp(key, "events", EVENTS_LEN) == 0) {
+      events = child;
+    } else if (length == ACTIONS_LEN && memcmp(key, "actions", ACTIONS_LEN) == 0) {
+      actions = child;
+    } else if (length == ATTRIBUTES_LEN && memcmp(key, "attributes", ATTRIBUTES_LEN) == 0) {
+      attributes = child;
+    } else if (length == KEEP_LEN && memcmp(key, "keep", KEEP_LEN) == 0) {
+      keep = child;
+    } else if (length == DURATION_LEN && memcmp(key, "duration", DURATION_LEN) == 0) {
+      duration = child;
+    } else if (length == TIMEOUT_LEN && memcmp(key, "timeout", TIMEOUT_LEN) == 0) {
+      run_timeout = child;
+    }
   }
 
-  if (ddwaf_object_size(&result.derivatives)) {
-    res.Set("derivatives", from_ddwaf_object(&result.derivatives, env));
+  mlog("Set timeout");
+  if (run_timeout && run_timeout->type == DDWAF_OBJ_BOOL) {
+    res.Set("timeout", Napi::Boolean::New(env, run_timeout->boolean));
+  }
+
+  if (duration && duration->type == DDWAF_OBJ_UNSIGNED && duration->uintValue > 0) {
+    mlog("Set duration");
+    res.Set("duration", Napi::Number::New(env, duration->uintValue));
+  }
+
+  if (attributes && ddwaf_object_size(attributes) > 0) {
+    mlog("Set attributes");
+    res.Set("attributes", from_ddwaf_object(attributes, env));
   }
 
   if (code == DDWAF_MATCH) {
+    mlog("ddwaf result is a match")
     res.Set("status", Napi::String::New(env, "match"));
-    res.Set("events", from_ddwaf_object(&result.events, env));
-    res.Set("actions", from_ddwaf_object(&result.actions, env));
+
+    if (events) {
+      mlog("Set events")
+      res.Set("events", from_ddwaf_object(events, env));
+    }
+
+    if (actions) {
+      mlog("Set actions")
+      res.Set("actions", from_ddwaf_object(actions, env));
+    }
   }
 
-  ddwaf_result_free(&result);
+  if (keep && keep->type == DDWAF_OBJ_BOOL) {
+    mlog("Set keep")
+    res.Set("keep", Napi::Boolean::New(env, keep->boolean));
+  }
+
+  ddwaf_object_free(&result);
 
   return res;
 }
