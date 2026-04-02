@@ -34,7 +34,7 @@
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^5.0.0",
     "mocha": "^11.7.5",
-    "node-addon-api": "^6.1.0",
+    "node-addon-api": "^8.7.0",
     "tar": "^6.1.11"
   },
   "dependencies": {
