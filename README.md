@@ -27,3 +27,4 @@ Therefore, unsupported platforms include:
 Please feel free to [contact support][support] if you would like to request support for a new platform.
 
 [support]: https://docs.datadoghq.com/help
+
