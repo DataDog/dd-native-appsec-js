@@ -51,5 +51,19 @@
     "LICENSE",
     "LICENSE-3rdparty.csv",
     "prebuilds/**/*"
-  ]
+  ],
+  "overrides": {
+    "eslint": {
+      "brace-expansion": "^1.1.15"
+    },
+    "mocha": {
+      "js-yaml": "^4.2.0"
+    },
+    "eslint-plugin-import": {
+      "brace-expansion": "^1.1.15"
+    },
+    "eslint-plugin-node": {
+      "brace-expansion": "^1.1.15"
+    }
+  }
 }
