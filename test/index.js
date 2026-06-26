@@ -12,6 +12,19 @@ const processor = require('./processor.json')
 
 const TIMEOUT = 9999e3
 
+describe('package manifest', () => {
+  it('declares no npm build lifecycle scripts (Yarn Berry YN0007)', () => {
+    const scripts = pkg.scripts || {}
+    const hooks = ['preinstall', 'install', 'postinstall']
+    const present = hooks.filter((name) => scripts[name] !== undefined)
+    assert.deepStrictEqual(
+      present,
+      [],
+      'package.json must not declare npm build lifecycle scripts (they trigger Yarn Berry YN0007)'
+    )
+  })
+})
+
 describe('DDWAF', () => {
   it('should return the version', () => {
     const v = DDWAF.version()
