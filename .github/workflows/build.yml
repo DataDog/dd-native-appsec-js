@@ -24,8 +24,9 @@ jobs:
 
   build:
     needs: download-libddwaf
-    uses: Datadog/action-prebuildify/.github/workflows/build.yml@main
+    uses: Datadog/action-prebuildify/.github/workflows/build.yml@BridgeAR/2026-07-22-preserve-artifact-directories
     with:
+      artifact-name: libddwaf
       cache: true
       napi: true
       package-manager: 'npm'
