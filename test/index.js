@@ -23,6 +23,10 @@ describe('package manifest', () => {
       'package.json must not declare npm build lifecycle scripts (they trigger Yarn Berry YN0007)'
     )
   })
+
+  it('opts out of npm implicit node-gyp rebuilds', () => {
+    assert.strictEqual(pkg.gypfile, false)
+  })
 })
 
 describe('DDWAF', () => {
