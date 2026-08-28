@@ -5,6 +5,7 @@
 #include <math.h>
 #include <napi.h>
 #include <napi-inl.h>
+#include <js_native_api.h>
 #include <ddwaf.h>
 
 #include <limits>
@@ -104,7 +105,22 @@ ddwaf_object* to_ddwaf_object_object(
     }
   }
 
-  Napi::Array properties = obj.GetPropertyNames();
+
+  napi_value result;
+  napi_status status = napi_get_all_property_names(env,
+                            obj,
+                            napi_key_own_only,
+                            napi_key_skip_symbols,
+                            napi_key_keep_numbers,
+                            &result);
+
+  if ((status) != napi_ok) {
+    mlog("Error getting object properties");
+    return nullptr;
+  }
+
+  Napi::Array properties = Napi::Array(env, result);
+
   uint32_t len = properties.Length();
   if (lim && len > DDWAF_MAX_CONTAINER_SIZE) {
     if (metrics) {
@@ -127,11 +143,7 @@ ddwaf_object* to_ddwaf_object_object(
   for (uint32_t i = 0; i < len; ++i) {
     mlog("Getting properties");
     Napi::Value keyV = properties.Get(i);
-    if (!obj.HasOwnProperty(keyV) || !keyV.IsString()) {
-      // We avoid inherited properties here.
-      // If the key is not a String, well this is weird
-      continue;
-    }
+
     std::string key = keyV.ToString().Utf8Value();
     Napi::Value valV = obj.Get(keyV);
     mlog("Looping into ToPWArgs");
