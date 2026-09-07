@@ -51,43 +51,5 @@
     "LICENSE",
     "LICENSE-3rdparty.csv",
     "prebuilds/**/*"
-  ],
-  "overrides": {
-    "eslint-plugin-import": {
-      "minimatch": {
-        "brace-expansion": "^1.1.18"
-      }
-    },
-    "eslint-plugin-node": {
-      "minimatch": {
-        "brace-expansion": "^1.1.18"
-      }
-    },
-    "eslint": {
-      "@eslint/eslintrc": {
-        "minimatch": {
-          "brace-expansion": "^1.1.18"
-        }
-      },
-      "@humanwhocodes/config-array": {
-        "minimatch": {
-          "brace-expansion": "^1.1.18"
-        }
-      },
-      "file-entry-cache": {
-        "flat-cache": {
-          "rimraf": {
-            "glob": {
-              "minimatch": {
-                "brace-expansion": "^1.1.18"
-              }
-            }
-          }
-        }
-      },
-      "minimatch": {
-        "brace-expansion": "^1.1.18"
-      }
-    }
-  }
+  ]
 }
