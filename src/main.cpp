@@ -200,6 +200,9 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
     LSTRARG(config_path.c_str()),
     &update, &diagnostics);
 
+  // The caller owns the input config even when the builder rejects it.
+  ddwaf_object_free(&update);
+
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
   info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
 
@@ -212,7 +215,6 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
 
   mlog("Update DDWAF instance");
   ddwaf_handle updated_handle = ddwaf_builder_build_instance(this->_builder);
-  ddwaf_object_free(&update);
 
   if (updated_handle != nullptr) {
     mlog("New DDWAF updated instance")
