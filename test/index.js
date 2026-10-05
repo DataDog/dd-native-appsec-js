@@ -205,6 +205,49 @@ describe('DDWAF', () => {
         assert.strictEqual(waf.disposed, false)
       })
 
+      for (const section of ['rules', 'custom_rules']) {
+        it(`should preserve diagnostics and recover after repeated rejected ${section} updates`, () => {
+          const waf = new DDWAF(rules, 'recommended')
+          const knownAddresses = new Set(waf.knownAddresses)
+          const knownActions = new Set(waf.knownActions)
+          const invalidRule = rules.rules.find(rule => rule.id === 'invalid_2')
+          let context
+
+          try {
+            for (let i = 0; i < 3; i++) {
+              const id = `invalid_update_${i}`
+              const config = { [section]: [{ ...invalidRule, id }] }
+
+              assert.strictEqual(waf.createOrUpdateConfig(config, 'config/update'), false)
+              assert.deepStrictEqual(waf.diagnostics[section], {
+                loaded: [],
+                failed: [id],
+                skipped: [],
+                errors: { 'invalid regular expression: *': [id] },
+                warnings: {}
+              })
+              assert.deepStrictEqual(waf.configPaths, ['recommended'])
+              assert.deepStrictEqual(waf.knownAddresses, knownAddresses)
+              assert.deepStrictEqual(waf.knownActions, knownActions)
+              assert.strictEqual(waf.disposed, false)
+            }
+
+            context = waf.createContext()
+            const result = context.run({ persistent: { value_attack: 'attack' } }, TIMEOUT)
+            assert.strictEqual(result.timeout, false)
+            assert.strictEqual(result.status, 'match')
+
+            const validRule = { ...rules.rules.find(rule => rule.id === 'value_matchall'), id: 'valid_update' }
+            assert.strictEqual(waf.createOrUpdateConfig({ rules: [validRule] }, 'config/update'), true)
+            assert.ok(waf.configPaths.includes('config/update'))
+            assert.deepStrictEqual(waf.diagnostics.rules.loaded, ['valid_update'])
+          } finally {
+            if (context) context.dispose()
+            waf.dispose()
+          }
+        })
+      }
+
       it('should keep functional handle after updating an invalid configuration', () => {
         const waf = new DDWAF(rules, 'recommended')
         waf.createOrUpdateConfig(brokenConfig, 'config/update')
