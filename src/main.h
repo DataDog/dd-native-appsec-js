@@ -6,23 +6,19 @@
 #define SRC_MAIN_H_
 #include <napi.h>
 #include <ddwaf.h>
-#include "src/metrics.h"
 
-#define LSTRARG(value) value, static_cast<uint32_t>(strlen(value))
-
-// TODO(@vdeturckheim): logs with ddwaf_set_log_cb
-// TODO(@vdeturckheim): fix issue when used with workers
+struct AddonData {
+    Napi::FunctionReference context_constructor;
+    Napi::FunctionReference subcontext_constructor;
+};
 
 class DDWAF : public Napi::ObjectWrap<DDWAF> {
  public:
-    // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
     static Napi::Value version(const Napi::CallbackInfo& info);
 
-    // JS constructor
     explicit DDWAF(const Napi::CallbackInfo& info);
 
-    // JS instance methods
     Napi::Value update_config(const Napi::CallbackInfo& info);
     Napi::Value remove_config(const Napi::CallbackInfo& info);
     Napi::Value GetConfigPaths(const Napi::CallbackInfo& info);
@@ -34,32 +30,52 @@ class DDWAF : public Napi::ObjectWrap<DDWAF> {
  private:
     void update_known_addresses(const Napi::CallbackInfo& info);
     void update_known_actions(const Napi::CallbackInfo& info);
+    void rebuild_instance();
 
-    bool _disposed;
-    ddwaf_builder _builder;
-    ddwaf_handle _handle;
+    bool _disposed{true};
+    ddwaf_builder _builder{nullptr};
+    ddwaf_handle _handle{nullptr};
 };
 
 class DDWAFContext : public Napi::ObjectWrap<DDWAFContext> {
  public:
-    // Static JS methods
     static Napi::Object Init(Napi::Env env, Napi::Object exports);
 
-    // JS constructor
     explicit DDWAFContext(const Napi::CallbackInfo& info);
 
-    // JS instance methods
+    Napi::Value run(const Napi::CallbackInfo& info);
+    Napi::Value createSubcontext(const Napi::CallbackInfo& info);
+    Napi::Value GetDisposed(const Napi::CallbackInfo& info);
+    void dispose(const Napi::CallbackInfo& info);
+    void Finalize(Napi::Env env);
+
+    bool init(ddwaf_handle handle);
+
+ private:
+    bool _disposed{true};
+    ddwaf_context _context{nullptr};
+    ddwaf_allocator _alloc{nullptr};
+};
+
+// A subcontext inherits parent data while keeping its own data and side effects local.
+// It shares ownership of the ruleset and parent store, but not the parent itself, so either may be destroyed first.
+// The parent must be alive when the subcontext is created.
+class DDWAFSubcontext : public Napi::ObjectWrap<DDWAFSubcontext> {
+ public:
+    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
+    explicit DDWAFSubcontext(const Napi::CallbackInfo& info);
+
     Napi::Value run(const Napi::CallbackInfo& info);
     Napi::Value GetDisposed(const Napi::CallbackInfo& info);
     void dispose(const Napi::CallbackInfo& info);
     void Finalize(Napi::Env env);
 
-    // C++ only instance method
-    bool init(ddwaf_handle handle);
+    bool init(ddwaf_context context, ddwaf_allocator alloc);
 
  private:
-    bool _disposed;
-    ddwaf_context _context;
-    WAFTruncationMetrics _metrics;
+    bool _disposed{true};
+    ddwaf_subcontext _subcontext{nullptr};
+    ddwaf_allocator _alloc{nullptr};
 };
 #endif  // SRC_MAIN_H_
