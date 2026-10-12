@@ -11,8 +11,12 @@ type diagnosticsInfo = {
   },
   loaded: string[],
   failed: string[],
+  skipped?: string[],
   errors: {
     [errorString: string]: string[]
+  },
+  warnings?: {
+    [warningString: string]: string[]
   }
 }
 
@@ -29,26 +33,44 @@ type TruncationMetrics = {
 }
 
 type result = {
-  timeout: boolean;
+  timeout?: boolean;
   duration?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
-  status?: 'match'; // TODO: remove this if new statuses are never added
-  actions?: object[];
+  /**
+   * Since libddwaf 2.0 this is also set when only attributes or actions were
+   * produced, so it no longer implies that a rule matched.
+   * Test `events.length` rather than `status` to detect an attack.
+   */
+  status?: 'match';
+  actions?: {
+    [actionType: string]: {
+      [parameter: string]: string | number | boolean
+    }
+  };
   attributes?: object;
-  metrics?: TruncationMetrics;
+  metrics: TruncationMetrics;
   errorCode?: number;
   keep?: boolean;
+  evaluated?: number;
 }
 
-type payload = {
-  persistent?: object,
-  ephemeral?: object
+/**
+ * Evaluates data which must not persist in the parent context. It inherits the
+ * data already provided to that context, but its own data and side effects stay
+ * local to it. Replaces the `ephemeral` payload of previous versions.
+ */
+declare class DDWAFSubcontext {
+  readonly disposed: boolean;
+
+  run(data: object, timeout: number): result;
+  dispose(): void;
 }
 
 declare class DDWAFContext {
   readonly disposed: boolean;
 
-  run(payload: payload, timeout: number): result;
+  run(data: object, timeout: number): result;
+  createSubcontext(): DDWAFSubcontext;
   dispose(): void;
 }
 
@@ -67,7 +89,8 @@ export class DDWAF {
     rules_override?: diagnosticsResult,
     rules_data?: diagnosticsResult,
     processors?: diagnosticsResult,
-    actions?: diagnosticsResult
+    actions?: diagnosticsResult,
+    scanners?: diagnosticsResult
   };
 
   readonly knownAddresses: Set<string>;
@@ -81,6 +104,11 @@ export class DDWAF {
   createOrUpdateConfig(config: rules, path: string): boolean;
   removeConfig(path: string): boolean;
 
-  createContext(): DDWAFContext;
+  /**
+   * Returns `null` when the instance currently has no ruleset, which is what
+   * removing every configuration produces. Add a configuration back to make it
+   * usable again.
+   */
+  createContext(): DDWAFContext | null;
   dispose(): void;
 }

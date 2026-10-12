@@ -8,13 +8,16 @@
 #include <cstdio>
 
 #if DEBUG == 1
-#define mlog(X, ...) {                                  \
-    std::fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__);  \
-    std::fprintf(stderr, X, ##__VA_ARGS__);                  \
-    std::fprintf(stderr, "\n");                  \
-}
+#define mlog(X, ...)                                        \
+  {                                                         \
+    std::fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); \
+    std::fprintf(stderr, X, ##__VA_ARGS__);                 \
+    std::fprintf(stderr, "\n");                             \
+  }
 #else
-#define mlog(X, ...) { }
+#define mlog(X, ...) \
+  {                  \
+  }
 #endif
 
 #endif  // SRC_LOG_H_

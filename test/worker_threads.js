@@ -17,9 +17,7 @@ describe('worker threads', () => {
     const context = waf.createContext()
 
     const result1 = context.run({
-      persistent: {
-        value_attack: 'whatev'
-      }
+      value_attack: 'whatev'
     }, 1e9)
     assert.strictEqual(result1?.status, 'match')
 
@@ -29,9 +27,7 @@ describe('worker threads', () => {
       assert.strictEqual(result2?.status, 'match')
 
       const result3 = context.run({
-        persistent: {
-          key_attack: { key: 'whatev' }
-        }
+        key_attack: { key: 'whatev' }
       }, 1e9)
       assert.strictEqual(result3?.status, 'match')
 
@@ -51,9 +47,7 @@ describe('worker threads', () => {
       const context = waf.createContext()
 
       const result2 = context.run({
-        persistent: {
-          value_attack: 'whatev'
-        }
+        value_attack: 'whatev'
       }, 1e9)
       assert.strictEqual(result2?.status, 'match')
 
