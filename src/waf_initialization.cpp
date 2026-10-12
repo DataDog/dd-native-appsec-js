@@ -2,7 +2,7 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION  8
+#define NAPI_VERSION 8
 #include <napi.h>
 #include <ddwaf.h>
 
@@ -64,26 +64,17 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
     return;
   }
 
-  if (!validate_obfuscator_config(&rules)) {
-    ddwaf_object_destroy(&rules, alloc);
-    ddwaf_builder_destroy(builder);
-    Napi::Error::New(env, "Invalid obfuscator regular expression").ThrowAsJavaScriptException();
-    return;
-  }
-
   ddwaf_object diagnostics;
   ddwaf_object_set_invalid(&diagnostics);
 
   bool result = ddwaf_builder_add_or_update_config(builder, config_path.data(),
-                                                   static_cast<uint32_t>(config_path.length()),
-                                                   &rules, &diagnostics);
+                                                   static_cast<uint32_t>(config_path.length()), &rules, &diagnostics);
 
   // The builder copies the configuration, so the source is safe to release.
   ddwaf_object_destroy(&rules, alloc);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
-  bool diagnostics_published = define_own_property(
-    info.This().As<Napi::Object>(), "diagnostics", diagnostics_js);
+  bool diagnostics_published = define_own_property(info.This().As<Napi::Object>(), "diagnostics", diagnostics_js);
 
   ddwaf_object_destroy(&diagnostics, alloc);
 

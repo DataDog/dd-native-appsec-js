@@ -64,18 +64,11 @@ shared time budget in the tracer. The native binding does not infer those polici
 ## Conversion and configuration limits
 
 Evaluation data is limited to 4096 bytes per string, 256 entries per container,
-20 levels of nesting, 5120 nodes and 1 MiB of retained key/value bytes per call.
-String truncation preserves complete UTF-8 code points; byte buffers retain their
-raw prefix. Truncation metrics report original sizes and whether the cumulative
-node or byte limit was reached. dd-trace-js owns exporting those measurements.
-Conversion follows property order and stops when either cumulative budget is
-exhausted, so later addresses may be omitted. The flags report incomplete conversion.
+and 20 levels of nesting. String truncation preserves complete UTF-8 code points.
+Truncation metrics report original sizes. dd-trace-js owns exporting those measurements.
 
-Configuration is not subject to the request node/byte budgets. libddwaf 2.1's
+Configuration containers are not subject to the request size limit. libddwaf 2.1's
 large-container APIs support configuration arrays and maps beyond 65535 entries.
 
-Obfuscator regex validation uses a temporary scanner because libddwaf 2.1.0 does
-not expose obfuscator compilation failures in diagnostics. This configuration-only
-workaround should be replaced when upstream provides those diagnostics.
-An update rejected by this validation returns `false` and replaces `diagnostics`
-with an empty object, since the update never reached the builder.
+Obfuscator configuration is passed directly to libddwaf. The binding reports the
+builder result and diagnostics without additional regex validation.

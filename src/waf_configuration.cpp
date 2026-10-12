@@ -2,7 +2,7 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION  8
+#define NAPI_VERSION 8
 #include <napi.h>
 #include <ddwaf.h>
 
@@ -84,23 +84,12 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
     return env.Undefined();
   }
 
-  if (!validate_obfuscator_config(&update)) {
-    ddwaf_object_destroy(&update, alloc);
-    // No builder diagnostics exist for a validation failure; discard the previous update's.
-    if (!define_own_property(info.This().As<Napi::Object>(), "diagnostics", Napi::Object::New(env))) {
-      return env.Undefined();
-    }
-    return Napi::Boolean::New(env, false);
-  }
-
   ddwaf_object diagnostics;
   ddwaf_object_set_invalid(&diagnostics);
 
   mlog("Applying new config to builder");
   bool update_result = ddwaf_builder_add_or_update_config(
-    this->_builder,
-    config_path.data(), static_cast<uint32_t>(config_path.length()),
-    &update, &diagnostics);
+      this->_builder, config_path.data(), static_cast<uint32_t>(config_path.length()), &update, &diagnostics);
 
   // The builder copies the configuration, so the source is always safe to release.
   ddwaf_object_destroy(&update, alloc);
@@ -109,8 +98,7 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
   this->rebuild_instance();
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
-  bool diagnostics_published = define_own_property(
-    info.This().As<Napi::Object>(), "diagnostics", diagnostics_js);
+  bool diagnostics_published = define_own_property(info.This().As<Napi::Object>(), "diagnostics", diagnostics_js);
 
   ddwaf_object_destroy(&diagnostics, alloc);
 
@@ -162,8 +150,8 @@ Napi::Value DDWAF::remove_config(const Napi::CallbackInfo& info) {
   }
 
   mlog("Applying removed config to builder");
-  bool remove_result = ddwaf_builder_remove_config(this->_builder, config_path.data(),
-                                                   static_cast<uint32_t>(config_path.length()));
+  bool remove_result =
+      ddwaf_builder_remove_config(this->_builder, config_path.data(), static_cast<uint32_t>(config_path.length()));
 
   if (!remove_result) {
     mlog("DDWAF Builder remove config has failed");
@@ -224,8 +212,7 @@ Napi::Value DDWAF::GetConfigPaths(const Napi::CallbackInfo& info) {
     }
 
     // Skip the internal obfuscator configuration.
-    if (length == OBFUSCATOR_CONFIG_PATH_LEN &&
-        memcmp(path, OBFUSCATOR_CONFIG_PATH, OBFUSCATOR_CONFIG_PATH_LEN) == 0) {
+    if (length == OBFUSCATOR_CONFIG_PATH_LEN && memcmp(path, OBFUSCATOR_CONFIG_PATH, OBFUSCATOR_CONFIG_PATH_LEN) == 0) {
       continue;
     }
 
@@ -241,8 +228,8 @@ Napi::Value DDWAF::GetConfigPaths(const Napi::CallbackInfo& info) {
   return config_paths_js;
 }
 
-static void set_string_set(const Napi::CallbackInfo& info, const char* property,
-                           const char* const* values, uint32_t size) {
+static void set_string_set(const Napi::CallbackInfo& info, const char* property, const char* const* values,
+                           uint32_t size) {
   std::vector<std::string> owned_values;
   owned_values.reserve(size);
   for (uint32_t i = 0; i < size; ++i) {
@@ -295,18 +282,14 @@ static void set_string_set(const Napi::CallbackInfo& info, const char* property,
 
 void DDWAF::update_known_addresses(const Napi::CallbackInfo& info) {
   uint32_t size = 0;
-  const char* const* known_addresses = this->_handle == nullptr
-    ? nullptr
-    : ddwaf_known_addresses(this->_handle, &size);
+  const char* const* known_addresses = this->_handle == nullptr ? nullptr : ddwaf_known_addresses(this->_handle, &size);
 
   set_string_set(info, "knownAddresses", known_addresses, size);
 }
 
 void DDWAF::update_known_actions(const Napi::CallbackInfo& info) {
   uint32_t size = 0;
-  const char* const* known_actions = this->_handle == nullptr
-    ? nullptr
-    : ddwaf_known_actions(this->_handle, &size);
+  const char* const* known_actions = this->_handle == nullptr ? nullptr : ddwaf_known_actions(this->_handle, &size);
 
   set_string_set(info, "knownActions", known_actions, size);
 }

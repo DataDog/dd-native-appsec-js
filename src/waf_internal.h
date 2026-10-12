@@ -18,6 +18,5 @@ constexpr size_t OBFUSCATOR_CONFIG_PATH_LEN = sizeof(OBFUSCATOR_CONFIG_PATH) - 1
 
 bool validate_config_path(Napi::Env env, const std::string& path);
 bool configure_obfuscator(const Napi::CallbackInfo& info, ddwaf_builder builder);
-bool validate_obfuscator_config(const ddwaf_object* config);
 
 #endif  // SRC_WAF_INTERNAL_H_
