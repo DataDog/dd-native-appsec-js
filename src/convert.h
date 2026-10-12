@@ -45,19 +45,11 @@ class ObjectStack {
 
 // Marshals a JS value into writable storage for one ddwaf_object. Nested allocations use alloc;
 // destroy the result with ddwaf_object_destroy(object, alloc) unless ownership transfers to libddwaf.
-ddwaf_object* to_ddwaf_object(
-  ddwaf_object *object,
-  Napi::Env env,
-  Napi::Value val,
-  int depth,
-  bool lim,
-  bool ignoreToJson,
-  ObjectStack *stack,
-  WAFTruncationMetrics *metrics,
-  ddwaf_allocator alloc
-);
+ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value val, int depth, bool lim,
+                              bool ignoreToJson, ObjectStack* stack, WAFTruncationMetrics* metrics,
+                              ddwaf_allocator alloc);
 
-Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env);
+Napi::Value from_ddwaf_object(const ddwaf_object* object, Napi::Env env);
 bool define_own_property(Napi::Object target, const Napi::Name& name, Napi::Value value);
 bool define_own_property(Napi::Object target, const char* name, Napi::Value value);
 bool define_own_property(Napi::Object target, uint32_t index, Napi::Value value);

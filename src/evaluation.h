@@ -12,25 +12,12 @@
 
 #include "src/metrics.h"
 
-bool validate_run_args(const Napi::CallbackInfo& info, const char* disposed_message,
-                       bool disposed, int64_t* timeout);
+bool validate_run_args(const Napi::CallbackInfo& info, const char* disposed_message, bool disposed, int64_t* timeout);
 
-Napi::Object eval_and_build_result(
-  Napi::Env env,
-  ddwaf_object* input,
-  ddwaf_context target,
-  ddwaf_allocator alloc,
-  WAFTruncationMetrics* metrics,
-  uint64_t timeout
-);
+Napi::Object eval_and_build_result(Napi::Env env, ddwaf_object* input, ddwaf_context target, ddwaf_allocator alloc,
+                                   WAFTruncationMetrics* metrics, uint64_t timeout);
 
-Napi::Object eval_and_build_result(
-  Napi::Env env,
-  ddwaf_object* input,
-  ddwaf_subcontext target,
-  ddwaf_allocator alloc,
-  WAFTruncationMetrics* metrics,
-  uint64_t timeout
-);
+Napi::Object eval_and_build_result(Napi::Env env, ddwaf_object* input, ddwaf_subcontext target, ddwaf_allocator alloc,
+                                   WAFTruncationMetrics* metrics, uint64_t timeout);
 
 #endif  // SRC_EVALUATION_H_

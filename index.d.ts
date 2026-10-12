@@ -2,53 +2,56 @@
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
  * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
  **/
-type Rules = Readonly<Record<string, unknown>>;
+type rules = object;
 
-type DiagnosticsMessages = Readonly<Record<string, readonly string[]>>;
-
-type DiagnosticsResult = {
-  readonly addresses?: {
-    readonly optional: readonly string[];
-    readonly required: readonly string[];
-  };
-  readonly loaded?: readonly string[];
-  readonly failed?: readonly string[];
-  readonly skipped?: readonly string[];
-  readonly errors?: DiagnosticsMessages;
-  readonly warnings?: DiagnosticsMessages;
-  readonly error?: string;
-};
-
-type TruncationMetrics = {
-  readonly maxTruncatedString?: number;
-  readonly maxTruncatedContainerSize?: number;
-  readonly maxTruncatedContainerDepth?: number;
-  /** Set when the cumulative node budget stopped the conversion. */
-  readonly truncatedByNodeLimit?: true;
-  /** Set when the cumulative retained byte budget (keys and truncated values) stopped conversion. */
-  readonly truncatedByByteLimit?: true;
+type diagnosticsInfo = {
+  addresses?: {
+    optional: string[],
+    required: string[]
+  },
+  loaded: string[],
+  failed: string[],
+  skipped?: string[],
+  errors: {
+    [errorString: string]: string[]
+  },
+  warnings?: {
+    [warningString: string]: string[]
+  }
 }
 
-type ActionParameters = Readonly<Record<string, string | number | boolean>>;
-type Actions = Readonly<Record<string, ActionParameters>>;
-type Event = Readonly<Record<string, unknown>>;
+type diagnosticsError = {
+  error: string
+}
 
-type Result = {
-  readonly timeout?: boolean;
-  readonly duration?: number;
-  readonly events?: readonly Event[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
+type diagnosticsResult = diagnosticsInfo | diagnosticsError
+
+type TruncationMetrics = {
+  maxTruncatedString?: number;
+  maxTruncatedContainerSize?: number;
+  maxTruncatedContainerDepth?: number;
+}
+
+type result = {
+  timeout?: boolean;
+  duration?: number;
+  events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
   /**
    * Since libddwaf 2.0 this is also set when only attributes or actions were
    * produced, so it no longer implies that a rule matched.
    * Test `events.length` rather than `status` to detect an attack.
    */
-  readonly status?: 'match';
-  readonly actions?: Actions;
-  readonly attributes?: Readonly<Record<string, unknown>>;
-  readonly metrics: TruncationMetrics;
-  readonly errorCode?: number;
-  readonly keep?: boolean;
-  readonly evaluated?: number;
+  status?: 'match';
+  actions?: {
+    [actionType: string]: {
+      [parameter: string]: string | number | boolean
+    }
+  };
+  attributes?: object;
+  metrics: TruncationMetrics;
+  errorCode?: number;
+  keep?: boolean;
+  evaluated?: number;
 }
 
 /**
@@ -59,14 +62,14 @@ type Result = {
 declare class DDWAFSubcontext {
   readonly disposed: boolean;
 
-  run(data: Readonly<Record<string, unknown>>, timeout: number): Result;
+  run(data: object, timeout: number): result;
   dispose(): void;
 }
 
 declare class DDWAFContext {
   readonly disposed: boolean;
 
-  run(data: Readonly<Record<string, unknown>>, timeout: number): Result;
+  run(data: object, timeout: number): result;
   createSubcontext(): DDWAFSubcontext;
   dispose(): void;
 }
@@ -76,29 +79,29 @@ export class DDWAF {
 
   readonly disposed: boolean;
 
-  readonly configPaths: readonly string[];
+  readonly configPaths: string[];
 
   readonly diagnostics: {
-    readonly ruleset_version?: string;
-    readonly rules?: DiagnosticsResult;
-    readonly custom_rules?: DiagnosticsResult;
-    readonly exclusions?: DiagnosticsResult;
-    readonly rules_override?: DiagnosticsResult;
-    readonly rules_data?: DiagnosticsResult;
-    readonly processors?: DiagnosticsResult;
-    readonly actions?: DiagnosticsResult;
-    readonly scanners?: DiagnosticsResult;
+    ruleset_version?: string,
+    rules?: diagnosticsResult,
+    custom_rules?: diagnosticsResult,
+    exclusions?: diagnosticsResult,
+    rules_override?: diagnosticsResult,
+    rules_data?: diagnosticsResult,
+    processors?: diagnosticsResult,
+    actions?: diagnosticsResult,
+    scanners?: diagnosticsResult
   };
 
   readonly knownAddresses: Set<string>;
   readonly knownActions: Set<string>;
 
-  constructor(rules: Rules, rulesPath: string, config?: {
-    readonly obfuscatorKeyRegex?: string;
-    readonly obfuscatorValueRegex?: string;
+  constructor(rules: rules, rulesPath: string, config?: {
+    obfuscatorKeyRegex?: string,
+    obfuscatorValueRegex?: string
   });
 
-  createOrUpdateConfig(config: Rules, path: string): boolean;
+  createOrUpdateConfig(config: rules, path: string): boolean;
   removeConfig(path: string): boolean;
 
   /**

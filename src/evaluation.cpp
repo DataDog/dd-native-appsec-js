@@ -2,7 +2,7 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION  8
+#define NAPI_VERSION 8
 #include <napi.h>
 #include <ddwaf.h>
 
@@ -30,25 +30,19 @@ struct DDWAFObjectGuard {
   }
 };
 
-static DDWAF_RET_CODE do_eval(ddwaf_context target, ddwaf_object* data, ddwaf_allocator alloc,
-                              ddwaf_object* result, uint64_t timeout) {
+static DDWAF_RET_CODE do_eval(ddwaf_context target, ddwaf_object* data, ddwaf_allocator alloc, ddwaf_object* result,
+                              uint64_t timeout) {
   return ddwaf_context_eval(target, data, alloc, result, timeout);
 }
 
-static DDWAF_RET_CODE do_eval(ddwaf_subcontext target, ddwaf_object* data, ddwaf_allocator alloc,
-                              ddwaf_object* result, uint64_t timeout) {
+static DDWAF_RET_CODE do_eval(ddwaf_subcontext target, ddwaf_object* data, ddwaf_allocator alloc, ddwaf_object* result,
+                              uint64_t timeout) {
   return ddwaf_subcontext_eval(target, data, alloc, result, timeout);
 }
 
 template <typename T>
-static Napi::Object eval_and_build_result_impl(
-  Napi::Env env,
-  ddwaf_object* input,
-  T target,
-  ddwaf_allocator alloc,
-  WAFTruncationMetrics* metrics,
-  uint64_t timeout
-) {
+static Napi::Object eval_and_build_result_impl(Napi::Env env, ddwaf_object* input, T target, ddwaf_allocator alloc,
+                                               WAFTruncationMetrics* metrics, uint64_t timeout) {
   // Keep the result destroyable when libddwaf does not write it.
   ddwaf_object result;
   ddwaf_object_set_invalid(&result);
@@ -99,18 +93,6 @@ static Napi::Object eval_and_build_result_impl(
     }
   }
 
-  if (metrics->truncated_by_node_limit) {
-    if (!define_own_property(metrics_js, "truncatedByNodeLimit", Napi::Boolean::New(env, true))) {
-      return res;
-    }
-  }
-
-  if (metrics->truncated_by_byte_limit) {
-    if (!define_own_property(metrics_js, "truncatedByByteLimit", Napi::Boolean::New(env, true))) {
-      return res;
-    }
-  }
-
   switch (code) {
     case DDWAF_ERR_INTERNAL:
     case DDWAF_ERR_INVALID_OBJECT:
@@ -123,9 +105,8 @@ static Napi::Object eval_and_build_result_impl(
       break;
   }
 
-  const ddwaf_object *run_timeout = nullptr, *duration = nullptr, *attributes = nullptr,
-                     *events = nullptr, *actions = nullptr, *keep = nullptr,
-                     *evaluated = nullptr;
+  const ddwaf_object *run_timeout = nullptr, *duration = nullptr, *attributes = nullptr, *events = nullptr,
+                     *actions = nullptr, *keep = nullptr, *evaluated = nullptr;
 
   size_t result_size = ddwaf_object_get_size(&result);
   for (size_t i = 0; i < result_size; ++i) {
@@ -160,8 +141,7 @@ static Napi::Object eval_and_build_result_impl(
 
   if (run_timeout != nullptr && ddwaf_object_is_bool(run_timeout)) {
     mlog("Set timeout");
-    if (!define_own_property(
-          res, "timeout", Napi::Boolean::New(env, ddwaf_object_get_bool(run_timeout)))) {
+    if (!define_own_property(res, "timeout", Napi::Boolean::New(env, ddwaf_object_get_bool(run_timeout)))) {
       return res;
     }
   }
@@ -213,8 +193,7 @@ static Napi::Object eval_and_build_result_impl(
 
   if (evaluated != nullptr && ddwaf_object_is_unsigned(evaluated)) {
     mlog("Set evaluated")
-    if (!define_own_property(
-          res, "evaluated", Napi::Number::New(env, ddwaf_object_get_unsigned(evaluated)))) {
+    if (!define_own_property(res, "evaluated", Napi::Number::New(env, ddwaf_object_get_unsigned(evaluated)))) {
       return res;
     }
   }
@@ -222,32 +201,19 @@ static Napi::Object eval_and_build_result_impl(
   return res;
 }
 
-Napi::Object eval_and_build_result(
-  Napi::Env env,
-  ddwaf_object* input,
-  ddwaf_context target,
-  ddwaf_allocator alloc,
-  WAFTruncationMetrics* metrics,
-  uint64_t timeout
-) {
+Napi::Object eval_and_build_result(Napi::Env env, ddwaf_object* input, ddwaf_context target, ddwaf_allocator alloc,
+                                   WAFTruncationMetrics* metrics, uint64_t timeout) {
   return eval_and_build_result_impl(env, input, target, alloc, metrics, timeout);
 }
 
-Napi::Object eval_and_build_result(
-  Napi::Env env,
-  ddwaf_object* input,
-  ddwaf_subcontext target,
-  ddwaf_allocator alloc,
-  WAFTruncationMetrics* metrics,
-  uint64_t timeout
-) {
+Napi::Object eval_and_build_result(Napi::Env env, ddwaf_object* input, ddwaf_subcontext target, ddwaf_allocator alloc,
+                                   WAFTruncationMetrics* metrics, uint64_t timeout) {
   return eval_and_build_result_impl(env, input, target, alloc, metrics, timeout);
 }
 
 // Returns false with a pending JS exception when the arguments are invalid, in
 // which case the caller must return without throwing again.
-bool validate_run_args(const Napi::CallbackInfo& info, const char* disposed_message,
-                       bool disposed, int64_t* timeout) {
+bool validate_run_args(const Napi::CallbackInfo& info, const char* disposed_message, bool disposed, int64_t* timeout) {
   Napi::Env env = info.Env();
 
   if (disposed) {

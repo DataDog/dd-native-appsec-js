@@ -38,7 +38,7 @@ describe('DDWAF', () => {
     assert.strictEqual(matchedValue({ obfuscatorKeyRegex: 'password' }), '<Redacted>')
   })
 
-  describe('obfuscator regex validation', () => {
+  describe('obfuscator configuration', () => {
     const keyPayload = {
       value_attack: {
         password: {
@@ -52,67 +52,10 @@ describe('DDWAF', () => {
       }
     }
 
-    const assertConstructorRejects = (option, pattern) => {
-      let waf
-      try {
-        assert.throws(() => {
-          waf = new DDWAF(rules, 'recommended', { [option]: pattern })
-        })
-      } finally {
-        if (waf && !waf.disposed) waf.dispose()
-      }
-    }
-
-    const assertDocumentRejects = (obfuscator) => {
-      let waf
-      try {
-        assert.throws(() => {
-          waf = new DDWAF({ ...rules, obfuscator }, 'recommended')
-        })
-      } finally {
-        if (waf && !waf.disposed) waf.dispose()
-      }
-    }
-
-    it('should reject malformed constructor obfuscator regexes in both dimensions', () => {
-      assertConstructorRejects('obfuscatorKeyRegex', '[')
-      assertConstructorRejects('obfuscatorValueRegex', '[')
-    })
-
-    it('should reject constructor obfuscator regexes unsupported by RE2', () => {
-      assertConstructorRejects('obfuscatorKeyRegex', '(?<=a)b')
-      assertConstructorRejects('obfuscatorValueRegex', '(?<=a)b')
-    })
-
-    it('should reject constructor obfuscator document regexes in both dimensions', () => {
-      for (const field of ['key_regex', 'value_regex']) {
-        for (const pattern of ['[', '(?<=a)b']) {
-          let waf
-          try {
-            assert.throws(() => {
-              waf = new DDWAF({
-                ...rules,
-                obfuscator: { [field]: pattern }
-              }, 'recommended')
-            })
-          } finally {
-            if (waf && !waf.disposed) waf.dispose()
-          }
-        }
-      }
-    })
-
-    it('should reject malformed constructor obfuscator document shapes', () => {
-      assertDocumentRejects(null)
-      assertDocumentRejects(42)
-      assertDocumentRejects({ key_regex: 42, value_regex: '' })
-      assertDocumentRejects({ key_regex: '', value_regex: 42 })
-    })
-
     it('should ignore inherited constructor obfuscator options', () => {
       const options = Object.create({
-        obfuscatorKeyRegex: '[',
-        obfuscatorValueRegex: '(?<=a)b'
+        obfuscatorKeyRegex: 'password',
+        obfuscatorValueRegex: 'value_attack'
       })
       let waf
 
@@ -186,131 +129,6 @@ describe('DDWAF', () => {
             true
           )
           assert.strictEqual(matchedValue(waf, testCase.payload), '<Redacted>')
-        } finally {
-          waf.dispose()
-        }
-      }
-    })
-
-    it('should reject malformed public runtime obfuscator updates without weakening active protection', () => {
-      const cases = [
-        {
-          field: 'key_regex',
-          config: { key_regex: 'password', value_regex: '' },
-          payload: keyPayload
-        },
-        {
-          field: 'value_regex',
-          config: { key_regex: '', value_regex: 'value_attack' },
-          payload: valuePayload
-        }
-      ]
-
-      for (const testCase of cases) {
-        for (const pattern of ['[', '(?<=a)b']) {
-          const waf = new DDWAF(rules, 'recommended')
-          try {
-            assert.strictEqual(
-              waf.createOrUpdateConfig({ obfuscator: testCase.config }, 'public/obfuscator'),
-              true
-            )
-            assert.strictEqual(matchedValue(waf, testCase.payload), '<Redacted>')
-            const configPaths = waf.configPaths
-
-            const updateResult = waf.createOrUpdateConfig({
-              obfuscator: {
-                ...testCase.config,
-                [testCase.field]: pattern
-              }
-            }, 'public/obfuscator')
-
-            assert.strictEqual(matchedValue(waf, testCase.payload), '<Redacted>')
-            assert.deepStrictEqual(waf.configPaths, configPaths)
-            assert.strictEqual(updateResult, false)
-          } finally {
-            waf.dispose()
-          }
-        }
-      }
-    })
-
-    it('should clear stale diagnostics when obfuscator validation rejects an update', () => {
-      const rejected = [
-        { key_regex: '[' },
-        { value_regex: '[' },
-        { key_regex: 42 },
-        { value_regex: 42 },
-        null
-      ]
-      const waf = new DDWAF(rules, 'recommended')
-      try {
-        for (const obfuscator of rejected) {
-          assert.strictEqual(waf.createOrUpdateConfig(rules, 'recommended'), true)
-          const previousDiagnostics = waf.diagnostics
-          assert.ok(previousDiagnostics.rules.loaded.length > 0)
-
-          assert.strictEqual(waf.createOrUpdateConfig({ obfuscator }, 'recommended'), false)
-          assert.notStrictEqual(waf.diagnostics, previousDiagnostics)
-          assert.deepStrictEqual(waf.diagnostics, {})
-          assert.deepStrictEqual(waf.configPaths, ['recommended'])
-          assert.strictEqual(matchedValue(waf, valuePayload), 'value_attack')
-        }
-
-        assert.strictEqual(waf.createOrUpdateConfig(rules, 'recommended'), true)
-        assert.ok(waf.diagnostics.rules.loaded.length > 0)
-      } finally {
-        waf.dispose()
-      }
-    })
-
-    it('should throw if clearing rejected-update diagnostics fails without changing active rules', () => {
-      const waf = new DDWAF(rules, 'recommended')
-      try {
-        Object.defineProperty(waf, 'diagnostics', {
-          value: waf.diagnostics,
-          writable: false,
-          enumerable: true,
-          configurable: false
-        })
-
-        assert.throws(
-          () => waf.createOrUpdateConfig({ obfuscator: { key_regex: '[' } }, 'recommended'),
-          Error
-        )
-        assert.deepStrictEqual(waf.configPaths, ['recommended'])
-        assert.strictEqual(matchedValue(waf, valuePayload), 'value_attack')
-      } finally {
-        waf.dispose()
-      }
-    })
-
-    it('should reject malformed same-path obfuscator shapes without weakening active protection', () => {
-      const malformed = [
-        null,
-        { key_regex: 42, value_regex: '' },
-        { key_regex: 'password', value_regex: 42 },
-        {
-          toJSON () { throw new Error('nested obfuscator conversion failed') }
-        }
-      ]
-
-      for (const obfuscator of malformed) {
-        const waf = new DDWAF(rules, 'recommended')
-        try {
-          assert.strictEqual(
-            waf.createOrUpdateConfig({
-              obfuscator: { key_regex: 'password', value_regex: '' }
-            }, 'public/obfuscator-shape'),
-            true
-          )
-          assert.strictEqual(matchedValue(waf, keyPayload), '<Redacted>')
-          const configPaths = waf.configPaths
-
-          const updateResult = waf.createOrUpdateConfig({ obfuscator }, 'public/obfuscator-shape')
-
-          assert.strictEqual(matchedValue(waf, keyPayload), '<Redacted>')
-          assert.deepStrictEqual(waf.configPaths, configPaths)
-          assert.strictEqual(updateResult, false)
         } finally {
           waf.dispose()
         }

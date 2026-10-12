@@ -149,134 +149,47 @@ describe('ddwaf_object marshalling', () => {
     waf.dispose()
   })
 
-  it('should convert Buffer bytes without invoking instance or prototype toJSON', () => {
+  it('should not reinterpret Buffer and byte-array objects as strings', () => {
     const waf = new DDWAF(rules, 'recommended')
-    const runBuffer = (buffer) => {
-      const context = waf.createContext()
-      try {
-        return context.run({
-          'server.request.headers.no_cookies': buffer
-        }, TIMEOUT)
-      } finally {
-        context.dispose()
-      }
-    }
-
     try {
-      const instanceBuffer = Buffer.from('value_attack')
-      const instanceToJSON = Object.getOwnPropertyDescriptor(instanceBuffer, 'toJSON')
-      let instanceCalls = 0
-      let instanceResult
-      try {
-        Object.defineProperty(instanceBuffer, 'toJSON', {
-          configurable: true,
-          value () {
-            instanceCalls++
-            throw new Error('Buffer instance toJSON must not be called')
-          }
-        })
-        instanceResult = runBuffer(instanceBuffer)
-      } finally {
-        if (instanceToJSON) {
-          Object.defineProperty(instanceBuffer, 'toJSON', instanceToJSON)
-        } else {
-          delete instanceBuffer.toJSON
-        }
-      }
-
-      assert.strictEqual(instanceCalls, 0)
-      assert.strictEqual(instanceResult.status, 'match')
-      assert.strictEqual(instanceResult.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-
-      const prototypeToJSON = Object.getOwnPropertyDescriptor(Buffer.prototype, 'toJSON')
-      let prototypeCalls = 0
-      let prototypeResult
-      try {
-        Object.defineProperty(Buffer.prototype, 'toJSON', {
-          configurable: true,
-          value () {
-            prototypeCalls++
-            throw new Error('Buffer prototype toJSON must not be called')
-          }
-        })
-        prototypeResult = runBuffer(Buffer.from('value_attack'))
-      } finally {
-        Object.defineProperty(Buffer.prototype, 'toJSON', prototypeToJSON)
-      }
-
-      assert.strictEqual(prototypeCalls, 0)
-      assert.strictEqual(prototypeResult.status, 'match')
-      assert.strictEqual(prototypeResult.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-    } finally {
-      waf.dispose()
-    }
-  })
-
-  it('should only convert byte views as raw bytes', () => {
-    const waf = new DDWAF(rules, 'recommended')
-    const runView = (view) => {
-      const context = waf.createContext()
-      try {
-        return context.run({
-          'server.request.headers.no_cookies': view
-        }, TIMEOUT)
-      } finally {
-        context.dispose()
-      }
-    }
-
-    try {
-      for (const view of [
+      for (const value of [
         Buffer.from('value_attack'),
         new Uint8Array(Buffer.from('value_attack')),
         new Uint8ClampedArray(Buffer.from('value_attack'))
       ]) {
-        const result = runView(view)
-        assert.strictEqual(result.status, 'match')
-        assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
+        const context = waf.createContext()
+        try {
+          const result = context.run({ 'server.request.headers.no_cookies': value }, TIMEOUT)
+          assert.strictEqual(result.status, undefined)
+        } finally {
+          context.dispose()
+        }
       }
-
-      const bytes = new Uint8Array(Buffer.from('value_attack'))
-      let toJSONCalls = 0
-      bytes.toJSON = () => {
-        toJSONCalls++
-        throw new Error('Uint8Array toJSON must not be called')
-      }
-      const bytesResult = runView(bytes)
-      assert.strictEqual(toJSONCalls, 0)
-      assert.strictEqual(bytesResult.status, 'match')
-      assert.strictEqual(bytesResult.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-
-      const dataView = new DataView(new Uint8Array(Buffer.from('value_attack')).buffer)
-      let dataViewResult
-      assert.doesNotThrow(() => {
-        dataViewResult = runView(dataView)
-      })
-      assert.strictEqual(dataViewResult.status, undefined)
-
-      const int32View = new Int32Array(new Uint8Array(Buffer.from('value_attack')).buffer)
-      assert.strictEqual(runView(int32View).status, undefined)
-
-      const float64View = new Float64Array(new Uint8Array(Buffer.from('value_attackxxxx')).buffer)
-      assert.strictEqual(runView(float64View).status, undefined)
     } finally {
       waf.dispose()
     }
   })
 
-  it('should report long Buffer byte length as string truncation', () => {
-    const buffer = Buffer.alloc(4097, 0x61)
+  it('should honor toJSON on Buffer and byte-array objects', () => {
     const waf = new DDWAF(rules, 'recommended')
-    let context
-
     try {
-      context = waf.createContext()
-      const result = context.run({ 'server.request.body': buffer }, TIMEOUT)
-
-      assert.strictEqual(result.metrics.maxTruncatedString, buffer.length)
-      assert.strictEqual(result.metrics.maxTruncatedContainerSize, undefined)
+      for (const value of [Buffer.from('ordinary'), new Uint8Array(8), new Uint8ClampedArray(8)]) {
+        let calls = 0
+        value.toJSON = () => {
+          calls++
+          return 'value_attack'
+        }
+        const context = waf.createContext()
+        try {
+          const result = context.run({ 'server.request.headers.no_cookies': value }, TIMEOUT)
+          assert.strictEqual(calls, 1)
+          assert.strictEqual(result.status, 'match')
+          assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
+        } finally {
+          context.dispose()
+        }
+      }
     } finally {
-      if (context) context.dispose()
       waf.dispose()
     }
   })
