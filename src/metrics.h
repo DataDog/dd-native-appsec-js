@@ -8,6 +8,8 @@
 
 #include <napi.h>
 
+#include <cstddef>
+
 struct WAFTruncationMetrics {
   size_t max_truncated_string_length = 0;
   size_t max_truncated_container_size = 0;

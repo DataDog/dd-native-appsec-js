@@ -11,15 +11,21 @@
       "<!@(node -p \"require('./scripts/lib.js').libPath\")"
     ],
     "sources": [
+      "src/context.cpp",
       "src/convert.cpp",
-      "src/main.cpp"
+      "src/evaluation.cpp",
+      "src/main.cpp",
+      "src/obfuscator.cpp",
+      "src/waf_configuration.cpp",
+      "src/waf_initialization.cpp"
     ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "MACOSX_DEPLOYMENT_TARGET": "14.2.1",
     },
     "conditions": [
       ["OS == 'linux'", {
+        "libraries": ["-lm"],
         'ldflags': ['-Wl,--rpath=\$$ORIGIN']
       }],
       ["OS == 'win'", {
