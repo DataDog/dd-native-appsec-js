@@ -44,9 +44,8 @@ paths when deciding whether to restore a fallback ruleset.
 If a rebuild produces no handle, new contexts also return `null`; the binding
 does not distinguish an empty ruleset from other build failures or retain a stale handle.
 
-`status: 'match'` can indicate attributes or actions without an attack event.
-Check `events?.length` for rule events. Durations are nanoseconds; timeout inputs
-are microseconds. Actions are a map keyed by action type.
+Durations are nanoseconds; timeout inputs are microseconds.
+Actions are a map keyed by action type.
 
 ## Responsibilities
 

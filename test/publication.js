@@ -152,7 +152,7 @@ describe('DDWAF', () => {
       }
     })
 
-    it('should publish evaluation fields as own data properties without invoking inherited setters', () => {
+    it('should publish attributes-only results as own data properties without invoking inherited setters', () => {
       const properties = ['metrics', 'status', 'events', 'actions', 'attributes']
       const waf = new DDWAF(rules, 'recommended')
       let context
@@ -168,8 +168,47 @@ describe('DDWAF', () => {
 
         for (const property of properties) {
           assert.strictEqual(calls.get(property), 0)
+        }
+
+        for (const property of ['metrics', 'attributes']) {
           assertOwnDataProperty(result, property)
         }
+
+        for (const property of ['status', 'events', 'actions']) {
+          assert.strictEqual(
+            Object.prototype.hasOwnProperty.call(result, property),
+            false,
+            `${property} must not be published`
+          )
+        }
+      } finally {
+        if (context) context.dispose()
+        waf.dispose()
+      }
+    })
+
+    it('should publish eventful results as own data properties without invoking inherited setters', () => {
+      const properties = ['metrics', 'status', 'events', 'actions']
+      const waf = new DDWAF(rules, 'recommended')
+      let context
+
+      try {
+        context = waf.createContext()
+        const { calls, result } = withInheritedSetters(Object.prototype, properties, setterCalls => ({
+          calls: setterCalls,
+          result: context.run({
+            custom_value_attack: 'match'
+          }, TIMEOUT)
+        }))
+
+        for (const property of properties) {
+          assert.strictEqual(calls.get(property), 0)
+          assertOwnDataProperty(result, property)
+        }
+
+        assert.strictEqual(result.status, 'match')
+        assert.strictEqual(result.events[0].rule.id, 'custom_action_rule')
+        assert.strictEqual(typeof result.actions.block_request.security_response_id, 'string')
       } finally {
         if (context) context.dispose()
         waf.dispose()

@@ -36,11 +36,6 @@ type result = {
   timeout?: boolean;
   duration?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
-  /**
-   * Since libddwaf 2.0 this is also set when only attributes or actions were
-   * produced, so it no longer implies that a rule matched.
-   * Test `events.length` rather than `status` to detect an attack.
-   */
   status?: 'match';
   actions?: {
     [actionType: string]: {

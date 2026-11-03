@@ -163,24 +163,26 @@ static Napi::Object eval_and_build_result_impl(Napi::Env env, ddwaf_object* inpu
     }
   }
 
-  if (code == DDWAF_MATCH) {
+  // libddwaf 2.1 returns DDWAF_MATCH for attributes and actions too, so the code
+  // alone no longer means a rule matched. Gate on real events to keep `status`
+  // meaning "an attack event was produced".
+  if (events != nullptr && ddwaf_object_get_size(events) > 0) {
     mlog("ddwaf result is a match")
     if (!define_own_property(res, "status", Napi::String::New(env, "match"))) {
       return res;
     }
 
-    if (events != nullptr) {
-      mlog("Set events")
-      if (!define_own_property(res, "events", from_ddwaf_object(events, env))) {
-        return res;
-      }
+    mlog("Set events")
+    if (!define_own_property(res, "events", from_ddwaf_object(events, env))) {
+      return res;
     }
+  }
 
-    if (actions != nullptr) {
-      mlog("Set actions")
-      if (!define_own_property(res, "actions", from_ddwaf_object(actions, env))) {
-        return res;
-      }
+  // Actions are published independently: libddwaf 2.1 can produce them without events.
+  if (actions != nullptr && ddwaf_object_get_size(actions) > 0) {
+    mlog("Set actions")
+    if (!define_own_property(res, "actions", from_ddwaf_object(actions, env))) {
+      return res;
     }
   }
 

@@ -12,6 +12,14 @@ const processor = require('./processor.json')
 
 const TIMEOUT = 9999e3
 
+function assertAbsent (object, property) {
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(object, property),
+    false,
+    `${property} must not be published`
+  )
+}
+
 describe('package manifest', () => {
   it('declares no npm build lifecycle scripts (Yarn Berry YN0007)', () => {
     const scripts = pkg.scripts || {}
@@ -115,7 +123,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert(result.events)
-    assert.deepStrictEqual(result.actions, {})
+    assertAbsent(result, 'actions')
     assert(!context.disposed)
 
     context.dispose()
@@ -146,7 +154,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'value_attack')
-    assert.deepStrictEqual(result.actions, {})
+    assertAbsent(result, 'actions')
     assert.deepStrictEqual(result.metrics, {})
     subcontext1.dispose()
     assert(subcontext1.disposed)
@@ -159,7 +167,7 @@ describe('DDWAF', () => {
     assert.strictEqual(result.timeout, false)
     assert.strictEqual(result.status, 'match')
     assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, 'other_attack')
-    assert.deepStrictEqual(result.actions, {})
+    assertAbsent(result, 'actions')
     assert.deepStrictEqual(result.metrics, {})
     subcontext2.dispose()
 
@@ -250,10 +258,12 @@ describe('DDWAF', () => {
       }
     }, TIMEOUT)
 
-    // libddwaf 2.1 reports `match` whenever output is produced.
-    assert.strictEqual(result.status, 'match')
-    assert.deepStrictEqual(result.events, [])
+    // libddwaf 2.1 returns DDWAF_MATCH for attributes alone; that is not an attack.
+    assertAbsent(result, 'status')
+    assertAbsent(result, 'events')
+    assertAbsent(result, 'actions')
     assert.deepStrictEqual(result.attributes, { 'server.request.body.schema': [8] })
+    assert.strictEqual(result.keep, false)
 
     context.dispose()
     assert(context.disposed)
@@ -438,6 +448,79 @@ describe('DDWAF', () => {
         }
       })
       assert.deepStrictEqual(resultWithUpdatedAction.metrics, {})
+    })
+
+    it('should report actions without status or events when the matching rule disables events', () => {
+      const silentActionRules = {
+        version: '2.2',
+        metadata: {
+          rules_version: '1.0.0'
+        },
+        actions: [{
+          id: 'silentblock',
+          type: 'block_request',
+          parameters: {
+            status_code: '403',
+            grpc_status_code: '10',
+            type: 'auto'
+          }
+        }],
+        rules: [{
+          id: 'silent_action_rule',
+          name: 'Action and attributes without event',
+          tags: {
+            type: 'silent_action',
+            category: 'attack_attempt'
+          },
+          conditions: [{
+            operator: 'phrase_match',
+            parameters: {
+              inputs: [
+                { address: 'silent_value_attack' }
+              ],
+              list: ['silent']
+            }
+          }],
+          output: {
+            event: false,
+            keep: true,
+            attributes: {
+              '_dd.appsec.trace.silent': { value: 'silent' }
+            }
+          },
+          on_match: ['silentblock']
+        }]
+      }
+
+      const waf = new DDWAF(silentActionRules, 'silent_action_ruleset')
+      let context
+
+      try {
+        assert.deepStrictEqual(waf.diagnostics.rules.loaded, ['silent_action_rule'])
+
+        context = waf.createContext()
+        const result = context.run({
+          silent_value_attack: 'silent'
+        }, TIMEOUT)
+
+        assert.strictEqual(result.timeout, false)
+        assertAbsent(result, 'status')
+        assertAbsent(result, 'events')
+        assert.strictEqual(typeof result.actions.block_request.security_response_id, 'string')
+        assert.deepStrictEqual(result.actions, {
+          block_request: {
+            security_response_id: result.actions.block_request.security_response_id,
+            grpc_status_code: 10,
+            status_code: 403,
+            type: 'auto'
+          }
+        })
+        assert.deepStrictEqual(result.attributes, { '_dd.appsec.trace.silent': 'silent' })
+        assert.strictEqual(result.keep, true)
+      } finally {
+        if (context) context.dispose()
+        waf.dispose()
+      }
     })
   })
 })

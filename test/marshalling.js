@@ -12,6 +12,14 @@ const matchedValue = require('./helpers/matched_value')
 
 const TIMEOUT = 9999e3
 
+function assertAbsent (object, property) {
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(object, property),
+    false,
+    `${property} must not be published`
+  )
+}
+
 describe('DDWAF', () => {
   it('should parse keys correctly', () => {
     const possibleKeys = new Map([
@@ -97,7 +105,9 @@ describe('DDWAF', () => {
     }, TIMEOUT)
 
     assert.strictEqual(result.timeout, false)
-    assert.strictEqual(result.status, 'match')
+    assertAbsent(result, 'status')
+    assertAbsent(result, 'events')
+    assertAbsent(result, 'actions')
     assert.strictEqual(result.keep, true)
     assert.strictEqual(result.attributes['_dd.appsec.trace.integer'], 662607015)
     assert.strictEqual(result.attributes['_dd.appsec.trace.negative_integer'], -662607015)

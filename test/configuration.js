@@ -9,6 +9,14 @@ const rules = require('./rules.json')
 
 const TIMEOUT = 9999e3
 
+function assertAbsent (object, property) {
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(object, property),
+    false,
+    `${property} must not be published`
+  )
+}
+
 describe('DDWAF', () => {
   describe('WAF update', () => {
     describe('Update config', () => {
@@ -106,7 +114,7 @@ describe('DDWAF', () => {
         assert.strictEqual(result.timeout, false)
         assert.strictEqual(result.status, 'match')
         assert(result.events)
-        assert.deepStrictEqual(result.actions, {})
+        assertAbsent(result, 'actions')
         assert(!context.disposed)
       })
 
@@ -487,7 +495,7 @@ describe('DDWAF', () => {
 
           assert.strictEqual(resultMonitor.timeout, false)
           assert.strictEqual(resultMonitor.status, 'match')
-          assert.deepStrictEqual(resultMonitor.actions, {})
+          assertAbsent(resultMonitor, 'actions')
           assert(resultMonitor.events)
 
           const updateWithRulesOverride = {
@@ -520,6 +528,23 @@ describe('DDWAF', () => {
     describe('Update config', () => {
       const brokenConfig = { rules: [{ name: 'rule_with_missing_id' }] }
 
+      it('should preserve an existing same-path config when an array root is rejected', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        let context
+
+        try {
+          assert.strictEqual(waf.createOrUpdateConfig([], 'recommended'), false)
+          assert.deepStrictEqual(waf.configPaths, ['recommended'])
+
+          context = waf.createContext()
+          const result = context.run({ 'server.request.headers.no_cookies': 'value_attack' }, TIMEOUT)
+          assert.strictEqual(result.status, 'match')
+        } finally {
+          if (context) context.dispose()
+          waf.dispose()
+        }
+      })
+
       it('should not keep stale rules active after an invalid same-path replacement removes the builder config', () => {
         const waf = new DDWAF(rules, 'recommended')
         let context
@@ -530,6 +555,42 @@ describe('DDWAF', () => {
 
           context = waf.createContext()
           assert.strictEqual(context, null)
+        } finally {
+          if (context) context.dispose()
+          waf.dispose()
+        }
+      })
+
+      it('should not register an unsupported same-path replacement', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        let context
+
+        try {
+          assert.strictEqual(waf.createOrUpdateConfig({ version: '1.0' }, 'recommended'), false)
+          assert.deepStrictEqual(waf.configPaths, [])
+
+          context = waf.createContext()
+          assert.strictEqual(context, null)
+        } finally {
+          if (context) context.dispose()
+          waf.dispose()
+        }
+      })
+
+      it('should not register an unsupported new path alongside a valid config', () => {
+        const waf = new DDWAF(rules, 'recommended')
+        let context
+
+        try {
+          assert.strictEqual(
+            waf.createOrUpdateConfig({ version: '1.0' }, 'datadog/2/ASM_DD/rc/config'),
+            false
+          )
+          assert.deepStrictEqual(waf.configPaths, ['recommended'])
+
+          context = waf.createContext()
+          const result = context.run({ 'server.request.headers.no_cookies': 'value_attack' }, TIMEOUT)
+          assert.strictEqual(result.status, 'match')
         } finally {
           if (context) context.dispose()
           waf.dispose()
