@@ -13,6 +13,7 @@
 #include "src/main.h"
 #include "src/log.h"
 #include "src/convert.h"
+#include "src/waf_internal.h"
 
 DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   Napi::Env env = info.Env();
@@ -38,38 +39,8 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   std::string key_regex_str;
   std::string value_regex_str;
 
-  if (arg_len >= 3) {  // TODO(@simon-id): there is a bug here ?
-    // TODO(@simon-id) make a macro here someday
-    if (!info[2].IsObject()) {
-      Napi::TypeError::New(env, "Second argument must be an object").ThrowAsJavaScriptException();
-      return;
-    }
-
-    Napi::Object config = info[2].ToObject();
-
-    if (config.Has("obfuscatorKeyRegex")) {
-      Napi::Value key_regex = config.Get("obfuscatorKeyRegex");
-
-      if (!key_regex.IsString()) {
-        Napi::TypeError::New(env, "obfuscatorKeyRegex must be a string").ThrowAsJavaScriptException();
-        return;
-      }
-
-      key_regex_str = key_regex.ToString().Utf8Value();
-      waf_config.obfuscator.key_regex = key_regex_str.c_str();
-    }
-
-    if (config.Has("obfuscatorValueRegex")) {
-      Napi::Value value_regex = config.Get("obfuscatorValueRegex");
-
-      if (!value_regex.IsString()) {
-        Napi::TypeError::New(env, "obfuscatorValueRegex must be a string").ThrowAsJavaScriptException();
-        return;
-      }
-
-      value_regex_str = value_regex.ToString().Utf8Value();
-      waf_config.obfuscator.value_regex = value_regex_str.c_str();
-    }
+  if (!configure_obfuscator(info, &waf_config, &key_regex_str, &value_regex_str)) {
+    return;
   }
 
   ddwaf_object rules;

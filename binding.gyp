@@ -15,6 +15,7 @@
       "src/convert.cpp",
       "src/evaluation.cpp",
       "src/main.cpp",
+      "src/obfuscator.cpp",
       "src/waf_configuration.cpp",
       "src/waf_initialization.cpp"
     ],
