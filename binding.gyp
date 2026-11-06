@@ -11,8 +11,13 @@
       "<!@(node -p \"require('./scripts/lib.js').libPath\")"
     ],
     "sources": [
+      "src/context.cpp",
       "src/convert.cpp",
-      "src/main.cpp"
+      "src/evaluation.cpp",
+      "src/main.cpp",
+      "src/obfuscator.cpp",
+      "src/waf_configuration.cpp",
+      "src/waf_initialization.cpp"
     ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
