@@ -36,7 +36,7 @@ type result = {
   timeout?: boolean;
   duration?: number;
   events?: object[]; // https://github.com/DataDog/libddwaf/blob/master/schema/events.json
-  status?: 'match';
+  status?: 'match'; // TODO: remove this if new statuses are never added
   actions?: {
     [actionType: string]: {
       [parameter: string]: string | number | boolean

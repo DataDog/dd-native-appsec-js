@@ -5,6 +5,7 @@
 const { it, describe } = require('mocha')
 const assert = require('assert')
 const { spawnSync } = require('child_process')
+
 const { DDWAF } = require('..')
 const rules = require('./rules.json')
 const processor = require('./processor.json')

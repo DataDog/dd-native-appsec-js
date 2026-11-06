@@ -2,7 +2,8 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION 8
+// min support Node.js 18.0.0 - https://nodejs.org/api/n-api.html#node-api-version-matrix
+#define NAPI_VERSION  8
 #include <napi.h>
 #include <ddwaf.h>
 
@@ -95,14 +96,12 @@ Napi::Value DDWAFContext::GetDisposed(const Napi::CallbackInfo& info) {
 
 Napi::Object DDWAFContext::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAFContext");
-  Napi::Function func =
-      DefineClass(env, "DDWAFContext",
-                  {
-                      InstanceMethod<&DDWAFContext::run>("run"),
-                      InstanceMethod<&DDWAFContext::createSubcontext>("createSubcontext"),
-                      InstanceMethod<&DDWAFContext::dispose>("dispose"),
-                      InstanceAccessor("disposed", &DDWAFContext::GetDisposed, nullptr, napi_enumerable),
-                  });
+  Napi::Function func = DefineClass(env, "DDWAFContext", {
+    InstanceMethod<&DDWAFContext::run>("run"),
+    InstanceMethod<&DDWAFContext::createSubcontext>("createSubcontext"),
+    InstanceMethod<&DDWAFContext::dispose>("dispose"),
+    InstanceAccessor("disposed", &DDWAFContext::GetDisposed, nullptr, napi_enumerable),
+  });
 
   env.GetInstanceData<AddonData>()->context_constructor = Napi::Persistent(func);
   return exports;
@@ -172,13 +171,11 @@ Napi::Value DDWAFSubcontext::GetDisposed(const Napi::CallbackInfo& info) {
 
 Napi::Object DDWAFSubcontext::Init(Napi::Env env, Napi::Object exports) {
   mlog("Setting up class DDWAFSubcontext");
-  Napi::Function func =
-      DefineClass(env, "DDWAFSubcontext",
-                  {
-                      InstanceMethod<&DDWAFSubcontext::run>("run"),
-                      InstanceMethod<&DDWAFSubcontext::dispose>("dispose"),
-                      InstanceAccessor("disposed", &DDWAFSubcontext::GetDisposed, nullptr, napi_enumerable),
-                  });
+  Napi::Function func = DefineClass(env, "DDWAFSubcontext", {
+    InstanceMethod<&DDWAFSubcontext::run>("run"),
+    InstanceMethod<&DDWAFSubcontext::dispose>("dispose"),
+    InstanceAccessor("disposed", &DDWAFSubcontext::GetDisposed, nullptr, napi_enumerable),
+  });
 
   env.GetInstanceData<AddonData>()->subcontext_constructor = Napi::Persistent(func);
   return exports;

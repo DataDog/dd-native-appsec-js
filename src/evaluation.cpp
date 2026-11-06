@@ -2,7 +2,8 @@
 * Unless explicitly stated otherwise all files in this repository are licensed under the Apache-2.0 License.
 * This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021 Datadog, Inc.
 **/
-#define NAPI_VERSION 8
+// min support Node.js 18.0.0 - https://nodejs.org/api/n-api.html#node-api-version-matrix
+#define NAPI_VERSION  8
 #include <napi.h>
 #include <ddwaf.h>
 
@@ -12,7 +13,7 @@
 #include "src/log.h"
 #include "src/convert.h"
 
-// Result map key lengths, used to reject a candidate before any memcmp.
+// libddwaf result field name constants
 constexpr size_t EVENTS_LEN = 6;
 constexpr size_t ACTIONS_LEN = 7;
 constexpr size_t ATTRIBUTES_LEN = 10;
@@ -93,6 +94,7 @@ static Napi::Object eval_and_build_result_impl(Napi::Env env, ddwaf_object* inpu
     }
   }
 
+  // Report if there is an error first
   switch (code) {
     case DDWAF_ERR_INTERNAL:
     case DDWAF_ERR_INVALID_OBJECT:
@@ -104,6 +106,8 @@ static Napi::Object eval_and_build_result_impl(Napi::Env env, ddwaf_object* inpu
     default:
       break;
   }
+
+  // No error. Collect result data and return
 
   const ddwaf_object *run_timeout = nullptr, *duration = nullptr, *attributes = nullptr, *events = nullptr,
                      *actions = nullptr, *keep = nullptr, *evaluated = nullptr;

@@ -4,6 +4,7 @@
  **/
 const { it, describe } = require('mocha')
 const assert = require('assert')
+
 const { DDWAF } = require('..')
 const rules = require('./rules.json')
 

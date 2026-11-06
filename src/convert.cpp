@@ -25,9 +25,17 @@ static bool query_utf8_length(Napi::Env env, Napi::Value value, size_t* length) 
   return false;
 }
 
-ddwaf_object* to_ddwaf_object_array(ddwaf_object* object, Napi::Env env, Napi::Array arr, int depth, bool lim,
-                                    bool ignoreToJSON, ObjectStack* stack, WAFTruncationMetrics* metrics,
-                                    ddwaf_allocator alloc) {
+ddwaf_object* to_ddwaf_object_array(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Array arr,
+  int depth,
+  bool lim,
+  bool ignoreToJSON,
+  ObjectStack* stack,
+  WAFTruncationMetrics* metrics,
+  ddwaf_allocator alloc
+) {
   if (!ignoreToJSON) {
     Napi::Value toJSON = arr.Get("toJSON");
     if (env.IsExceptionPending()) {
@@ -49,7 +57,8 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object* object, Napi::Env env, Napi::A
   uint32_t len = arr.Length();
   if (lim && len > WAF_MAX_CONTAINER_SIZE) {
     if (metrics) {
-      metrics->max_truncated_container_size = std::max(metrics->max_truncated_container_size, static_cast<size_t>(len));
+      metrics->max_truncated_container_size = std::max(metrics->max_truncated_container_size,
+                                                       static_cast<size_t>(len));
     }
     len = WAF_MAX_CONTAINER_SIZE;
   }
@@ -62,7 +71,7 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object* object, Napi::Env env, Napi::A
   }
 
   for (uint32_t i = 0; i < len; ++i) {
-    Napi::Value item = arr.Get(i);
+    Napi::Value item  = arr.Get(i);
     if (env.IsExceptionPending()) {
       mlog("Exception pending");
       break;
@@ -81,9 +90,17 @@ ddwaf_object* to_ddwaf_object_array(ddwaf_object* object, Napi::Env env, Napi::A
   return object;
 }
 
-ddwaf_object* to_ddwaf_object_object(ddwaf_object* object, Napi::Env env, Napi::Object obj, int depth, bool lim,
-                                     bool ignoreToJSON, ObjectStack* stack, WAFTruncationMetrics* metrics,
-                                     ddwaf_allocator alloc) {
+ddwaf_object* to_ddwaf_object_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Object obj,
+  int depth,
+  bool lim,
+  bool ignoreToJSON,
+  ObjectStack* stack,
+  WAFTruncationMetrics* metrics,
+  ddwaf_allocator alloc
+) {
   if (!ignoreToJSON) {
     Napi::Value toJSON = obj.Get("toJSON");
     if (env.IsExceptionPending()) {
@@ -111,7 +128,8 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object* object, Napi::Env env, Napi::
   uint32_t len = properties.Length();
   if (lim && len > WAF_MAX_CONTAINER_SIZE) {
     if (metrics) {
-      metrics->max_truncated_container_size = std::max(metrics->max_truncated_container_size, static_cast<size_t>(len));
+      metrics->max_truncated_container_size = std::max(metrics->max_truncated_container_size,
+                                                       static_cast<size_t>(len));
     }
     len = WAF_MAX_CONTAINER_SIZE;
   }
@@ -136,6 +154,8 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object* object, Napi::Env env, Napi::
       break;
     }
     if (!own_property || !keyV.IsString()) {
+      // We avoid inherited properties here.
+      // If the key is not a String, well this is weird
       continue;
     }
 
@@ -166,8 +186,14 @@ ddwaf_object* to_ddwaf_object_object(ddwaf_object* object, Napi::Env env, Napi::
   return object;
 }
 
-ddwaf_object* to_ddwaf_string(ddwaf_object* object, Napi::Env env, Napi::Value val, bool lim,
-                              WAFTruncationMetrics* metrics, ddwaf_allocator alloc) {
+ddwaf_object* to_ddwaf_string(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  bool lim,
+  WAFTruncationMetrics* metrics,
+  ddwaf_allocator alloc
+) {
   size_t original_length = 0;
   if (!query_utf8_length(env, val, &original_length)) {
     return ddwaf_object_set_invalid(object);
@@ -197,9 +223,17 @@ ddwaf_object* to_ddwaf_string(ddwaf_object* object, Napi::Env env, Napi::Value v
   return ddwaf_object_set_string(object, str.c_str(), static_cast<uint32_t>(original_length), alloc);
 }
 
-ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value val, int depth, bool lim,
-                              bool ignoreToJson, ObjectStack* stack, WAFTruncationMetrics* metrics,
-                              ddwaf_allocator alloc) {
+ddwaf_object* to_ddwaf_object(
+  ddwaf_object *object,
+  Napi::Env env,
+  Napi::Value val,
+  int depth,
+  bool lim,
+  bool ignoreToJson,
+  ObjectStack* stack,
+  WAFTruncationMetrics* metrics,
+  ddwaf_allocator alloc
+) {
   mlog("starting to convert an object");
   if (env.IsExceptionPending()) {
     mlog("Exception pending");
@@ -208,8 +242,8 @@ ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value v
   if (depth >= static_cast<int>(WAF_MAX_CONTAINER_DEPTH)) {
     mlog("Max depth reached");
     if (metrics) {
-      metrics->max_truncated_container_depth =
-          std::max(metrics->max_truncated_container_depth, static_cast<size_t>(depth));
+      metrics->max_truncated_container_depth = std::max(metrics->max_truncated_container_depth,
+                                                        static_cast<size_t>(depth));
     }
     return ddwaf_object_set_map(object, 0, alloc);
   }
@@ -231,6 +265,7 @@ ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value v
     return ddwaf_object_set_bool(object, boolValue);
   }
   if (val.IsFunction()) {
+    // Special case because a function will evaluate true for both IsFunction and IsObject.
     return ddwaf_object_set_invalid(object);
   }
   if (val.IsArray()) {
@@ -242,8 +277,9 @@ ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value v
       return ddwaf_object_set_invalid(object);
     }
     mlog("creating Array");
-    auto result = to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson,
-                                        stack, metrics, alloc);
+    auto result =
+      to_ddwaf_object_array(object, env, val.ToObject().As<Napi::Array>(), depth + 1, lim, ignoreToJson, stack,
+                            metrics, alloc);
     stack->pop();
     return result;
   }
@@ -256,8 +292,8 @@ ddwaf_object* to_ddwaf_object(ddwaf_object* object, Napi::Env env, Napi::Value v
       return ddwaf_object_set_invalid(object);
     }
     mlog("creating Object");
-    auto result =
-        to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson, stack, metrics, alloc);
+    auto result = to_ddwaf_object_object(object, env, val.ToObject(), depth + 1, lim, ignoreToJson, stack, metrics,
+                                        alloc);
     stack->pop();
     return result;
   }
@@ -296,7 +332,7 @@ bool define_own_property(Napi::Object target, uint32_t index, Napi::Value value)
   return define_own_property(target, name.data(), value);
 }
 
-Napi::Value from_ddwaf_object(const ddwaf_object* object, Napi::Env env) {
+Napi::Value from_ddwaf_object(const ddwaf_object *object, Napi::Env env) {
   Napi::Value result;
 
   // libddwaf 2.x tags are not bitmasks. Use the public predicates and accessors.
