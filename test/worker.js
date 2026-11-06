@@ -10,9 +10,7 @@ if (!isMainThread) {
   const context = waf.createContext()
 
   const result = context.run({
-    persistent: {
-      value_attack: 'whatev'
-    }
+    value_attack: 'whatev'
   }, 1e9)
 
   parentPort.postMessage(result)
