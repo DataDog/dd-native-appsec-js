@@ -562,16 +562,50 @@ describe('DDWAF', () => {
         }
       })
 
-      it('should not register an unsupported same-path replacement', () => {
+      for (const [name, config] of [
+        ['an unsupported version', { version: '1.0' }],
+        ['a malformed version', { version: 'abc' }],
+        ['invalid metadata', { metadata: [] }]
+      ]) {
+        it(`should restore fallback rules after rejecting ${name} at an existing remote path`, () => {
+          const path = 'datadog/2/ASM_DD/rc/config'
+          const waf = new DDWAF(rules, path)
+          let context
+
+          try {
+            assert.strictEqual(waf.createOrUpdateConfig(config, path), false)
+            assert.strictEqual(typeof waf.diagnostics.error, 'string')
+            assert.deepStrictEqual(waf.configPaths, [])
+            assert.strictEqual(waf.createContext(), null)
+
+            assert.strictEqual(waf.createOrUpdateConfig(rules, 'recommended'), true)
+            assert.deepStrictEqual(waf.configPaths, ['recommended'])
+            context = waf.createContext()
+            const result = context.run({ 'server.request.headers.no_cookies': 'value_attack' }, TIMEOUT)
+            assert.strictEqual(result.status, 'match')
+          } finally {
+            if (context) context.dispose()
+            waf.dispose()
+          }
+        })
+      }
+
+      it('should discard partially loaded exclusions when a later entry is invalid', () => {
         const waf = new DDWAF(rules, 'recommended')
         let context
 
         try {
-          assert.strictEqual(waf.createOrUpdateConfig({ version: '1.0' }, 'recommended'), false)
-          assert.deepStrictEqual(waf.configPaths, [])
+          const config = {
+            exclusions: [{ id: 'exclude_attack', rules_target: [{ rule_id: 'value_attack' }] }, 'invalid']
+          }
+          assert.strictEqual(waf.createOrUpdateConfig(config, 'config/exclusions'), false)
+          assert.deepStrictEqual(waf.diagnostics.exclusions, { error: "bad cast, expected 'map', obtained 'string'" })
+          assert.deepStrictEqual(waf.configPaths, ['recommended'])
 
           context = waf.createContext()
-          assert.strictEqual(context, null)
+          const result = context.run({ 'server.request.headers.no_cookies': 'value_attack' }, TIMEOUT)
+          assert.strictEqual(result.status, 'match')
+          assert.ok(result.events.some(event => event.rule.id === 'value_attack'))
         } finally {
           if (context) context.dispose()
           waf.dispose()

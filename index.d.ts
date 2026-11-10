@@ -77,6 +77,7 @@ export class DDWAF {
   readonly configPaths: string[];
 
   readonly diagnostics: {
+    error?: string,
     ruleset_version?: string,
     rules?: diagnosticsResult,
     custom_rules?: diagnosticsResult,

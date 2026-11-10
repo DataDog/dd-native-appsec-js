@@ -4,7 +4,7 @@
   "description": "Node.js bindings for libddwaf",
   "main": "index.js",
   "gypfile": false,
-  "libddwaf_version": "2.1.0",
+  "libddwaf_version": "2.2.0",
   "scripts": {
     "rebuild": "node-gyp rebuild",
     "postrebuild": "node scripts/postrebuild",

@@ -92,15 +92,8 @@ Napi::Value DDWAF::update_config(const Napi::CallbackInfo& info) {
   bool update_result = ddwaf_builder_add_or_update_config(
       this->_builder, config_path.data(), static_cast<uint32_t>(config_path.length()), &update, &diagnostics);
 
-  bool update_is_map = ddwaf_object_is_map(&update);
-
   // The builder copies the configuration, so the source is always safe to release.
   ddwaf_object_destroy(&update, alloc);
-
-  // libddwaf 2.1 can retain config paths when loading throws.
-  if (!update_result && update_is_map) {
-    ddwaf_builder_remove_config(this->_builder, config_path.data(), static_cast<uint32_t>(config_path.length()));
-  }
 
   this->rebuild_instance();
 

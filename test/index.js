@@ -188,6 +188,49 @@ describe('DDWAF', () => {
     assert(result.events)
   })
 
+  it('should support opt-in string conversion for scalar operators', () => {
+    for (const [operator, type, value, input] of [
+      ['greater_than', 'unsigned', 1000, 1001],
+      ['equals', 'boolean', true, true],
+      ['!equals', 'float', 1000, 1001]
+    ]) {
+      for (const options of [{}, { convert_strings: false }, { convert_strings: true }]) {
+        const waf = new DDWAF({
+          version: '2.2',
+          rules: [{
+            id: 'scalar',
+            name: 'scalar',
+            tags: { type: 'test', category: 'test' },
+            conditions: [{
+              operator,
+              parameters: { inputs: [{ address: 'value' }], type, value, options }
+            }]
+          }]
+        }, 'scalar')
+
+        try {
+          for (const [data, matches] of [
+            [input, true],
+            [String(input), options.convert_strings === true],
+            [`${input}invalid`, false]
+          ]) {
+            const context = waf.createContext()
+            try {
+              const result = context.run({ value: data }, TIMEOUT)
+              assert.strictEqual(result.timeout, false)
+              assert.strictEqual(result.status === 'match', matches,
+                `${operator} with ${JSON.stringify(options)} on ${JSON.stringify(data)}`)
+            } finally {
+              context.dispose()
+            }
+          }
+        } finally {
+          waf.dispose()
+        }
+      }
+    }
+  })
+
   it('should refuse invalid rule', () => {
     assert.throws(() => new DDWAF({}, 'empty_rules'), new Error('Invalid rules'))
     assert.throws(() => new DDWAF('', 'non_object_rules'), new TypeError('First argument must be an object'))

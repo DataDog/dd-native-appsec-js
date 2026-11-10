@@ -30,7 +30,7 @@ Please feel free to [contact support][support] if you would like to request supp
 
 # Migrating to native-appsec 12
 
-This version bundles libddwaf 2.1.0 and changes the evaluation API.
+This version bundles libddwaf 2.2.0 and changes the evaluation API.
 `context.run(data, timeout)` now receives an address map directly. The previous
 `{ persistent, ephemeral }` envelope is no longer supported. For scoped data,
 create a subcontext with `context.createSubcontext()`, call its `run(data, timeout)`
@@ -40,7 +40,9 @@ its own data and evaluation effects local. It can outlive the parent.
 `createContext()` returns `null` when there is no active ruleset, including after
 removing all configurations. A rejected same-path replacement can also remove
 the previous configuration; callers must check diagnostics and configuration
-paths when deciding whether to restore a fallback ruleset.
+paths when deciding whether to restore a fallback ruleset. Rejected map configurations
+are fully removed from the builder, including their paths and any partially loaded
+content. Top-level parsing failures are reported in `diagnostics.error`.
 If a rebuild produces no handle, new contexts also return `null`; the binding
 does not distinguish an empty ruleset from other build failures or retain a stale handle.
 
