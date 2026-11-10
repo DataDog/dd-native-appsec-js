@@ -7,7 +7,6 @@
 #include <napi.h>
 #include <ddwaf.h>
 
-#include <cstring>
 #include <string>
 
 #include "src/main.h"
@@ -33,35 +32,61 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
     return;
   }
 
-  ddwaf_config waf_config{{0, 0, 0}, {nullptr, nullptr}, ddwaf_object_free};
+  std::string config_path = info[1].As<Napi::String>().Utf8Value();
+  if (!validate_config_path(env, config_path)) {
+    return;
+  }
 
-  // do not touch these strings after the c_str() assigment
-  std::string key_regex_str;
-  std::string value_regex_str;
+  ddwaf_allocator alloc = ddwaf_get_default_allocator();
 
-  if (!configure_obfuscator(info, &waf_config, &key_regex_str, &value_regex_str)) {
+  mlog("Init Builder");
+  ddwaf_builder builder = ddwaf_builder_init();
+
+  if (builder == nullptr) {
+    Napi::Error::New(env, "Could not create the WAF builder").ThrowAsJavaScriptException();
+    return;
+  }
+
+  if (!configure_obfuscator(info, builder)) {
+    ddwaf_builder_destroy(builder);
     return;
   }
 
   ddwaf_object rules;
+  ddwaf_object_set_invalid(&rules);
   mlog("building rules");
-  to_ddwaf_object(&rules, env, info[0], 0, false, false, JsSet::Create(env), nullptr);
-  std::string config_path = info[1].As<Napi::String>().Utf8Value();
+  ObjectStack rules_stack;
+  to_ddwaf_object(&rules, env, info[0], 0, false, false, &rules_stack, nullptr, alloc);
+
+  if (env.IsExceptionPending()) {
+    mlog("Exception pending while building rules");
+    ddwaf_object_destroy(&rules, alloc);
+    ddwaf_builder_destroy(builder);
+    return;
+  }
 
   ddwaf_object diagnostics;
+  ddwaf_object_set_invalid(&diagnostics);
 
-  mlog("Init Builder");
-  ddwaf_builder builder = ddwaf_builder_init(&waf_config);
-  bool result = ddwaf_builder_add_or_update_config(builder, LSTRARG(config_path.c_str()), &rules, &diagnostics);
+  bool result = ddwaf_builder_add_or_update_config(builder, config_path.data(),
+                                                   static_cast<uint32_t>(config_path.length()), &rules, &diagnostics);
 
-  ddwaf_object_free(&rules);
+  // The builder copies the configuration, so the source is safe to release.
+  ddwaf_object_destroy(&rules, alloc);
 
   Napi::Value diagnostics_js = from_ddwaf_object(&diagnostics, env);
-  info.This().As<Napi::Object>().Set("diagnostics", diagnostics_js);
+  bool diagnostics_published = define_own_property(info.This().As<Napi::Object>(), "diagnostics", diagnostics_js);
 
-  ddwaf_object_free(&diagnostics);
+  ddwaf_object_destroy(&diagnostics, alloc);
+
+  if (!diagnostics_published) {
+    mlog("Exception pending while reporting diagnostics");
+    ddwaf_builder_destroy(builder);
+    return;
+  }
 
   if (!result) {
+    ddwaf_builder_destroy(builder);
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
     return;
   }
@@ -70,6 +95,7 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   ddwaf_handle handle = ddwaf_builder_build_instance(builder);
 
   if (handle == nullptr) {
+    ddwaf_builder_destroy(builder);
     Napi::Error::New(env, "Invalid rules").ThrowAsJavaScriptException();
     return;
   }
@@ -79,5 +105,11 @@ DDWAF::DDWAF(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DDWAF>(info) {
   this->_disposed = false;
 
   this->update_known_addresses(info);
-  this->update_known_actions(info);
+  if (!env.IsExceptionPending()) {
+    this->update_known_actions(info);
+  }
+  if (env.IsExceptionPending()) {
+    // Failed construction deletes the wrapper without calling Finalize().
+    this->Finalize(env);
+  }
 }

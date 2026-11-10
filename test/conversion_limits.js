@@ -16,10 +16,8 @@ describe('limit tests', () => {
 
     const context1 = waf.createContext()
     const result1 = context1.run({
-      persistent: {
-        'server.response.status': {
-          a0: '404'
-        }
+      'server.response.status': {
+        a0: '404'
       }
     }, TIMEOUT)
     assert.strictEqual(result1.status, 'match')
@@ -33,9 +31,7 @@ describe('limit tests', () => {
 
     const context2 = waf.createContext()
     const result2 = context2.run({
-      persistent: {
-        'server.response.status': item
-      }
+      'server.response.status': item
     }, TIMEOUT)
     assert(!result2.status)
     assert(!result2.events)
@@ -47,9 +43,7 @@ describe('limit tests', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      persistent: {
-        'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
-      }
+      'server.request.headers.no_cookies': createNestedObject(5, { header: 'value_attack' })
     }, TIMEOUT)
 
     assert.strictEqual(result.status, 'match')
@@ -62,9 +56,7 @@ describe('limit tests', () => {
     const context = waf.createContext()
 
     const result = context.run({
-      persistent: {
-        'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
-      }
+      'server.request.headers.no_cookies': createNestedObject(100, { header: 'value_attack' })
     }, TIMEOUT)
 
     assert(!result.status)
@@ -78,9 +70,7 @@ describe('limit tests', () => {
     // test first item in big rule
     const context1 = waf.createContext()
     const result1 = context1.run({
-      persistent: {
-        'server.request.body': { a: '.htaccess' }
-      }
+      'server.request.body': { a: '.htaccess' }
     }, TIMEOUT)
     assert(result1.status)
     assert(result1.events)
@@ -88,9 +78,7 @@ describe('limit tests', () => {
     // test last item in big rule
     const context2 = waf.createContext()
     const result2 = context2.run({
-      persistent: {
-        'server.request.body': { a: 'yarn.lock' }
-      }
+      'server.request.body': { a: 'yarn.lock' }
     }, TIMEOUT)
     assert(result2.status)
     assert(result2.events)
@@ -101,9 +89,7 @@ describe('limit tests', () => {
 
     const context1 = waf.createContext()
     const result1 = context1.run({
-      persistent: {
-        'server.response.status': '404'
-      }
+      'server.response.status': '404'
     }, TIMEOUT)
     assert.strictEqual(result1.status, 'match')
     assert(result1.events)
@@ -112,10 +98,8 @@ describe('limit tests', () => {
 
     const context2 = waf.createContext()
     const result2 = context2.run({
-      persistent: {
-        'server.response.status': longValue,
-        'server.request.body': { a: longValue + 'a' }
-      }
+      'server.response.status': longValue,
+      'server.request.body': { a: longValue + 'a' }
     }, TIMEOUT)
 
     assert(!result2.status)
@@ -146,15 +130,13 @@ describe('limit tests', () => {
 
     const context = waf.createContext()
     const result = context.run({
-      persistent: {
-        'server.request.body': {
-          deep1: deepObject1,
-          large1: largeObject1,
-          deep2: deepObject2,
-          large2: largeObject2,
-          str1: longValue1,
-          str2: longValue2
-        }
+      'server.request.body': {
+        deep1: deepObject1,
+        large1: largeObject1,
+        deep2: deepObject2,
+        large2: largeObject2,
+        str1: longValue1,
+        str2: longValue2
       }
     }, TIMEOUT)
 
@@ -173,3 +155,126 @@ function createNestedObject (n, obj) {
 
   return obj
 }
+
+describe('limit tests', () => {
+  it('should evaluate later addresses after a large number of earlier nodes', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    let context
+    let getterCalls = 0
+    const payload = {
+      padding: Array.from(
+        { length: 20 },
+        () => Array.from({ length: 256 }, (_, index) => index)
+      )
+    }
+    Object.defineProperty(payload, 'server.request.headers.no_cookies', {
+      enumerable: true,
+      get () {
+        getterCalls++
+        return 'value_attack'
+      }
+    })
+
+    try {
+      context = waf.createContext()
+      const result = context.run(payload, TIMEOUT)
+
+      assert.strictEqual(getterCalls, 1)
+      assert.strictEqual(result.status, 'match')
+      assert.deepStrictEqual(result.metrics, {})
+    } finally {
+      if (context) context.dispose()
+      waf.dispose()
+    }
+  })
+
+  it('should retain later addresses after truncating a large UTF-8 value', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    let context
+    let getterCalls = 0
+    const payload = {
+      padding: 'é'.repeat(524289)
+    }
+    Object.defineProperty(payload, 'server.request.headers.no_cookies', {
+      enumerable: true,
+      get () {
+        getterCalls++
+        return 'value_attack'
+      }
+    })
+
+    try {
+      context = waf.createContext()
+      const result = context.run(payload, TIMEOUT)
+
+      assert.strictEqual(getterCalls, 1)
+      assert.strictEqual(result.status, 'match')
+      assert.strictEqual(result.metrics.maxTruncatedString, 1048578)
+    } finally {
+      if (context) context.dispose()
+      waf.dispose()
+    }
+  })
+
+  it('should evaluate later addresses after a large amount of earlier string data', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const context = waf.createContext()
+    try {
+      const result = context.run({
+        padding: new Array(256).fill('a'.repeat(4096)),
+        'server.request.headers.no_cookies': 'value_attack'
+      }, TIMEOUT)
+
+      assert.strictEqual(result.status, 'match')
+      assert.deepStrictEqual(result.metrics, {})
+    } finally {
+      context.dispose()
+      waf.dispose()
+    }
+  })
+
+  it('should report the original length of a large truncated string', () => {
+    const value = 'a'.repeat(2000000)
+    const waf = new DDWAF(rules, 'recommended')
+    let context
+
+    try {
+      context = waf.createContext()
+      const result = context.run({ 'server.request.body': value }, TIMEOUT)
+
+      assert.strictEqual(result.metrics.maxTruncatedString, value.length)
+    } finally {
+      if (context) context.dispose()
+      waf.dispose()
+    }
+  })
+
+  it('should preserve bounded UTF-8 string prefixes in contexts and subcontexts', () => {
+    const waf = new DDWAF(rules, 'recommended')
+    const parent = waf.createContext()
+    const text = 'ordinary'.repeat(150000)
+    const unicode = 'a'.repeat(4095) + 'é' + 'ordinary'.repeat(150000)
+
+    try {
+      for (const scoped of [false, true]) {
+        for (const [value, expected] of [
+          [text, text.slice(0, 4096)],
+          [unicode, 'a'.repeat(4095)]
+        ]) {
+          const context = scoped ? parent.createSubcontext() : waf.createContext()
+          try {
+            const result = context.run({ value_attack: value }, TIMEOUT)
+            assert.strictEqual(result.errorCode, undefined)
+            assert.strictEqual(result.events[0].rule_matches[0].parameters[0].value, expected)
+            assert.strictEqual(result.metrics.maxTruncatedString, Buffer.byteLength(value))
+          } finally {
+            context.dispose()
+          }
+        }
+      }
+    } finally {
+      parent.dispose()
+      waf.dispose()
+    }
+  })
+})

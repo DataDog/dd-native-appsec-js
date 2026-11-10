@@ -21,10 +21,11 @@
     ],
     "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
     "xcode_settings": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.10",
+      "MACOSX_DEPLOYMENT_TARGET": "14.2.1",
     },
     "conditions": [
       ["OS == 'linux'", {
+        "libraries": ["-lm"],
         'ldflags': ['-Wl,--rpath=\$$ORIGIN']
       }],
       ["OS == 'win'", {
